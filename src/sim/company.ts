@@ -1,0 +1,239 @@
+// Company-level simulation shared by the player and AI manufacturers:
+// model bookkeeping, unit costs, factories, research, finance and the player's monthly tick.
+import type { Company, Factory, GameState, MonthLedger, RegionId, SegmentId, Tech, TechArea, VehicleModel, VehicleSpec } from './types';
+import { COUNTRY, REGION_IDS } from '../data/world';
+import { computeVehicle } from './engineering';
+import { clamp, cpi, kf } from './util';
+import { modProduct, type MarketResult } from './market';
+
+export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
+export const TECH_AREAS: TechArea[] = ['engine', 'chassis', 'aero', 'electronics', 'manufacturing'];
+export const AREA_NAME: Record<TechArea, string> = { engine: 'Powertrain', chassis: 'Chassis & materials', aero: 'Aerodynamics', electronics: 'Electronics & safety', manufacturing: 'Manufacturing' };
+export const zeroRegions = (): Record<RegionId, number> => ({ NA: 0, EU: 0, JP: 0, CN: 0, LATAM: 0, ROW: 0 });
+
+/** Nominal hourly manufacturing wage. */
+export function wage(country: string, year: number): number {
+  const c = COUNTRY[country] ?? COUNTRY.USA;
+  return c.wage2020 * kf(c.wageCurve, year) * cpi(year);
+}
+export const engineerCost = (c: Company, year: number) => 1.6 * 170 * wage(c.country, year);
+export const industryTech = (year: number, lead = -1): Tech => ({ engine: year + lead, chassis: year + lead, aero: year + lead, electronics: year + lead, manufacturing: year + lead });
+export const materialIndex = (g: GameState) => g.macro.materialCost * modProduct(g, (m) => m.materialCost);
+export const INTEREST_BASE: [number, number][] = [[1950, 0.04], [1970, 0.07], [1981, 0.15], [1990, 0.09], [2000, 0.065], [2010, 0.04], [2020, 0.035], [2023, 0.07], [2030, 0.05]];
+
+export function makeModel(g: GameState, name: string, spec: VehicleSpec, segment: SegmentId, tech: Tech, designYear: number): VehicleModel {
+  const stats = computeVehicle(spec, { year: g.year, tech });
+  return {
+    id: uid(g, 'm'), name, spec, segment, status: 'design', devMonthsLeft: 0, devMonthsTotal: 0, devCostPaid: 0, devCostTotal: 0,
+    frozenTech: { ...tech }, designYear, launchYear: 0, launchMonth: 1, price: 0, inventory: 0, cumulativeUnits: 0, generation: 1, stats,
+    historical: false, volumeWeight: 1, lastSales: zeroRegions(), lastDemand: 0, lastUnitCost: 0, salesHistory: [], lifetimeRevenue: 0, recallRisk: 0,
+  };
+}
+/** Re-evaluate a model against the current year: costs inflate, and scores are relative to rising era norms. */
+export function refreshStats(g: GameState, m: VehicleModel) {
+  m.stats = computeVehicle(m.spec, { year: g.year, tech: m.frozenTech });
+}
+
+export function unitCost(g: GameState, m: VehicleModel, f: Factory | { country: string; automation: number }, monthlyVol: number): number {
+  const learning = Math.max(0.8, Math.pow(Math.max(m.cumulativeUnits, 500) / 500, -0.04));
+  const parts = m.stats.partsCost * materialIndex(g) * (1 + 1.5 / (1 + monthlyVol / 100)) * learning;
+  const labour = m.stats.labourHours * (1 - 0.65 * f.automation) * wage(f.country, g.year);
+  return parts + labour;
+}
+/** Quick estimate used by the UI and by pricing before a factory is chosen. */
+export function estimateUnitCost(g: GameState, c: Company, m: VehicleModel, monthlyVol = 0): number {
+  const f = c.factories[0] ?? { country: c.country, automation: 0.3 };
+  return unitCost(g, m, f, monthlyVol || Math.max(20, m.lastDemand));
+}
+
+export const factoryBuildCost = (capacity: number, automation: number, year: number) => capacity * 12 * 4000 * (1 + automation) * cpi(year) * kf([[1950, 0.5], [1990, 0.85], [2020, 1]], year);
+export const factoryFixedCost = (f: Factory, year: number) => Math.max(f.capacity, 40) * (6 * wage(f.country, year) + 180 * cpi(year) * (1 + 1.5 * f.automation));
+export const factoryValue = (f: Factory, year: number) => factoryBuildCost(f.capacity, f.automation, year) * 0.45;
+export const lineShareUsed = (f: Factory) => f.lines.reduce((a, l) => a + l.share, 0);
+export const toolingCost = (m: VehicleModel, units: number) => m.stats.toolingPerUnitCapacity * units;
+
+export function annualRevenue(c: Company): number { return c.ledger.slice(-12).reduce((a, l) => a + l.revenue, 0) * (12 / Math.max(1, Math.min(12, c.ledger.length))); }
+export function annualProfit(c: Company): number { return c.ledger.slice(-12).reduce((a, l) => a + l.profit, 0) * (12 / Math.max(1, Math.min(12, c.ledger.length))); }
+export function annualUnits(c: Company): number { return c.ledger.slice(-12).reduce((a, l) => a + l.units, 0) * (12 / Math.max(1, Math.min(12, c.ledger.length))); }
+export function revenueBasis(c: Company): number {
+  if (c.ledger.length >= 6) return annualRevenue(c);
+  const act = c.models.filter((m) => m.status === 'production');
+  const w = act.reduce((a, m) => a + m.volumeWeight, 0) || 1;
+  return Math.max(annualRevenue(c), act.reduce((a, m) => a + (c.baseVolume * m.volumeWeight) / w * m.price * 0.88, 0));
+}
+export function creditLimit(c: Company, year: number): number {
+  return Math.max(revenueBasis(c) * 0.5, 20e6 * cpi(year)) + c.factories.reduce((a, f) => a + factoryValue(f, year), 0) * 0.6;
+}
+export function valuation(c: Company, year: number): number {
+  const rev = annualRevenue(c) || c.baseVolume * 20000 * cpi(year);
+  const base = Math.max(0.55 * rev, 8 * annualProfit(c)) * (0.8 + c.prestige / 100);
+  return Math.max(base + c.cash - c.debt, 0.15 * rev, 5e6 * cpi(year));
+}
+export function interestRate(g: GameState, c: Company): number {
+  const base = g.macro.interestBase + g.macro.modifiers.reduce((a, m) => a + (m.interest ?? 0), 0);
+  const lev = c.debt / Math.max(creditLimit(c, g.year), 1);
+  return base + 0.02 * Math.min(lev, 2) + (g.difficulty === 'hard' ? 0.015 : g.difficulty === 'easy' ? -0.01 : 0);
+}
+export const researchRef = (year: number) => 1.5e6 * cpi(year) * kf([[1950, 0.15], [1980, 0.45], [2000, 0.8], [2020, 1]], year);
+export const devEngineersNeeded = (g: GameState, c: Company, m: VehicleModel) => Math.max(5, (m.devCostTotal * 0.3) / (Math.max(m.devMonthsTotal, 1) * engineerCost(c, g.year)));
+
+export function emptyLedger(g: GameState): MonthLedger {
+  return { y: g.year, m: g.month, revenue: 0, cogs: 0, factoryFixed: 0, wages: 0, rd: 0, marketing: 0, dev: 0, logistics: 0, motorsport: 0, interest: 0, tax: 0, other: 0, profit: 0, cash: 0, debt: 0, units: 0 };
+}
+
+export function news(g: GameState, kind: GameState['news'][number]['kind'], title: string, body: string, tag?: string) {
+  g.news.unshift({ y: g.year, m: g.month, title, body, kind, tag });
+  if (g.news.length > 250) g.news.length = 250;
+}
+
+/** Player manufacturer: one month of production, sales, development, research and finance. */
+export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra: { msCost: number; msIncome: number }): MonthLedger {
+  const L = emptyLedger(g);
+  const prodAll = modProduct(g, (m) => m.productionAll);
+
+  // ---- factories & production
+  const produced = new Map<string, number>();
+  const costSum = new Map<string, number>();
+  const lineCap = new Map<string, number>();
+  for (const f of c.factories) for (const l of f.lines) lineCap.set(l.modelId, (lineCap.get(l.modelId) ?? 0) + f.capacity * l.share * l.ramp);
+  for (const f of c.factories) {
+    if (f.expansion) {
+      f.expansion.monthsLeft--;
+      if (f.expansion.monthsLeft <= 0) {
+        const old = f.capacity; f.capacity += f.expansion.add; f.expansion = null;
+        for (const l of f.lines) l.share *= old / f.capacity; // lines keep their absolute capacity
+        news(g, 'company', `${f.name} expansion complete`, `Capacity is now ${Math.round(f.capacity).toLocaleString()} units per month.`);
+      }
+    }
+    L.factoryFixed += factoryFixedCost(f, g.year);
+    const regionMult = prodAll * modProduct(g, (m) => m.production?.[f.region]) * (f.disruption > 0 ? 0.25 : 1);
+    if (f.disruption > 0) f.disruption--;
+    for (const l of f.lines) {
+      const m = c.models.find((x) => x.id === l.modelId);
+      if (!m || (m.status !== 'ready' && m.status !== 'production')) continue;
+      const cap = f.capacity * l.share * l.ramp * regionMult;
+      const totalCap = lineCap.get(m.id) || 1;
+      const lastD = m.lastDemand > 0 ? m.lastDemand : totalCap * 0.6; // first month: build launch stock
+      const desiredModel = Math.max(0, lastD * 1.03 + (0.6 * lastD - m.inventory) * 0.5);
+      const target = l.target >= 0 ? l.target : desiredModel * ((f.capacity * l.share * l.ramp) / totalCap);
+      const n = Math.max(0, Math.min(cap, target));
+      l.ramp = Math.min(1, l.ramp + 0.2);
+      if (n <= 0) continue;
+      const uc = unitCost(g, m, f, totalCap);
+      produced.set(m.id, (produced.get(m.id) ?? 0) + n);
+      costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
+      L.cogs += n * uc;
+    }
+  }
+
+  // ---- sales
+  for (const m of c.models) {
+    const made = produced.get(m.id) ?? 0;
+    if (made > 0) {
+      m.lastUnitCost = (costSum.get(m.id) ?? 0) / made;
+      m.inventory += made;
+      m.cumulativeUnits += made;
+      if (m.status === 'ready') m.status = 'production';
+    }
+    const dem = mk.demand.get(m.id);
+    let total = 0;
+    if (dem) for (const r of REGION_IDS) total += dem[r];
+    m.lastDemand = total;
+    let sold = 0;
+    const ratio = total > 0 ? Math.min(1, m.inventory / total) : 0;
+    for (const r of REGION_IDS) {
+      const n = dem ? dem[r] * ratio : 0;
+      m.lastSales[r] = n;
+      sold += n;
+      if (n > 0) {
+        const local = c.factories.some((f) => f.region === r && f.lines.some((l) => l.modelId === m.id));
+        L.logistics += n * (local ? 150 : 700) * cpi(g.year);
+      }
+    }
+    if (sold > 0) {
+      if (!m.launchYear) {
+        m.launchYear = g.year; m.launchMonth = g.month;
+        news(g, 'company', `${c.name} ${m.name} goes on sale`, `First customer deliveries at ${Math.round(m.price).toLocaleString()} USD.`);
+      }
+      m.inventory -= sold;
+      const rev = sold * m.price * 0.88; // 12 % dealer margin
+      L.revenue += rev; L.units += sold; m.lifetimeRevenue += rev;
+    }
+    L.logistics += m.inventory * (m.lastUnitCost || m.stats.partsCost) * 0.008; // stock financing & storage
+    if (m.status === 'production' || m.salesHistory.length) { m.salesHistory.push(Math.round(sold)); if (m.salesHistory.length > 120) m.salesHistory.shift(); }
+  }
+
+  // ---- development projects (share the engineering staff)
+  const projects = c.models.filter((m) => m.status === 'development');
+  const need = projects.reduce((a, m) => a + devEngineersNeeded(g, c, m), 0);
+  const speed = need > 0 ? clamp(c.engineers / need, 0.25, 1.3) : 1;
+  for (const m of projects) {
+    const spend = (m.devCostTotal * 0.55) / m.devMonthsTotal * speed;
+    m.devCostPaid += spend; L.dev += spend;
+    m.devMonthsLeft -= speed;
+    if (m.devMonthsLeft <= 0) {
+      m.status = 'ready'; m.devMonthsLeft = 0;
+      refreshStats(g, m);
+      news(g, 'company', `${m.name} is ready for production`, 'Engineering sign-off complete. Assign it to a factory line and set a price to start selling.', 'ready');
+    }
+  }
+
+  // ---- research
+  const ref = researchRef(g.year);
+  const yNow = g.year + (g.month - 1) / 12;
+  for (const a of TECH_AREAS) {
+    const s = c.rdBudget[a];
+    L.rd += s;
+    if (s > 0) c.tech[a] += (1 / 12) * Math.sqrt(s / ref) * Math.max(0.15, 1 - 0.16 * (c.tech[a] - yNow + 2));
+    if (c.tech[a] < yNow - 4) c.tech[a] = yNow - 4; // technology diffuses through suppliers and licensing
+  }
+  if (c.motorsport) { // technology transfer from the race programme
+    const d = c.motorsport.championship.teams.find((t) => t.id === c.motorsport!.teamId)?.dev;
+    if (d) { c.tech.aero += 0.012 * d.aero; c.tech.engine += 0.012 * d.engine; c.tech.chassis += 0.012 * d.chassis; }
+  }
+
+  // ---- overheads
+  L.wages = c.engineers * engineerCost(c, g.year) + L.revenue * 0.035 + (c.factories.length ? 0.4e6 * cpi(g.year) : 0);
+  L.marketing = c.marketingBudget;
+  const reachTotal = REGION_IDS.reduce((a, r) => a + c.reach[r], 0);
+  L.other = reachTotal * 5 * cpi(g.year);
+  L.motorsport = extra.msCost;
+  L.revenue += extra.msIncome;
+  c.interestRate = interestRate(g, c);
+  L.interest = (c.debt * c.interestRate) / 12 - (c.cash > 0 ? (c.cash * Math.max(0, g.macro.interestBase - 0.02)) / 12 : 0);
+  const pre = L.revenue - L.cogs - L.factoryFixed - L.wages - L.rd - L.marketing - L.dev - L.logistics - L.motorsport - L.interest - L.other;
+  c.ytdProfit += pre;
+  L.tax = pre > 0 && c.ytdProfit > 0 ? Math.min(pre, c.ytdProfit) * 0.25 : 0;
+  L.profit = pre - L.tax;
+  c.cash += L.profit;
+
+  // ---- brand dynamics
+  let wSum = 0, pre2 = 0, rel = 0, perf = 0;
+  for (const m of c.models) {
+    if (m.status !== 'production') continue;
+    const w = Math.max(1, REGION_IDS.reduce((a, r) => a + m.lastSales[r], 0) * m.price);
+    wSum += w; pre2 += w * m.stats.scores.prestige; rel += w * m.stats.scores.reliability; perf += w * m.stats.scores.performance;
+  }
+  if (wSum > 0) {
+    // +8: familiarity of an established marque lifts its image above the bare product scores
+    c.prestige += (clamp(pre2 / wSum + 8 + 0.4 * c.msGlow, 0, 100) - c.prestige) * 0.008;
+    c.reliabilityRep += (rel / wSum - c.reliabilityRep) * 0.02;
+    c.sportiness += (clamp(perf / wSum + c.msGlow, 0, 100) - c.sportiness) * 0.015;
+  } else if (c.motorsport) {
+    c.prestige += (clamp(40 + 1.5 * c.msGlow, 0, 100) - c.prestige) * 0.02;
+    c.sportiness += (clamp(60 + 1.2 * c.msGlow, 0, 100) - c.sportiness) * 0.02;
+  }
+  c.msGlow *= 0.97;
+  const intensity = (c.marketingBudget * 12) / (annualRevenue(c) + 50e6 * cpi(g.year));
+  const awTarget = clamp(32 + 55 * (1 - Math.exp(-intensity / 0.03)) + c.prestige / 10 + 0.5 * c.msGlow, 0, 100);
+  for (const r of REGION_IDS) c.awareness[r] += ((c.reach[r] > 0 ? awTarget : awTarget * 0.4) - c.awareness[r]) * 0.06;
+
+  // ---- solvency
+  if (c.cash < 0) { c.debt += -c.cash; c.cash = 0; }
+  const limit = creditLimit(c, g.year);
+  if (c.debt - c.cash > limit * 1.25) c.troubleMonths++; else c.troubleMonths = Math.max(0, c.troubleMonths - 1);
+  L.cash = c.cash; L.debt = c.debt;
+  c.ledger.push(L);
+  if (c.ledger.length > 180) c.ledger.shift();
+  return L;
+}
