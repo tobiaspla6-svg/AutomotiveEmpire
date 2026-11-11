@@ -16,6 +16,8 @@ export const REGIONS: { id: RegionId; name: string; short: string }[] = [
   { id: 'LATAM', name: 'Latin America', short: 'Lat. America' },
   { id: 'ROW', name: 'Rest of World', short: 'Rest of World' },
 ];
+/** Last year covered by the approximate historical market data; later years hold those levels (estimates). */
+export const MARKET_DATA_THROUGH = 2025;
 export const REGION_IDS: RegionId[] = REGIONS.map((r) => r.id);
 export const REGION_NAME: Record<RegionId, string> = Object.fromEntries(REGIONS.map((r) => [r.id, r.name])) as Record<RegionId, string>;
 

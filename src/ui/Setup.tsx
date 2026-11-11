@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { Difficulty, Discipline, HistoryMode } from '../sim/types';
 import { useStore } from '../store/game';
-import { MAKERS, MAKER, makerStart } from '../data/manufacturers';
-import { COUNTRIES, COUNTRY, REGIONS } from '../data/world';
+import { LAST_START_YEAR, MAKERS, MAKER, makerStart, productionDataThrough } from '../data/manufacturers';
+import { COUNTRIES, COUNTRY, MARKET_DATA_THROUGH, REGIONS } from '../data/world';
 import { TECHS } from '../data/tech';
 import {
   capitalOptions, ENGINEER_LEVELS, FACTORY_SIZES, founderCosts, MS_BUDGETS, newCeoGame, newFounderGame, newMotorsportGame, previewCompany,
@@ -23,6 +23,11 @@ const HIST: { value: HistoryMode; label: string; title: string }[] = [
   { value: 'historical', label: 'Historical', title: 'World events happen on their real dates.' },
   { value: 'alternative', label: 'Alternative history', title: 'Events may be skipped, shifted by up to two years or change in magnitude; competitors drift from their real trajectories.' },
 ];
+/** Shown whenever the chosen start year is past the last year of historical data. */
+function EstimateNote({ year }: { year: number }) {
+  if (year <= MARKET_DATA_THROUGH) return null;
+  return <div className="warnbox">Starting in {year}: market sizes, prices, fuel and interest levels after {MARKET_DATA_THROUGH} are held at their last known values and are estimates, not history. Events after that date are generated, not historical.</div>;
+}
 function WorldOptions(p: { diff: Difficulty; setDiff: (d: Difficulty) => void; hist: HistoryMode; setHist: (h: HistoryMode) => void }) {
   return (
     <>
@@ -61,7 +66,8 @@ export function CeoSetupScreen() {
             </button>))}
           </div>
         </div>
-        <Slider label="Starting year" value={y} min={makerStart(def)} max={2024} onChange={setYear} />
+        <Slider label="Starting year" value={y} min={makerStart(def)} max={LAST_START_YEAR} onChange={setYear} />
+        <EstimateNote year={y} />
         <WorldOptions diff={diff} setDiff={setDiff} hist={hist} setHist={setHist} />
         <button className="btn primary lg" onClick={() => start(newCeoGame({ makerId, year: y, difficulty: diff, historyMode: hist }))}>Take the chair at {def.name}, {y}</button>
         <p className="small muted">The world is populated with every other catalogued manufacturer active in {y}; they follow their real model launches and plant openings while you are free to diverge.</p>
@@ -81,7 +87,7 @@ export function CeoSetupScreen() {
         <div className="panel grid g4">
           <Kpi label="Starting cash" value={fmtMoney(c.cash)} detail={<Src k="e" />} />
           <Kpi label="Existing debt" value={fmtMoney(c.debt)} detail={<Src k="e" />} />
-          <Kpi label="Annual production" value={fmtNum(c.baseVolume)} detail={<Src k="a" />} />
+          <Kpi label="Annual production" value={fmtNum(c.baseVolume)} detail={y > productionDataThrough(def) ? <><Src k="e" /> <span className="tiny">held at {productionDataThrough(def)} level</span></> : <Src k="a" />} />
           <Kpi label="Est. revenue" value={fmtMoney(revenue)} detail={<Src k="e" />} />
           <Kpi label="Capacity / month" value={fmtNum(capacity)} detail={<Src k="e" />} />
           <Kpi label="Workforce" value={fmtNum(workforce)} detail={<Src k="e" />} />
@@ -140,7 +146,8 @@ export function FounderSetupScreen() {
         <label className="field"><span className="lab"><span>Company name</span></span><input type="text" value={o.name} maxLength={28} onChange={(e) => set({ name: e.target.value })} /></label>
         <div className="row"><div className="grow"><Select label="Home country" value={o.country} options={COUNTRIES.map((c) => ({ value: c.id, label: c.name }))} onChange={(v) => set({ country: v })} /></div>
           <label className="field"><span className="lab"><span>Brand colour</span></span><input type="color" value={o.color} onChange={(e) => set({ color: e.target.value })} /></label></div>
-        <Slider label="Founding year" value={o.year} min={1950} max={2024} onChange={(v) => set({ year: v })} />
+        <Slider label="Founding year" value={o.year} min={1950} max={LAST_START_YEAR} onChange={(v) => set({ year: v })} />
+        <EstimateNote year={o.year} />
         <div className="col" style={{ gap: 6 }}><h4>Starting capital</h4><Seg value={capIdx} options={caps.map((c, i) => ({ value: i, label: fmtMoney(c, 0) }))} onChange={(i) => set({ capital: caps[i] })} /></div>
         <div className="col" style={{ gap: 6 }}><h4>Business specialisation</h4>
           <div className="cards">{SPECIALIZATIONS.map((s) => <button key={s.id} className={'card' + (o.specialization === s.id ? ' on' : '')} disabled={s.id === 'ev' && o.year < 2005} onClick={() => set({ specialization: s.id })}><b>{s.name}</b><span className="tiny muted">{s.blurb}</span></button>)}</div>
@@ -210,7 +217,8 @@ export function MotorsportSetupScreen() {
         <div className="col" style={{ gap: 6 }}><h4>Racing discipline</h4>
           <div className="cards" style={{ gridTemplateColumns: '1fr 1fr' }}>{DISCIPLINES.map((d) => <button key={d.id} className={'card' + (disc === d.id ? ' on' : '')} disabled={!disciplineAvailable(d.id, year)} onClick={() => setDiscipline(d.id)}><b>{d.name}</b><span className="tiny muted">{disciplineAvailable(d.id, year) ? getRegs(d.id, year).className : `from ${d.from}`}</span></button>)}</div>
         </div>
-        <Slider label="Starting year" value={year} min={1950} max={2024} onChange={setYear} />
+        <Slider label="Starting year" value={year} min={1950} max={LAST_START_YEAR} onChange={setYear} />
+        <EstimateNote year={year} />
         <div className="col" style={{ gap: 6 }}><h4>Team</h4>
           <Select value={makerId ?? ''} options={[{ value: '', label: 'Independent (fictional) team' }, ...MAKERS.filter((m) => makerStart(m) <= year).map((m) => ({ value: m.id, label: `${m.name} — works team` }))]} onChange={(v) => pickMaker(v || null)} />
           <label className="field"><span className="lab"><span>Team name</span></span><input type="text" value={teamName} maxLength={30} onChange={(e) => setTeamName(e.target.value)} /></label>

@@ -40,7 +40,7 @@ const PRIVATEERS: [string, string, string][] = [
 ];
 const SPONSORS = ['Meridian Bank', 'Altus Oil', 'Kestrel Watches', 'Nordlys Telecom', 'Vantor Tools', 'Sable Logistics', 'Orion Insurance', 'Halcyon Airlines'];
 const GROUP: Record<Discipline, MsGroup> = { f1: 'f1', hypercar: 'proto', lmdh: 'proto', gt: 'gt', touring: 'touring' };
-const LMDH_MAKERS = ['porsche', 'bmw', 'gm', 'honda', 'lamborghini', 'renault'];
+const LMDH_MAKERS = ['porsche', 'bmw', 'gm', 'honda', 'lamborghini', 'renault', 'hyundai'];
 const SERIES_WEIGHT: Record<Discipline, number> = { f1: 1, hypercar: 0.8, lmdh: 0.7, gt: 0.4, touring: 0.3 };
 
 export const budgetRef = (regs: Regs, year: number) => regs.budget2020 * cpi(year);
