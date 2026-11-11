@@ -66,8 +66,10 @@ export function modelWeights(c: Company): Map<string, number> {
     for (const m of active) {
       let cap = 0;
       for (const f of c.factories) for (const l of f.lines) if (l.modelId === m.id) cap += f.capacity * l.share;
-      w.set(m.id, Math.max(cap, 1));
-      total += Math.max(cap, 1);
+      // dealers push what can be supplied: line capacity, or the stock on hand once a line is gone
+      const wm = Math.max(cap, m.inventory / 2, 1);
+      w.set(m.id, wm);
+      total += wm;
     }
   } else {
     for (const m of active) { w.set(m.id, m.volumeWeight); total += m.volumeWeight; }
@@ -77,6 +79,7 @@ export function modelWeights(c: Company): Map<string, number> {
 }
 
 export function appeal(g: GameState, c: Company, m: VehicleModel, region: RegionId, fuel: number): number {
+  if (!(m.price > 0) || !Number.isFinite(m.price)) return 0; // no valid price: not on sale (a 0 price would make appeal infinite)
   const def = SEG[m.segment];
   const s = m.stats.scores;
   let u = 0;

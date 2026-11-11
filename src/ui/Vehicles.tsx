@@ -53,7 +53,7 @@ export function VehiclesView() {
                 <td>{SEG[m.segment].name}</td>
                 <td className="r">{Math.round(m.stats.powerKw)} kW</td><td className="r">{m.stats.zeroTo100.toFixed(1)} s</td>
                 <td className="r">{fmtMoney(cost)}</td>
-                <td className="r" onClick={(e) => e.stopPropagation()}>{m.status === 'development' ? '—' : <input type="number" style={{ width: 96, textAlign: 'right' }} value={Math.round(m.price)} step={Math.max(50, Math.round(m.price / 100))} aria-label={`Price of ${m.name}`} onChange={(e) => act((gg) => setPrice(gg, m.id, Number(e.target.value)))} />}</td>
+                <td className="r" onClick={(e) => e.stopPropagation()}>{m.status === 'development' ? '—' : <PriceInput price={m.price} label={`Price of ${m.name}`} onCommit={(v) => act((gg) => setPrice(gg, m.id, v))} />}</td>
                 <td className="r">{fmtNum(sold)}</td><td className="r">{fmtNum(m.lastDemand)}</td><td className="r">{fmtNum(m.inventory)}</td>
                 <td className="r" onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
                   {m.status === 'development' ? <button className="btn sm danger" onClick={() => act((gg) => cancelDevelopment(gg, m.id), 'Programme cancelled.')}>Cancel</button> : <>
@@ -66,6 +66,13 @@ export function VehiclesView() {
       )}
     </>
   );
+}
+/** Edits a price locally and commits it on Enter or when focus leaves; invalid entries revert. */
+function PriceInput({ price, label, onCommit }: { price: number; label: string; onCommit: (v: number) => boolean }) {
+  const [text, setText] = useState<string | null>(null);
+  const commit = () => { if (text === null) return; const v = Number(text); setText(null); if (v !== Math.round(price)) onCommit(v); };
+  return <input type="number" min={1} style={{ width: 96, textAlign: 'right' }} aria-label={label} value={text ?? String(Math.round(price))} step={Math.max(50, Math.round(price / 100))}
+    onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setText(null); }} />;
 }
 const nextName = (n: string) => { const m = n.match(/^(.*?)(?: Mk ?(\d+))?$/); return m ? `${m[1]} Mk${Number(m[2] ?? 1) + 1}` : n + ' II'; };
 

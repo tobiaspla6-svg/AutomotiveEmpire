@@ -12,7 +12,7 @@ import { news, uid } from '../company';
 import { getRegs, DISC_NAME, type Regs } from './regs';
 import { computeRaceCar, defaultRaceCar, checkLegal, raceEngineSpec } from './racecar';
 import { lapSim } from './lapsim';
-import { makeWeather, RaceSim, type RaceConfig, type RaceEntry } from './race';
+import { makeWeather, RaceSim, type RaceConfig, type RaceEntry, type Weather } from './race';
 import { TRACK, trackGeom } from './tracks';
 
 const FIRST: Record<string, string[]> = {
@@ -235,10 +235,18 @@ export function wingTable(c: Company, div: MotorsportDivision, trackId: string):
 
 export interface PlayerRaceChoices { wing: number[]; startCompound: (string | undefined)[]; auto: boolean[] }
 
+const roundSeed = (g: GameState, ch: Championship) => hashStr(`${g.id}:${ch.year}:${ch.nextRound}:${ch.discipline}`);
+/** Weather for the next round. Pure: safe to call while rendering the race briefing. */
+export function raceWeather(g: GameState, div: MotorsportDivision): Weather {
+  const ch = div.championship, round = ch.rounds[ch.nextRound], track = TRACK[round.trackId];
+  const duration = round.hours ? round.hours * 3600 : round.laps * (track.km / 5.5) * 100;
+  return makeWeather(track, duration, makeRng(roundSeed(g, ch) ^ 0x51ed27));
+}
+
 export function buildRaceConfig(g: GameState, c: Company, div: MotorsportDivision, choices?: PlayerRaceChoices): RaceConfig {
   const ch = div.championship;
   const round = ch.rounds[ch.nextRound];
-  const seed = hashStr(`${g.id}:${ch.year}:${ch.nextRound}:${ch.discipline}`);
+  const seed = roundSeed(g, ch);
   const rng = makeRng(seed ^ 0x9e3779b9);
   ensureDrivers(g, div, rng);
   const baseRegs = getRegs(ch.discipline, ch.year);
@@ -266,9 +274,7 @@ export function buildRaceConfig(g: GameState, c: Company, div: MotorsportDivisio
       });
     }
   }
-  const track = TRACK[round.trackId];
-  const duration = round.hours ? round.hours * 3600 : round.laps * (track.km / 5.5) * 100;
-  const weather = makeWeather(track, duration, makeRng(seed ^ 0x51ed27));
+  const weather = raceWeather(g, div);
   return { seed, trackId: round.trackId, regs: baseRegs, year: ch.year, name: round.name, laps: round.laps, duration: round.hours * 3600, entries, weather, pointsScale: round.pointsScale };
 }
 

@@ -14,6 +14,7 @@ import { checkLegal, raceEngineSpec } from './racing/racecar';
 import { borrow, clearStock, dispose, repay, spend, type SpendKind } from './accounts';
 
 /** Pay from cash plus unused credit and record the payment in the books under `kind`. */
+const finite = (...xs: number[]) => xs.every((x) => typeof x === 'number' && Number.isFinite(x));
 const pay = (c: Company, g: GameState, amount: number, kind: SpendKind): string | null => spend(c, amount, kind, creditLimit(c, g.year) - c.debt);
 
 export function validateSpec(s: VehicleSpec): string[] {
@@ -62,7 +63,13 @@ export function cancelDevelopment(g: GameState, modelId: string) {
   // money already spent stays in the books as development expense (sunk cost)
   news(g, 'company', `Programme cancelled: ${m.name}`, `$${(m.devCostPaid / 1e6).toFixed(1)}M of the $${(m.devCostTotal / 1e6).toFixed(1)}M budget had been spent and is written off.`);
 }
-export function setPrice(g: GameState, modelId: string, price: number) { const m = player(g).models.find((x) => x.id === modelId); if (m) m.price = Math.max(0, price); }
+export function setPrice(g: GameState, modelId: string, price: number): string | null {
+  const m = player(g).models.find((x) => x.id === modelId);
+  if (!m) return 'Unknown model.';
+  if (!finite(price) || price < 1) return 'Enter a price above zero.';
+  m.price = Math.round(price);
+  return null;
+}
 
 export function addLine(g: GameState, factoryId: string, modelId: string, units: number): string | null {
   const c = player(g);
@@ -71,7 +78,7 @@ export function addLine(g: GameState, factoryId: string, modelId: string, units:
   if (m.status !== 'ready' && m.status !== 'production') return 'The model has not finished development.';
   if (f.capacity <= 0) return 'The factory is still under construction.';
   const free = f.capacity * (1 - lineShareUsed(f));
-  if (units <= 0) return 'Choose a line capacity.';
+  if (!finite(units) || units <= 0) return 'Choose a line capacity.';
   if (units > free + 0.5) return `Only ${Math.floor(free)} units / month of free capacity in this plant.`;
   const tooling = toolingCost(m, units);
   const err = pay(c, g, tooling, 'capex');
@@ -92,7 +99,7 @@ export function removeLine(g: GameState, factoryId: string, modelId: string) {
 }
 export function setLineTarget(g: GameState, factoryId: string, modelId: string, target: number) {
   const l = player(g).factories.find((x) => x.id === factoryId)?.lines.find((x) => x.modelId === modelId);
-  if (l) l.target = target;
+  if (l && finite(target)) l.target = target;
 }
 /** Share of the net list price that fleet buyers pay for a retired model's remaining stock. */
 export const FLEET_CLEARANCE = 0.6;
@@ -114,6 +121,7 @@ export const maxAutomation = (c: Company) => (hasTech(c.tech, 'auto80') ? 0.9 : 
 export function buildFactory(g: GameState, name: string, country: string, capacity: number, automation: number): string | null {
   const c = player(g);
   if (!COUNTRY[country]) return 'Choose a country.';
+  if (!finite(capacity, automation) || automation < 0) return 'Enter a capacity and an automation level.';
   if (capacity < 20) return 'Minimum capacity is 20 units per month.';
   if (automation > maxAutomation(c) + 1e-6) return `Your manufacturing technology allows at most ${Math.round(maxAutomation(c) * 100)}% automation.`;
   const cost = factoryBuildCost(capacity, automation, g.year);
@@ -127,7 +135,7 @@ export function expandFactory(g: GameState, factoryId: string, add: number): str
   const c = player(g); const f = c.factories.find((x) => x.id === factoryId);
   if (!f) return 'Unknown factory.';
   if (f.expansion) return 'An expansion is already under way.';
-  if (add < 10) return 'Expansion too small.';
+  if (!finite(add) || add < 10) return 'Expansion too small.';
   const cost = factoryBuildCost(add, f.automation, g.year) * 0.85;
   const err = pay(c, g, cost, 'capex');
   if (err) return err;
@@ -138,6 +146,7 @@ export function expandFactory(g: GameState, factoryId: string, add: number): str
 export function upgradeAutomation(g: GameState, factoryId: string, to: number): string | null {
   const c = player(g); const f = c.factories.find((x) => x.id === factoryId);
   if (!f) return 'Unknown factory.';
+  if (!finite(to)) return 'Choose an automation level.';
   if (to <= f.automation) return 'Already at that level.';
   if (to > maxAutomation(c) + 1e-6) return `Manufacturing technology allows at most ${Math.round(maxAutomation(c) * 100)}% automation.`;
   const cost = automationCost(f.capacity, f.automation, to, g.year);
@@ -157,10 +166,12 @@ export function sellFactory(g: GameState, factoryId: string): string | null {
   return null;
 }
 
-export function setRd(g: GameState, area: TechArea, amount: number) { player(g).rdBudget[area] = Math.max(0, amount); }
-export function setMarketing(g: GameState, amount: number) { player(g).marketingBudget = Math.max(0, amount); }
+export function setRd(g: GameState, area: TechArea, amount: number) { if (finite(amount)) player(g).rdBudget[area] = Math.max(0, amount); }
+export function setMarketing(g: GameState, amount: number) { if (finite(amount)) player(g).marketingBudget = Math.max(0, amount); }
 export function setEngineers(g: GameState, n: number): string | null {
-  const c = player(g); n = Math.max(0, Math.round(n));
+  const c = player(g);
+  if (!finite(n)) return 'Enter a number of engineers.';
+  n = Math.max(0, Math.round(n));
   const d = n - c.engineers; if (!d) return null;
   const err = pay(c, g, Math.abs(d) * engineerCost(c, g.year) * (d > 0 ? 2 : 3), 'oneOff'); // recruitment or severance
   if (err) return err;
@@ -170,7 +181,7 @@ export function setEngineers(g: GameState, n: number): string | null {
 export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35);
 export function investDealers(g: GameState, region: RegionId, amount: number): string | null {
   const c = player(g);
-  if (amount <= 0) return 'Enter an amount.';
+  if (!finite(amount) || amount <= 0) return 'Enter an amount.';
   const setup = c.reach[region] <= 0 ? 5e6 * cpi(g.year) : 0;
   if (amount <= setup) return `Entering a new region costs at least $${(setup / 1e6).toFixed(1)}M for an importer and parts depot.`;
   const err = pay(c, g, amount, 'capex');
@@ -183,12 +194,15 @@ export function investDealers(g: GameState, region: RegionId, amount: number): s
 }
 export function takeLoan(g: GameState, amount: number): string | null {
   const c = player(g);
+  if (!finite(amount) || amount <= 0) return 'Enter an amount to borrow.';
   const room = creditLimit(c, g.year) - c.debt;
   if (amount > room) return `Lenders will extend at most $${(Math.max(0, room) / 1e6).toFixed(1)}M more.`;
   borrow(c, amount); return null;
 }
 export function repayLoan(g: GameState, amount: number): string | null {
-  const c = player(g); const a = Math.min(amount, c.debt, c.cash);
+  const c = player(g);
+  if (!finite(amount) || amount <= 0) return 'Enter an amount to repay.';
+  const a = Math.min(amount, c.debt, c.cash);
   if (a <= 0) return 'Nothing to repay.';
   repay(c, a); return null;
 }
@@ -243,6 +257,7 @@ export function signDriver(g: GameState, driverId: string, years: number, replac
   const c = player(g); const div = c.motorsport; if (!div) return 'No racing programme.';
   const ch = div.championship, team = playerTeam(div), regs = teamRegs(team, ch.year);
   const d = ch.drivers.find((x) => x.id === driverId); if (!d) return 'Unknown driver.';
+  if (!finite(years) || years < 1) return 'Choose a contract length.';
   if (d.teamId === team.id) { d.contractEnd = ch.year + years; return null; }
   if (d.teamId) return 'This driver is under contract elsewhere.';
   const seats = regs.carsPerTeam * regs.driversPerCar;
@@ -286,9 +301,8 @@ export function recruitStaff(g: GameState, key: keyof NonNullable<Company['motor
   if (err) return err;
   div.staff[key] = Math.min(98, div.staff[key] + 5); return null;
 }
-export function setDevBudget(g: GameState, amount: number) { const d = player(g).motorsport; if (d) d.devBudget = Math.max(0, amount); }
+export function setDevBudget(g: GameState, amount: number) { const d = player(g).motorsport; if (d && finite(amount)) d.devBudget = Math.max(0, amount); }
 export function setDevFocus(g: GameState, f: DevLevels) { const d = player(g).motorsport; if (d) d.devFocus = { ...f }; }
-export function setOwnerGrant(g: GameState, perYear: number) { const d = player(g).motorsport; if (d && g.mode !== 'motorsport') d.ownerGrant = 0 * perYear; }
 
 /** Commit a new race-car design. Changing the architecture costs money and resets part of the development. */
 export function redesignRaceCar(g: GameState, spec: RaceCarSpec): string | null {
