@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { BodyType, EngineLayout, SegmentId, VehicleModel, VehicleSpec } from '../sim/types';
 import { useGame, useStore } from '../store/game';
-import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle } from '../sim/engineering';
+import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle, suggestFinalDrive } from '../sim/engineering';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { SEG, SEGMENTS, segPrice } from '../data/world';
 import { cancelDevelopment, retireModel, setPrice, startDevelopment, validateSpec } from '../sim/actions';
@@ -186,6 +186,8 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
               <Select label="Gearbox" value={spec.gearbox} onChange={(v) => up({ gearbox: v })} options={[{ value: 'manual', label: 'Manual' }, { value: 'auto', label: 'Automatic (torque converter)' }, { value: 'dct', label: 'Dual-clutch', disabled: lock('dct'), note: note('dct') }]} />
               <Slider label="Number of gears" value={Math.min(spec.gears, maxGears)} min={3} max={maxGears} onChange={(v) => up({ gears: v })} fmt={(v) => `${v}-speed`} />
               <Slider label="Final drive ratio" value={spec.finalDrive} min={2.2} max={5.5} step={0.05} onChange={(v) => up({ finalDrive: v })} fmt={(v) => `${v.toFixed(2)} : 1`} hint="Shorter (higher number) = stronger acceleration, lower top speed and higher cruising revs." />
+              <div className="row small" style={{ gap: 8 }}><button className="btn" onClick={() => up({ finalDrive: suggestFinalDrive(spec, { year: g.year, tech: p.tech }) })}>Match gearing to top speed</button><span className="muted">engineer's suggestion: {suggestFinalDrive(spec, { year: g.year, tech: p.tech }).toFixed(2)} : 1</span></div>
+              {spec.enginePos === 'front' && spec.drive !== 'FWD' && <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!!spec.transaxle} onChange={(x) => up({ transaxle: x.target.checked })} /> Rear transaxle (gearbox at the rear axle: ≈ 4 % more weight on the driven wheels, costlier driveline)</label>}
             </>}
             {ev && <p className="small muted">Electric cars use a single-speed reduction gear.</p>}
             <StatLine label="Weight on front axle" value={`${Math.round(stats.weightFront * 100)}%`} />
@@ -238,6 +240,7 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
             <StatLine label="Torque" value={`${Math.round(stats.torqueNm)} Nm @ ${Math.round(stats.engine.torqueRpm)}`} />
             <StatLine label="Kerb mass" value={`${Math.round(stats.mass)} kg · ${Math.round(stats.powerToWeight)} kW/t`} />
             <StatLine label="0–100 km/h" value={`${stats.zeroTo100.toFixed(1)} s`} /><StatLine label="Quarter mile" value={`${stats.quarterMile.toFixed(1)} s`} />
+            <StatLine label="80–120 km/h" value={stats.passing80to120 != null ? `${stats.passing80to120.toFixed(1)} s` : '—'} title="Full-throttle overtaking, through the gears." /><StatLine label="0–200 km/h" value={stats.zeroTo200 != null ? `${stats.zeroTo200.toFixed(1)} s` : '—'} />
             <StatLine label="Top speed" value={`${Math.round(stats.topSpeed)} km/h`} /><StatLine label="Braking 100–0" value={`${stats.braking100.toFixed(1)} m`} />
             <StatLine label="Cornering" value={`${stats.lateralG.toFixed(2)} g`} />
             <StatLine label={ev ? 'Consumption' : 'Fuel urban / highway'} value={ev ? `${stats.fuelCombined.toFixed(1)} kWh/100 km` : `${stats.fuelUrban.toFixed(1)} / ${stats.fuelHighway.toFixed(1)} L/100 km`} />
