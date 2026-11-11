@@ -46,6 +46,8 @@ export interface VehicleSpec {
   panels: PanelType;
   engine: EngineSpec;
   enginePos: 'front' | 'mid' | 'rear';
+  /** Gearbox mounted at the rear axle of a front-engined car (better weight distribution, dearer driveline). Absent = false. */
+  transaxle?: boolean;
   drive: 'FWD' | 'RWD' | 'AWD';
   gearbox: Gearbox;
   gears: number;
@@ -95,6 +97,8 @@ export interface VehicleStats {
   massBreakdown: Record<string, number>;
   powerKw: number; torqueNm: number; powerToWeight: number; // kW/t
   zeroTo100: number; quarterMile: number; topSpeed: number; // s, s, km/h
+  /** 0–200 km/h in seconds (null if the car cannot reach it) and 80–120 km/h under full throttle. Absent in stats computed by older versions. */
+  zeroTo200?: number | null; passing80to120?: number | null;
   braking100: number; lateralG: number;
   cd: number; frontalArea: number; cdA: number; clA: number; downforce200: number; // kg at 200 km/h (negative = lift)
   fuelUrban: number; fuelHighway: number; fuelCombined: number; // L/100km (or kWh/100km for EV)

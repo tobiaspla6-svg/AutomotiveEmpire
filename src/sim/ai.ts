@@ -5,7 +5,7 @@
 import type { Company, Factory, GameState, RegionId, Tech, VehicleModel, VehicleSpec } from './types';
 import { MAKERS, makerStart, type MakerDef, type ModelRow } from '../data/manufacturers';
 import { COUNTRY, REGION_IDS } from '../data/world';
-import { BODY, CYL, computeVehicle, defaultVehicle } from './engineering';
+import { BODY, CYL, computeVehicle, defaultVehicle, suggestFinalDrive } from './engineering';
 import { emptyLedger, industryTech, makeModel, news, refreshStats, uid, unitCost, wage, zeroRegions, INTEREST_BASE, factoryValue } from './company';
 import { emptyPending, openBooks } from './accounts';
 import { suggestedPrice, type MarketResult } from './market';
@@ -14,53 +14,99 @@ import { rnd, type Rng } from './rng';
 
 const era = (y: number, pts: [number, number][]) => kf(pts, y);
 
+/** Era growth of car dimensions: the same nameplate is roughly 12 % longer in 2020 than in 1970. */
+const SIZE_ERA: [number, number][] = [[1950, 0.94], [1970, 0.95], [1990, 0.98], [2005, 1.02], [2020, 1.06]];
+
 export function specFromRow(row: ModelRow, def: MakerDef): VehicleSpec {
   const y = clamp(row.from, 1946, 2030);
   const seg = row.seg;
   const exotic = def.archetype === 'exotic';
+  const usa = def.country === 'USA';
   const s = defaultVehicle(y, row.body);
   const e = s.engine;
   e.layout = row.layout;
+  const perf = seg === 'sports' || seg === 'supercar';
+  const utility = row.body === 'pickup' || row.body === 'suv';
+  // limited-series flagships (a tiny share of the maker's volume) get the most exotic construction of their day
+  const halo = seg === 'supercar' && row.w <= 0.2;
+  s.quality = clamp({ budget: 0.35, family: 0.45, premium: 0.65, luxury: 0.85, sports: 0.55, supercar: 0.8, suv: 0.5, pickup: 0.45 }[seg] + (exotic ? 0.05 : 0) + (kf(def.reliability, y) - 60) / 250, 0.15, 1);
   if (row.layout === 'EV') { e.motorKw = row.kw ?? 150; e.batteryKwh = row.kwh ?? 60; s.gearbox = 'auto'; }
   else {
     e.displacement = row.cc;
     e.aspiration = row.asp === 't' ? 'turbo' : row.asp === 'tt' ? 'twinturbo' : row.asp === 's' ? 'supercharged' : 'na';
-    e.boost = row.asp === 's' ? 0.5 : y < 1985 ? 0.5 : y < 2003 ? 0.7 : 1.0;
-    const usV8 = (row.layout === 'V8' || row.layout === 'I6') && def.country === 'USA' && y < 1996;
-    const sporty = seg === 'sports' || seg === 'supercar' || def.archetype === 'sports' || exotic;
-    e.valvetrain = usV8 ? 'ohv' : sporty ? (y < 1962 ? 'sohc' : y < 1984 ? 'dohc2' : 'dohc4') : y < 1966 ? 'ohv' : y < 1990 ? 'sohc' : 'dohc4';
-    if (row.layout.startsWith('F') && y < 1990 && !exotic && seg !== 'supercar') e.valvetrain = y < 1964 ? 'ohv' : 'sohc';
     const turbo = e.aspiration === 'turbo' || e.aspiration === 'twinturbo';
-    e.fuelSystem = y >= (turbo ? 2006 : 2012) ? 'di' : y >= (sporty || seg === 'premium' || seg === 'luxury' ? 1976 : 1987) ? 'efi' : 'carb';
-    e.compression = era(y, [[1950, 7], [1965, 8.6], [1985, 9.5], [2005, 10.5], [2020, 11.5]]) + (sporty ? 0.5 : 0) - (turbo ? (e.fuelSystem === 'di' ? 1.2 : 2.2) : 0);
-    e.cam = { budget: 0.25, family: 0.3, premium: 0.38, luxury: 0.3, sports: 0.55, supercar: 0.72, suv: 0.25, pickup: 0.2 }[seg];
+    const sporty = perf || def.archetype === 'sports' || exotic;
+    const premiumMaker = def.archetype === 'premium';
+    // American V8s and sixes kept pushrods long after Europe and Japan moved to overhead cams; GM's V8 still has them
+    const pushrod = (row.layout === 'V8' || row.layout === 'I6') && usa && (y < 1996 || (def.id === 'gm' && row.layout === 'V8'));
+    e.valvetrain = pushrod ? 'ohv' : sporty ? (y < 1962 ? 'sohc' : y < 1984 ? 'dohc2' : 'dohc4') : y < 1966 ? 'ohv' : y < 1990 ? 'sohc' : 'dohc4';
+    if (row.layout.startsWith('F') && y < 1990 && !exotic && seg !== 'supercar') e.valvetrain = y < 1964 ? 'ohv' : 'sohc';
+    if (def.id === 'jaguar' && y < 1984 && row.layout === 'I6') e.valvetrain = 'dohc2'; // the XK twin-cam six of 1948
+    const upmarket = sporty || seg === 'premium' || seg === 'luxury' || premiumMaker;
+    e.fuelSystem = y >= (turbo ? 2006 : 2012) ? 'di' : y >= (upmarket ? 1976 : 1987) ? 'efi' : 'carb';
+    if (def.id === 'mercedes' && y >= 1954 && y < 1976 && (seg === 'supercar' || seg === 'luxury')) e.fuelSystem = 'mfi'; // Bosch mechanical injection
+    // A full hybrid of a volume maker runs an efficiency-tuned (Atkinson-cycle) engine and its battery, not its motor,
+    // limits the electric boost; performance hybrids deliver the motor's full output.
+    const ecoHybrid = (row.hybrid ?? 0) > 0 && !perf;
+    e.hybridKw = ecoHybrid ? Math.round((row.hybrid ?? 0) * 0.33) : row.hybrid ?? 0;
+    // Boost pressure (bar above atmospheric) typical of the class and period; superchargers run low boost.
+    const boostBy = (mainstream: number, upper: number, sports: number, supercar: number) => (seg === 'supercar' ? supercar : seg === 'sports' ? sports : seg === 'premium' || seg === 'luxury' ? upper : mainstream);
+    const hyb = (row.hybrid ?? 0) > 0;
+    e.boost = row.asp === 's' ? 0.5
+      : y < 1985 ? boostBy(0.45, 0.5, 0.6, 0.8) : y < 2003 ? boostBy(0.55, 0.6, 0.75, 1.3) : y < 2013 ? boostBy(0.5, 0.7, 0.9, exotic ? 1.1 : 0.7)
+        : boostBy(0.7, 0.75, 0.75, exotic ? (hyb ? (y >= 2024 && halo ? 2.3 : 1.55) : 1.3) : 0.7);
+    // compression falls with boost; direct injection buys some of it back
+    e.compression = era(y, [[1950, 7], [1965, 8.6], [1985, 9.5], [2005, 10.5], [2020, 11.5]]) + (sporty ? 0.5 : 0) - (turbo ? (e.fuelSystem === 'di' ? 0.6 + 1.5 * e.boost : 1.0 + 1.3 * e.boost) : 0) + (ecoHybrid ? 1 : 0);
+    e.cam = ecoHybrid ? 0.1 : { budget: 0.25, family: 0.3, premium: 0.38, luxury: 0.3, sports: 0.55, supercar: 0.72, suv: 0.25, pickup: 0.2 }[seg]
+      + (premiumMaker && !perf && !utility ? 0.1 : 0) + (exotic && y < 1976 ? 0.08 : 0); // sporting saloons; multi-carburettor exotics
     e.vvt = y >= (sporty ? 1992 : 2000);
     e.aluBlock = exotic || y >= 2002 || row.layout.startsWith('F');
-    e.hybridKw = row.hybrid ?? 0;
-    e.boreStroke = sporty ? 1.12 : usV8 ? 1.12 : 0.98;
-    let red = { ohv: 4800, sohc: 5600, dohc2: 6500, dohc4: 6600 }[e.valvetrain] + (sporty ? 700 : 0) + (seg === 'supercar' ? 600 : 0) + clamp((y - 1960) * 12, 0, 700);
+    e.boreStroke = sporty ? 1.12 : pushrod ? 1.12 : 0.98;
+    // Rev limit: valvetrain and era, higher for sports engines and highest for exotic naturally aspirated ones;
+    // turbocharged, supercharged, truck and efficiency-tuned engines rev lower.
+    const vtec = def.id === 'honda' && perf && y >= 1989; // Honda's high-revving VTEC sports engines
+    const massSports = perf && def.archetype === 'mass' && !vtec;
+    let red = { ohv: 4800, sohc: 5700, dohc2: 6300, dohc4: 6300 }[e.valvetrain] + clamp((y - 1960) * 10, 0, 500)
+      + (sporty ? (massSports ? 350 : 700) : premiumMaker ? 400 : 0) + (seg === 'supercar' ? (exotic ? 700 : 350) : 0) + (exotic && e.aspiration === 'na' && y >= 1990 ? 500 : 0) + (vtec ? 900 : 0)
+      + (pushrod && y >= 1997 ? 900 : 0) - (turbo ? 500 : 0) - (row.asp === 's' ? 1400 : 0) - (utility ? 500 : 0) - (ecoHybrid ? 1500 : 0);
     if (y < 1960) red -= 500;
-    // keep mean piston speed inside the era's safe limit
+    // keep mean piston speed inside the limit of the era and build quality (same formula as the engine model)
     const vCyl = row.cc / CYL[row.layout] / 1e6;
     const stroke = Math.cbrt((4 * vCyl) / (Math.PI * e.boreStroke ** 2));
-    const spLim = 17 + 6 * clamp((y - 1950) / 70, 0, 1) + 1.2;
-    e.redline = Math.round(Math.min(red, (spLim * 0.97 * 60) / (2 * stroke)) / 100) * 100;
+    const spLim = 17 + 6 * clamp((y - 1950) / 70, 0, 1) + 3.5 * s.quality;
+    e.redline = Math.round(Math.min(red, (spLim * (exotic || vtec ? 0.98 : sporty ? 0.9 : 0.86) * 60) / (2 * stroke)) / 100) * 100;
   }
-  s.quality = clamp({ budget: 0.35, family: 0.45, premium: 0.65, luxury: 0.85, sports: 0.55, supercar: 0.8, suv: 0.5, pickup: 0.45 }[seg] + (exotic ? 0.05 : 0) + (kf(def.reliability, y) - 60) / 250, 0.15, 1);
-  s.size = { budget: 0.9, family: 1.0, premium: 1.05, luxury: 1.12, sports: 0.96, supercar: 1.0, suv: 1.0, pickup: 1.0 }[seg] * (row.cc > 0 && row.cc < 800 ? 0.88 : 1) * (y < 1965 && seg === 'budget' ? 0.95 : 1);
+  // Size: class and era growth. Supercars were always full-size; big-engined sports cars and off-roaders are larger
+  // than small-engined ones; American saloons before the 1980s were a size class above everyone else's.
+  const sizeEra = kf(SIZE_ERA, y);
+  const cc = row.layout === 'EV' ? 2500 : row.cc;
+  const hotHatch = row.body === 'hatch' && seg === 'sports';
+  s.size = clamp({ budget: 0.9, family: 1.0, premium: 1.05, luxury: 1.12, sports: 1.0, supercar: 1.0, suv: 1.0, pickup: 1.0 }[seg] * (row.cc > 0 && row.cc < 800 ? 0.88 : 1) * (y < 1965 && seg === 'budget' ? 0.95 : 1)
+    * (seg === 'supercar' ? Math.max(1, Math.sqrt(sizeEra)) : sizeEra)
+    * (usa && (seg === 'family' || seg === 'luxury' || seg === 'premium') && row.body === 'sedan' && y < 1980 ? 1.1 : 1)
+    * (utility ? clamp(0.94 + (cc - 2000) / 20000, 0.94, 1.09) : seg === 'sports' ? clamp(0.96 + (cc - 2000) / 40000, 0.93, 1.06) : 1)
+    * (hotHatch ? (y >= 2000 ? 0.98 : 0.9) : 1), 0.85, 1.15);
   const mclaren = def.id === 'mclaren';
-  s.chassis = row.body === 'pickup' || (row.body === 'suv' && y < 1995) ? 'ladder' : mclaren ? 'carbon' : exotic && row.body !== 'suv' ? (y >= 1999 ? 'aluminium' : 'spaceframe') : 'steel';
-  s.panels = mclaren ? 'carbon' : exotic ? 'aluminium' : row.name.includes('Corvette') ? 'fibreglass' : 'steel';
   s.enginePos = row.pos === 'm' ? 'mid' : row.pos === 'r' ? 'rear' : 'front';
   s.drive = row.drive === 'F' ? 'FWD' : row.drive === 'A' ? 'AWD' : 'RWD';
+  // rear transaxle: front-engined supercars since the 1960s, Porsche's front-engined coupés, the Corvette from the C5 on
+  s.transaxle = row.pos === 'f' && row.drive !== 'F' && row.layout !== 'EV' && ((seg === 'supercar' && y >= 1964) || (def.id === 'porsche' && row.body !== 'suv' && row.body !== 'sedan') || /Corvette \(C[5-7]/.test(row.name));
+  // Structure. Exotic makers: tube frames, then aluminium; carbon tubs for McLaren and for limited-series flagships.
+  // Other makers' supercars: aluminium structures from 1990 when mid-engined or transaxle, carbon only for the rarest.
+  const specialist = exotic || def.id === 'porsche';
+  const carbonTub = mclaren || (halo && (specialist ? y >= 1990 : y >= 2010 && row.w <= 0.005));
+  s.chassis = row.body === 'pickup' || (row.body === 'suv' && y < 1995) ? 'ladder' : carbonTub ? 'carbon'
+    : exotic && row.body !== 'suv' ? (y >= 1999 ? 'aluminium' : 'spaceframe')
+      : seg === 'supercar' && y >= 1990 && (row.pos === 'm' || s.transaxle) ? 'aluminium' : 'steel';
+  s.panels = carbonTub || (halo && specialist && y >= 1985) ? 'carbon' : exotic || s.chassis === 'aluminium' ? 'aluminium' : row.name.includes('Corvette') ? 'fibreglass' : 'steel';
   if (row.layout !== 'EV') {
-    const lux = seg === 'luxury' || seg === 'premium';
-    const dct = (seg === 'supercar' && y >= 2009) || (exotic && y >= 2009) || (def.id === 'porsche' && y >= 2012);
-    s.gearbox = dct ? 'dct' : (lux && y >= 1965) || (def.country === 'USA' && y >= 1955 && seg !== 'sports') || (y >= 2012 && seg !== 'sports' && seg !== 'budget') ? 'auto' : 'manual';
+    const dct = (seg === 'supercar' && y >= 2009) || (exotic && y >= 2009) || (def.id === 'porsche' && y >= 2012) || (seg === 'sports' && row.pos === 'm' && y >= 2014);
+    // automatics: American cars from the 1950s, luxury cars from the 1960s, European and Japanese premium cars from the late 1980s, most cars after 2012
+    const auto = (seg === 'luxury' && y >= 1965) || (seg === 'premium' && y >= (usa ? 1955 : 1988)) || (usa && y >= 1955 && seg !== 'sports') || (y >= 2012 && seg !== 'sports' && seg !== 'budget');
+    s.gearbox = dct ? 'dct' : auto ? 'auto' : 'manual';
     s.gears = s.gearbox === 'dct' ? 7 : s.gearbox === 'auto' ? (y < 1982 ? 3 : y < 2001 ? 4 : y < 2006 ? 5 : y < 2013 ? 6 : 8)
-      : (y < (seg === 'supercar' || seg === 'sports' ? 1965 : 1976) ? 4 : y < 1999 ? 5 : 6);
+      : (y < (perf ? 1965 : 1976) ? 4 : y < 1999 ? 5 : 6);
   }
-  const perf = seg === 'sports' || seg === 'supercar';
   s.suspFront = perf || seg === 'luxury' ? 'wishbone' : 'macpherson';
   s.suspRear = row.body === 'pickup' ? 'solid' : perf ? (exotic || y >= 1985 ? 'wishbone' : y < 1962 ? 'solid' : 'macpherson')
     : (seg === 'premium' || seg === 'luxury') ? (y >= 1990 ? 'multilink' : y >= 1960 ? 'macpherson' : 'solid') : y < 1972 ? 'solid' : y >= 2005 && seg !== 'budget' ? 'multilink' : 'macpherson';
@@ -72,9 +118,10 @@ export function specFromRow(row: ModelRow, def: MakerDef): VehicleSpec {
     supercar: [[1950, 175], [1965, 205], [1985, 255], [2005, 295], [2020, 315]], suv: [[1950, 185], [1990, 225], [2020, 245]], pickup: [[1950, 180], [1990, 225], [2020, 265]],
   };
   s.tireWidth = Math.round(era(y, tw[seg]) / 5) * 5;
-  s.tireCompound = seg === 'supercar' ? (y >= 1966 ? 'sport' : 'touring') : seg === 'sports' ? (y >= 1972 ? 'sport' : 'touring') : seg === 'budget' ? 'economy' : 'touring';
+  // supercars have shipped on track-biased road tyres since the early 2010s
+  s.tireCompound = seg === 'supercar' ? (y >= 2012 ? 'semislick' : y >= 1966 ? 'sport' : 'touring') : seg === 'sports' ? (y >= 1972 ? 'sport' : 'touring') : seg === 'budget' ? 'economy' : 'touring';
   s.wheelDia = Math.round(era(y, perf ? [[1950, 15], [1980, 15], [2000, 18], [2020, 20]] : [[1950, 14], [1980, 13.5], [2000, 15.5], [2020, 17.5]]) + (seg === 'luxury' || seg === 'suv' ? 1 : 0));
-  s.wing = seg === 'supercar' && y >= 1975 ? (y >= 2000 ? 0.4 : 0.3) : seg === 'sports' && y >= 1985 ? 0.12 : 0;
+  s.wing = seg === 'supercar' && y >= 1985 ? (y >= 2010 ? 0.3 : 0.2) : seg === 'supercar' && y >= 1972 ? 0.1 : seg === 'sports' && y >= 1985 ? 0.1 : 0;
   s.splitter = seg === 'supercar' && y >= 1985 ? 0.3 : 0;
   s.flatFloor = seg === 'supercar' && y >= 1995;
   s.aeroOpt = y < 1980 ? 0.2 : y < 2000 ? 0.5 : 0.7;
@@ -96,21 +143,15 @@ export function makerTech(def: MakerDef, year: number): Tech {
   return t;
 }
 
+/** Final drive ratio for a catalogue car: the engineering rule the design studio also suggests. */
+export const tunedFinalDrive = (spec: VehicleSpec, year: number, tech: Tech): number => suggestFinalDrive(spec, { year, tech });
+
 /** Create the in-game model for a catalogue row. Final drive is chosen by a small search, price from segment positioning. */
 export function modelFromRow(g: GameState, c: Company, def: MakerDef, row: ModelRow): VehicleModel {
   const designYear = clamp(row.from, 1946, g.year);
   const tech = makerTech(def, designYear);
   const spec = specFromRow(row, def);
-  if (spec.engine.layout !== 'EV') {
-    let best = 3.7, bestScore = -1;
-    for (const fd of [2.7, 3.1, 3.5, 3.9, 4.3]) {
-      spec.finalDrive = fd;
-      const st = computeVehicle(spec, { year: designYear, tech });
-      const sc = st.scores.performance + 0.5 * st.scores.economy;
-      if (sc > bestScore) { bestScore = sc; best = fd; }
-    }
-    spec.finalDrive = best;
-  }
+  spec.finalDrive = tunedFinalDrive(spec, designYear, tech);
   const m = makeModel(g, row.name, spec, row.seg, tech, designYear);
   m.historical = true; m.endYear = row.to; m.volumeWeight = row.w;
   m.status = 'production'; m.launchYear = designYear; m.launchMonth = 1;

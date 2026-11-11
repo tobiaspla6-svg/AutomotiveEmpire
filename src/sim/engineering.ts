@@ -73,7 +73,8 @@ export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, ra
 
   const vePeak = VE_BASE[e.valvetrain] + VE_FUEL[e.fuelSystem] + 0.07 * t + (e.vvt ? 0.03 : 0) + 0.08 * e.cam + (race ? 0.05 : 0);
   const valveLimit = VALVE_RPM[e.valvetrain] * (0.86 + 0.2 * t1 + 0.08 * quality) * (race ? 1.1 + 0.75 * t1 : 1) * Math.pow(0.0005 / vCyl, 0.15);
-  const spLimit = 17 + 6 * t1 + 2 * quality + (race ? 4.5 : 0);
+  // forged internals and tighter tolerances let a well-built road engine run faster piston speeds (≈25 m/s for the best)
+  const spLimit = 17 + 6 * t1 + 2 * quality + (race ? 4.5 : 1.5 * quality);
   const spRed = (2 * stroke * e.redline) / 60;
 
   // Indicated efficiency: ideal Otto cycle (γ_eff ≈ 1.30) × real-cycle factor.
@@ -81,7 +82,8 @@ export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, ra
 
   // Knock: effective compression rises with boost; limit grows with fuel/chamber technology.
   const boost = e.aspiration === 'na' ? 0 : e.boost;
-  const knockIdx = e.compression * Math.pow(1 + boost, 0.65);
+  // road engines run intercooled charge and richer mixtures under boost than this simple index assumed (race path unchanged)
+  const knockIdx = e.compression * Math.pow(1 + boost, race ? 0.65 : 0.55);
   const knockLimit = 8.6 + 4.4 * t1 + (e.fuelSystem === 'di' ? 1.4 : 0) + (e.valvetrain === 'dohc4' ? 0.4 : 0) + (race ? (boost > 0 ? 5.5 : 3) : 0) + (0.085 - bore) * 20;
   const knockMargin = knockLimit - knockIdx;
   const derate = knockMargin >= 0 ? 1 : Math.max(0.6, 1 + 0.05 * knockMargin);
@@ -162,16 +164,19 @@ export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, ra
 
 function computeMotor(e: EngineSpec, techYear: number, quality: number): EngineStats {
   const evT = clamp((techYear - 2005) / 20, 0, 1);
-  const baseRpm = 5000, maxRpm = 16000;
+  // Constant torque up to the base speed, constant power above it. With the fixed 9:1 reduction a base speed of
+  // 4300 rpm is ≈ 60 km/h, as in production EVs (e.g. 160 kW / 350 Nm, 150 kW / 310 Nm).
+  // Rotor speed limit grows with motor technology (≈ 16,000 rpm in 2012, ≈ 19,000 rpm in 2025).
+  const baseRpm = 4300, maxRpm = Math.round((14000 + 5000 * evT) / 500) * 500;
   const tq = (e.motorKw * 9549) / baseRpm;
   const curve: CurvePoint[] = [];
   for (let rpm = 0; rpm <= maxRpm; rpm += 500) {
-    const nm = rpm <= baseRpm ? tq : (tq * baseRpm) / rpm * (rpm > 13000 ? 1 - (rpm - 13000) / 12000 : 1);
+    const nm = rpm <= baseRpm ? tq : (tq * baseRpm) / rpm * (rpm > 0.8 * maxRpm ? 1 - (rpm - 0.8 * maxRpm) / (0.75 * maxRpm) : 1);
     curve.push({ rpm, nm, kw: (nm * rpm) / 9549 });
   }
   const kgPerKwh = kf([[1990, 30], [2000, 22], [2008, 9.5], [2015, 7.3], [2020, 6.2], [2025, 5.4], [2035, 4.2]], techYear);
   const usdPerKwh = kf([[1990, 3000], [2000, 2200], [2008, 1100], [2012, 650], [2015, 380], [2020, 150], [2025, 115], [2035, 75]], techYear);
-  const mass = e.motorKw * lerp(1.1, 0.45, evT) + 35 + e.batteryKwh * kgPerKwh;
+  const mass = e.motorKw * lerp(0.8, 0.3, evT) + 30 + e.batteryKwh * kgPerKwh;
   const cost = (1500 + e.motorKw * 18 + e.batteryKwh * usdPerKwh) * (0.9 + 0.3 * quality);
   const warnings: string[] = [];
   if (e.batteryKwh / e.motorKw < 0.12) warnings.push('Battery is small for this motor — peak power cannot be sustained.');
@@ -195,9 +200,10 @@ export function torqueAt(st: EngineStats, rpm: number): number {
 
 // --------------------------------------------------------------------------------------- Vehicle
 
-export function gearRatios(n: number, isEV: boolean): number[] {
+export function gearRatios(n: number, isEV: boolean, sport = 0): number[] {
   if (isEV) return [1];
-  const first = n <= 3 ? 2.9 : n === 4 ? 3.4 : n <= 6 ? 3.7 : 4.3;
+  // a sports gearbox has a taller first gear and closer ratios
+  const first = (n <= 3 ? 2.9 : n === 4 ? 3.4 : n <= 6 ? 3.7 : 4.3) * (1 - 0.2 * sport);
   const top = n <= 4 ? 1.0 : n === 5 ? 0.82 : n === 6 ? 0.7 : n === 7 ? 0.63 : 0.58;
   const out: number[] = [];
   for (let i = 0; i < n; i++) out.push(first * Math.pow(top / first, n === 1 ? 0 : i / (n - 1)));
@@ -206,7 +212,7 @@ export function gearRatios(n: number, isEV: boolean): number[] {
 
 const MU_COMPOUND = { economy: 0.95, touring: 1.04, sport: 1.15, semislick: 1.3 } as const;
 const CRR_COMPOUND = { economy: 0.0085, touring: 0.0105, sport: 0.012, semislick: 0.015 } as const;
-const TIRE_TECH: [number, number][] = [[1950, 0.74], [1960, 0.8], [1970, 0.86], [1980, 0.91], [1990, 0.95], [2000, 0.98], [2010, 1.0], [2025, 1.03]];
+const TIRE_TECH: [number, number][] = [[1950, 0.74], [1960, 0.8], [1970, 0.86], [1980, 0.91], [1990, 0.95], [2000, 0.98], [2010, 1.0], [2025, 1.05]];
 const SUSP_GRIP = { solid: 0.9, macpherson: 0.95, wishbone: 1.0, multilink: 0.99 } as const;
 
 // Era reference values used to turn absolute figures into 0–100 scores ("how good is this for its time").
@@ -235,31 +241,43 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
 
   // ---- mass (kg)
   const plan = d.length * d.width;
-  const chassisF = { ladder: 1.25, steel: 1.0, spaceframe: 0.9, aluminium: 0.82, carbon: 0.66 }[s.chassis];
   const elecT = clamp((tech.electronics - 1950) / 70, 0, 1);
-  const mChassis = 50 * plan * Math.pow(plan / 8.28, 0.15) * chassisF * b.massF * (1.05 - 0.1 * tc) * (0.72 + 0.1 * s.safety);
+  const chassisF = { ladder: 1.25, steel: 1.0, spaceframe: 1.12, aluminium: 0.84, carbon: 0.66 }[s.chassis];
+  // crash structures: every safety level adds reinforcement to the shell as well as equipment
+  const mChassis = 50 * plan * Math.pow(plan / 8.28, 0.15) * chassisF * b.massF * (1.05 - 0.1 * tc) * (0.7 + 0.11 * s.safety);
   const mPanels = 12 * plan * { steel: 1, aluminium: 0.6, fibreglass: 0.55, carbon: 0.35 }[s.panels] * (s.body === 'suv' || s.body === 'pickup' ? 1.2 : 1);
-  const mInterior = { basic: 60, standard: 110, premium: 170, luxury: 260 }[s.interior] * s.size * (0.5 + s.seats / 10) * (0.7 + 0.3 * elecT);
-  const mSafety = [0, 25, 60, 95][Math.round(s.safety)] ?? 0;
+  // seats, trim, sound deadening, heating/air conditioning; a sport-focused cabin sheds part of it
+  const mInterior = { basic: 80, standard: 150, premium: 225, luxury: 330 }[s.interior] * s.size * (0.5 + s.seats / 10) * (0.7 + 0.3 * elecT) * (1 - 0.3 * s.sport);
+  const mSafety = [0, 30, 80, 135][Math.round(s.safety)] ?? 0;
   const nGears = isEV ? 1 : s.gears;
   let mDrive = isEV ? 45 : ({ manual: 35, auto: 70, dct: 60 }[s.gearbox] + 5 * nGears + 0.09 * eng.torqueNm);
-  if (s.drive === 'AWD') mDrive += 75;
+  if (s.drive === 'AWD') mDrive += s.chassis === 'ladder' ? 165 : 75; // off-roaders: transfer case and live axles
   if (s.drive === 'RWD' && s.enginePos === 'front') mDrive += 25;
-  const mRunning = 115 * s.size * s.size + { drum: 0, disc: 4, vented: 10, ceramic: -12 }[s.brakes] + 4 * (4 + s.tireWidth / 30) + 4 * (s.wheelDia * 0.55);
-  const mMisc = 35 + lerp(15, 70, elecT) + (isEV ? 0 : 40) + s.wing * 12 + s.splitter * 6;
+  const transaxle = !!s.transaxle && s.enginePos === 'front' && s.drive !== 'FWD' && !isEV;
+  if (transaxle) mDrive += 15; // torque tube
+  // suspension, subframes, steering, brakes, wheels and tyres
+  const mRunning = 140 * s.size * s.size + { drum: 0, disc: 6, vented: 14, ceramic: -6 }[s.brakes] + 4 * (4 + s.tireWidth / 30) + 4 * (s.wheelDia * 0.55);
+  // glazing, wiring and electrics, and for combustion cars fuel, exhaust and cooling system
+  const mMisc = 28 * s.size + lerp(20, 85, elecT) + (isEV ? 12 : 42 * s.size + 38) + s.wing * 12 + s.splitter * 6;
   const mass = mChassis + mPanels + mInterior + mSafety + mDrive + mRunning + mMisc + eng.mass;
   const massBreakdown = { Chassis: mChassis, 'Body panels': mPanels, Powertrain: eng.mass, Driveline: mDrive, 'Wheels, brakes, suspension': mRunning, Interior: mInterior, Safety: mSafety, 'Fluids & electrics': mMisc };
 
   // ---- layout
-  let wf = isEV ? 0.5 : s.enginePos === 'front' ? (s.drive === 'FWD' ? 0.62 : s.drive === 'AWD' ? 0.58 : 0.54) : s.enginePos === 'mid' ? 0.43 : 0.39;
-  if (!isEV) wf += (eng.mass / mass - 0.12) * 0.5 * (s.enginePos === 'front' ? 1 : -1);
+  // Static front axle share. A front-engined rear-drive car carries its gearbox and final drive behind the engine, and the
+  // sportier the chassis the further back the engine sits (front-mid engine, rear transaxle): ≈ 53 % front for a
+  // saloon, ≈ 51 % for a sports coupé and ≈ 47–48 % with a rear transaxle. A heavy engine moves the balance towards its own end.
+  let wf = isEV ? 0.5 : s.enginePos === 'front' ? (s.drive === 'FWD' ? 0.615 : s.drive === 'AWD' ? 0.57 - 0.03 * s.sport : 0.54 - 0.04 * s.sport) : s.enginePos === 'mid' ? 0.43 : 0.39;
+  if (transaxle) wf -= 0.04;
+  if (!isEV) wf += (eng.mass / mass - 0.12) * 0.3 * (s.enginePos === 'front' ? 1 : -1);
   wf = clamp(wf, 0.3, 0.7);
   const cgH = d.height * (s.body === 'suv' || s.body === 'pickup' ? 0.42 : 0.38);
 
   // ---- aero
-  const cdEra = kf([[1950, 1.38], [1965, 1.22], [1980, 1.1], [2000, 1.0], [2020, 0.9]], tech.aero);
-  const cd = b.cd * cdEra * (1 - 0.1 * s.aeroOpt) + 0.06 * s.wing + 0.015 * s.splitter + (s.flatFloor ? -0.008 : 0) + (s.tireWidth - 195) * 0.00012;
-  const frontalArea = 0.84 * d.width * (d.height - d.clearance * 0.5);
+  const cdEra = kf([[1950, 1.42], [1965, 1.28], [1980, 1.1], [2000, 1.0], [2020, 0.9]], tech.aero);
+  // Drag: body shape, aero devices, tyre width, and the cooling airflow a powerful engine needs (radiators, intercoolers, brake ducts).
+  const coolingCd = isEV ? 0.00003 * Math.max(0, eng.powerKw - 150) : 0.00008 * Math.max(0, eng.powerKw - 100);
+  const cd = b.cd * cdEra * (1 - 0.1 * s.aeroOpt) + 0.1 * s.wing + 0.02 * s.splitter + (s.flatFloor ? -0.008 : 0) + (s.tireWidth - 195) * 0.00025 + coolingCd;
+  const frontalArea = 0.86 * d.width * (d.height - d.clearance * 0.5);
   const cdA = cd * frontalArea;
   const aeroTech = 0.7 + 0.5 * clamp((tech.aero - 1965) / 55, 0, 1);
   const cl = 0.16 - 0.04 * s.aeroOpt - 0.5 * s.wing * aeroTech - 0.16 * s.splitter * aeroTech - (s.flatFloor ? 0.2 * aeroTech : 0);
@@ -273,45 +291,71 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const crr = CRR_COMPOUND[s.tireCompound] * kf([[1950, 1.6], [1970, 1.3], [1990, 1.1], [2010, 1.0]], tech.chassis);
 
   // ---- driveline
-  const ratios = gearRatios(nGears, isEV);
-  const final = isEV ? 9.0 : s.finalDrive;
+  const ratios = gearRatios(nGears, isEV, s.sport);
+  // electric cars: single reduction sized to the wheel, so that the motor's base speed is ≈ 60 km/h
+  const final = isEV ? 9.0 * (d.tireR / 0.33) : s.finalDrive;
   const autoEta = kf([[1950, 0.84], [1980, 0.88], [2000, 0.94], [2015, 0.97]], tech.engine);
   const eta = (isEV ? 0.93 : { FWD: 0.91, RWD: 0.895, AWD: 0.86 }[s.drive]) * (s.gearbox === 'auto' && !isEV ? autoEta : 1);
-  const shiftTime = isEV ? 0 : s.gearbox === 'dct' ? 0.08 : s.gearbox === 'auto' ? kf([[1950, 0.9], [1990, 0.6], [2015, 0.25]], tech.engine) : kf([[1950, 0.6], [2000, 0.35]], tech.engine);
-  const redline = isEV ? 16000 : s.engine.redline;
-  const launchRpm = isEV ? 0 : s.gearbox === 'auto' ? 2200 : Math.min(redline * 0.62, Math.max(2500, eng.torqueRpm));
-  const resist = (v: number) => 0.5 * RHO * cdA * v * v + crr * (mass + 75) * G;
+  const shiftTime = isEV ? 0 : s.gearbox === 'dct' ? 0.08 : s.gearbox === 'auto' ? kf([[1950, 0.9], [1990, 0.6], [2015, 0.25]], tech.engine) : kf([[1950, 0.75], [1975, 0.6], [2000, 0.4], [2015, 0.35]], tech.engine);
+  const redline = isEV ? eng.valveLimitRpm : s.engine.redline;
+  // Launch. A manual or dual-clutch car slips its clutch at the launch revs; a torque-converter automatic stalls the
+  // converter, which multiplies torque until the turbine catches up. Launch control (dual-clutch and modern automatic
+  // gearboxes with engine electronics from the mid-2000s) holds the engine where it makes its torque.
+  const launchControl = !isEV && s.gearbox !== 'manual' && tech.electronics >= 2004;
+  const stallRpm = clamp(eng.torqueRpm * 0.75, 1800, 2800);
+  const launchRpm = isEV ? 0 : s.gearbox === 'auto' ? (launchControl ? Math.max(stallRpm, Math.min(redline * 0.5, eng.torqueRpm)) : stallRpm) : Math.min(redline * 0.62, Math.max(2500, eng.torqueRpm));
+  // Share of the tyres' peak grip that can actually be held on a full-throttle start: an open differential and the
+  // driver's right foot, then limited-slip differentials, traction control and finally launch control.
+  let tractionUse = isEV ? 0.98 : kf([[1950, 0.9], [1985, 0.93], [1998, 0.95], [2010, 0.97]], tech.electronics);
+  if (launchControl) tractionUse = Math.max(tractionUse, kf([[2004, 0.96], [2014, 0.99]], tech.electronics));
+  if (s.drive === 'AWD') tractionUse = Math.min(1, tractionUse + 0.02);
   const m = mass + 75; // with driver
+  // rolling resistance rises with speed (tyre deformation): ≈ +20 % at 100 km/h, ×2.5 at 330 km/h
+  const resist = (v: number) => 0.5 * RHO * cdA * v * v + crr * (1 + 0.55 * (v / 55) * (v / 55)) * m * G;
+  // engine, flywheel and gearbox inertia reflected to the wheels (a sport flywheel is lighter; a motor rotor is small)
+  const kInertia = isEV ? 0.0004 : 0.0015 * (1 - 0.3 * s.sport);
 
   // ---- acceleration: explicit Euler integration
   let v = 0, x = 0, tt = 0, gear = 0, shift = 0, aPrev = 3;
-  let t100 = NaN, tQ = NaN;
-  while (tt < 45 && (isNaN(t100) || isNaN(tQ))) {
+  let t100 = NaN, tQ = NaN, t80 = NaN, t120 = NaN, t200 = NaN;
+  // run to the quarter mile and on to 200 km/h (or until the car has clearly stopped gaining speed)
+  while (tt < 45 && (isNaN(t100) || isNaN(tQ) || (isNaN(t200) && (tt < 12 || aPrev > 0.25)))) {
     const dt = tt < 4 ? 0.01 : tt < 20 ? 0.03 : 0.1;
     const total = ratios[gear] * final;
-    let rpm = (v / d.tireR) * total * 9.5493;
-    if (!isEV && rpm > redline * 0.985 && gear < nGears - 1 && shift <= 0) { gear++; shift = shiftTime; continue; }
+    const rpm = (v / d.tireR) * total * 9.5493;
+    if (!isEV && gear < nGears - 1 && shift <= 0) {
+      // change up at the rev limit, or past the power peak as soon as the next gear pulls harder
+      let up = rpm > redline * 0.985;
+      if (!up && rpm > eng.powerRpm) {
+        const rpmNext = (rpm * ratios[gear + 1]) / ratios[gear];
+        up = torqueAt(eng, rpmNext) * ratios[gear + 1] > torqueAt(eng, rpm) * ratios[gear];
+      }
+      if (up) { gear++; shift = shiftTime; continue; }
+    }
     let F = 0, Ftrac = 1e9;
     if (shift > 0) shift -= dt;
     else {
       const rpmEff = gear === 0 ? Math.max(rpm, launchRpm) : rpm;
-      F = (torqueAt(eng, Math.min(rpmEff, redline - 1)) * total * eta) / d.tireR;
+      const converter = s.gearbox === 'auto' && !isEV && gear === 0 && rpm < stallRpm ? 1 + 0.8 * (1 - rpm / stallRpm) : 1;
+      F = (torqueAt(eng, Math.min(rpmEff, redline - 1)) * converter * total * eta) / d.tireR;
       if (rpm >= redline) F = 0;
       const N = m * G + downforce(v);
       const transfer = (m * Math.max(aPrev, 0) * cgH) / d.wheelbase;
       const Nd = s.drive === 'AWD' ? N : s.drive === 'RWD' ? (1 - wf) * N + transfer : wf * N - transfer;
-      Ftrac = mu * 1.05 * Math.max(Nd, 0);
+      Ftrac = mu * 1.05 * tractionUse * Math.max(Nd, 0);
     }
     // rotating inertia loads the engine, not the contact patch: evaluate both limits separately
-    const aEng = (F - resist(v)) / (m * (1.03 + 0.0015 * total * total));
+    const aEng = (F - resist(v)) / (m * (1.03 + kInertia * total * total));
     const a = shift > 0 ? aEng : Math.min(aEng, (Ftrac - resist(v)) / (m * 1.03));
     aPrev = a;
     v = Math.max(0, v + a * dt);
     x += v * dt;
     tt += dt;
+    if (isNaN(t80) && v >= 22.22) t80 = tt;
     if (isNaN(t100) && v >= 27.78) t100 = tt;
+    if (isNaN(t120) && v >= 33.33) t120 = tt;
+    if (isNaN(t200) && v >= 55.56) t200 = tt;
     if (isNaN(tQ) && x >= 402.3) tQ = tt;
-    void rpm;
   }
   if (isNaN(t100)) t100 = 45 * Math.max(1, 27.78 / Math.max(v, 3)); if (isNaN(tQ)) tQ = 45;
 
@@ -353,7 +397,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const carbonKg = kf([[1980, 300], [1995, 170], [2010, 125], [2025, 95]], tech.chassis);
   const cChassis = mChassis * { ladder: 2.0, steel: 2.4, spaceframe: 6, aluminium: 9, carbon: carbonKg }[s.chassis] * cq;
   const cPanels = (mPanels * { steel: 3, aluminium: 9, fibreglass: 10, carbon: carbonKg * 0.85 }[s.panels] + 600 * s.size) * cq;
-  const cDrive = (isEV ? 900 : { manual: 500 + 90 * nGears, auto: 1100 + 150 * nGears, dct: 2400 + 100 * nGears }[s.gearbox]) + (s.drive === 'AWD' ? 1200 : 0);
+  const cDrive = (isEV ? 900 : { manual: 500 + 90 * nGears, auto: 1100 + 150 * nGears, dct: 2400 + 100 * nGears }[s.gearbox]) + (s.drive === 'AWD' ? 1200 : 0) + (transaxle ? 900 : 0);
   const suspCost = { solid: 200, macpherson: 350, wishbone: 650, multilink: 800 };
   const cRunning = (suspCost[s.suspFront] + suspCost[s.suspRear]) * (1 + 0.5 * s.sport) + { drum: 150, disc: 300, vented: 520, ceramic: 6500 }[s.brakes]
     + 4 * (50 + s.tireWidth * 0.4) * { economy: 1, touring: 1.2, sport: 1.7, semislick: 2.6 }[s.tireCompound] + 4 * (40 + (s.wheelDia - 13) * 22);
@@ -415,7 +459,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   return {
     engine: eng, length: d.length, width: d.width, height: d.height, wheelbase: d.wheelbase, mass, weightFront: wf, massBreakdown,
     powerKw, torqueNm: eng.torqueNm, powerToWeight: powerKw / (mass / 1000),
-    zeroTo100: t100, quarterMile: tQ, topSpeed: top * 3.6, braking100, lateralG, cd, frontalArea, cdA, clA,
+    zeroTo100: t100, quarterMile: tQ, topSpeed: top * 3.6, zeroTo200: isNaN(t200) ? null : t200, passing80to120: isNaN(t80) || isNaN(t120) ? null : t120 - t80, braking100, lateralG, cd, frontalArea, cdA, clA,
     downforce200: downforce(55.56) / G, fuelUrban: eco.urban, fuelHighway: eco.highway, fuelCombined: eco.combined, rangeKm,
     partsCost: parts2020 * nominal, costBreakdown, labourHours, devCost, devMonths, toolingPerUnitCapacity, scores, warnings,
   };
@@ -466,6 +510,31 @@ function fuelModel(s: VehicleSpec, eng: EngineStats, p: { m: number; cdA: number
   const idleFuelW = (fmepBar((2 * stroke * 800) / 60, eng.fmepK) * 1e5 * vd * (800 / 120)) / 0.25;
   const urban = ((u.pEng / u.etaB) * tMove + (startStop ? 0.15 : 1) * idleFuelW * 28) / J_PER_L * 100;
   return { urban, highway, combined: 0.55 * urban + 0.45 * highway };
+}
+
+/**
+ * Final drive ratio an engineer would pick for this car: top gear is matched to the speed the car can reach on its
+ * power. Boxes with few gears run close to peak power in top; five or more gears make top an overdrive for quiet,
+ * economical cruising. Sporty cars keep the gearing shorter.
+ */
+export function suggestFinalDrive(s: VehicleSpec, ctx: VehicleCtx): number {
+  if (s.engine.layout === 'EV') return s.finalDrive;
+  const st = computeVehicle(s, ctx);
+  const d = dims(s);
+  const eta = { FWD: 0.91, RWD: 0.895, AWD: 0.86 }[s.drive];
+  const m = st.mass + 75;
+  // speed at which peak power equals drag + rolling resistance (bisection)
+  let lo = 10, hi = 140;
+  for (let i = 0; i < 40; i++) {
+    const v = (lo + hi) / 2;
+    const need = (0.5 * RHO * st.cdA * v * v + 0.012 * (1 + 0.55 * (v / 55) * (v / 55)) * m * G) * v;
+    if (need < st.powerKw * 1000 * eta) lo = v; else hi = v;
+  }
+  const overdrive = [1.03, 1.03, 1.03, 1.05, 1.12, 1.24, 1.32, 1.45, 1.55, 1.6][clamp(s.gears, 1, 9)];
+  const over = lerp(overdrive, Math.max(1.03, overdrive * 0.86), s.sport);
+  const ratios = gearRatios(s.gears, false, s.sport);
+  const fd = (s.engine.redline * d.tireR) / (9.5493 * ratios[ratios.length - 1] * over * lo);
+  return clamp(Math.round(fd * 20) / 20, 2.2, 5.5);
 }
 
 // ------------------------------------------------------------------------------------- Defaults
