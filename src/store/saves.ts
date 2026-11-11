@@ -1,6 +1,7 @@
 // Persistent local saves in IndexedDB (no backend). The SaveBackend interface is the seam where
 // an optional cloud backend (e.g. Supabase) could be plugged in later; none is connected.
 import type { GameState } from '../sim/types';
+import { prepareLoadedGame } from '../sim/migrate';
 
 export interface SaveMeta { slot: string; name: string; mode: string; year: number; month: number; savedAt: number; company: string; cash: number }
 export interface SaveBackend {
@@ -49,7 +50,13 @@ export function exportToFile(g: GameState) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 export async function importFromFile(file: File): Promise<GameState> {
-  const g = JSON.parse(await file.text()) as GameState;
-  if (!g || !Array.isArray(g.companies) || !g.playerId || typeof g.year !== 'number') throw new Error('This file is not an Automotive Empire save.');
-  return g;
+  let raw: unknown;
+  try { raw = JSON.parse(await file.text()); } catch { throw new Error('This file is not an Automotive Empire save.'); }
+  return prepareLoadedGame(raw);
+}
+/** Load a slot and upgrade it to the current save format. Throws with a player-facing message. */
+export async function loadSlot(slot: string): Promise<GameState> {
+  const raw = await localSaves.load(slot);
+  if (!raw) throw new Error('Save not found.');
+  return prepareLoadedGame(raw);
 }

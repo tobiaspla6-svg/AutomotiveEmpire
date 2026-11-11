@@ -13,9 +13,10 @@ import {
 } from '../sim/actions';
 import { computeMarket, fuelPrice, segVolume } from '../sim/market';
 import { cpi, fmtMoney, fmtNum, MONTHS } from '../sim/util';
-import { exportToFile, importFromFile, localSaves, type SaveMeta } from '../store/saves';
-import { BarList, Kpi, LineChart, Meter, Modal, PageHead, PALETTE, Select, Slider, StatLine, Tag } from './common';
-import { SAVE_VERSION } from '../sim/world';
+import { exportToFile, importFromFile, loadSlot, localSaves, type SaveMeta } from '../store/saves';
+import { prepareLoadedGame } from '../sim/migrate';
+import { equity, fixedAssets, inventoryValue } from '../sim/accounts';
+import { BarList, Kpi, LineChart, Meter, Modal, Money, PageHead, PALETTE, Select, Slider, StatLine, Tag } from './common';
 import { MAKER } from '../data/manufacturers';
 
 const ledgerLabels = (l: MonthLedger[]) => l.map((x) => `${MONTHS[x.m - 1]} ${String(x.y).slice(2)}`);
@@ -255,7 +256,7 @@ export function ResearchView() {
 }
 
 // ---------------------------------------------------------------------------------- Finance
-const COST_ROWS: [keyof MonthLedger, string][] = [['cogs', 'Cost of cars built'], ['factoryFixed', 'Factory fixed costs'], ['wages', 'Engineers & administration'], ['dev', 'Vehicle programmes'], ['rd', 'Research'], ['marketing', 'Marketing'], ['logistics', 'Logistics & stock'], ['motorsport', 'Motorsport'], ['other', 'Dealer support'], ['interest', 'Interest'], ['tax', 'Tax']];
+const COST_ROWS: [keyof MonthLedger, string][] = [['cogs', 'Cost of cars sold'], ['factoryFixed', 'Factory fixed costs'], ['wages', 'Engineers & administration'], ['dev', 'Vehicle programmes'], ['rd', 'Research'], ['marketing', 'Marketing'], ['logistics', 'Logistics & stock'], ['motorsport', 'Motorsport'], ['other', 'Dealer support'], ['oneOff', 'One-off items & write-offs'], ['depreciation', 'Depreciation (non-cash)'], ['interest', 'Interest'], ['tax', 'Tax']];
 export function FinanceView() {
   const { g, p } = useGame();
   const act = useStore((s) => s.act);
@@ -281,12 +282,28 @@ export function FinanceView() {
           <h3>Income statement</h3>
           <table><thead><tr><th>Item</th><th className="r">Last month</th><th className="r">Last 12 months</th></tr></thead><tbody>
             <tr><td><b>Revenue</b></td><td className="r">{fmtMoney(last?.revenue ?? 0)}</td><td className="r">{fmtMoney(y('revenue'))}</td></tr>
+            <tr><td className="dim">+ Other income (grants, prizes, fleet sales)</td><td className="r">{fmtMoney(last?.otherIncome ?? 0)}</td><td className="r">{fmtMoney(y('otherIncome'))}</td></tr>
+            <tr><td className="dim">+ Gains / losses on assets</td><td className="r">{fmtMoney(last?.assetGains ?? 0)}</td><td className="r">{fmtMoney(y('assetGains'))}</td></tr>
             {COST_ROWS.map(([k, label]) => <tr key={k}><td className="dim">− {label}</td><td className="r">{fmtMoney((last?.[k] as number) ?? 0)}</td><td className="r">{fmtMoney(y(k))}</td></tr>)}
             <tr><td><b>Net profit</b></td><td className={'r ' + ((last?.profit ?? 0) < 0 ? 'bad' : 'good')}><b>{fmtMoney(last?.profit ?? 0)}</b></td><td className={'r ' + (y('profit') < 0 ? 'bad' : 'good')}><b>{fmtMoney(y('profit'))}</b></td></tr>
           </tbody></table>
         </div>
         <div className="col">
           <div className="panel col"><h3>Where the money went (12 months)</h3><BarList items={COST_ROWS.map(([k, label], i) => ({ label, value: Math.max(0, y(k)), color: PALETTE[i % PALETTE.length] })).filter((x) => x.value > 0).sort((a, b) => b.value - a.value)} fmt={(v) => fmtMoney(v)} /></div>
+          <div className="panel col"><h3>Balance sheet</h3>
+            <StatLine label="Cash" value={fmtMoney(p.cash)} />
+            <StatLine label="Inventory (cars in stock, at cost)" value={fmtMoney(inventoryValue(p))} />
+            <StatLine label="Plants, tooling, dealers, facilities (book value)" value={fmtMoney(fixedAssets(p))} />
+            <StatLine label="− Debt" value={fmtMoney(p.debt)} />
+            <StatLine label={<b>Equity</b>} value={<b className={equity(p) < 0 ? 'bad' : ''}>{fmtMoney(equity(p))}</b>} />
+          </div>
+          <div className="panel col"><h3>Cash flow (12 months)</h3>
+            <StatLine label="Operating" value={<Money v={y('operatingCash')} sign />} title="Net profit + depreciation − non-cash gains − increase in inventory" />
+            <StatLine label="  of which: cars built (into stock)" value={fmtMoney(y('production'))} />
+            <StatLine label="Investing" value={<Money v={y('investingCash')} sign />} title="Plants, tooling, dealer networks, facilities and acquisitions, less asset sales" />
+            <StatLine label="Financing" value={<Money v={y('financingCash')} sign />} title="Borrowing less repayments, including automatic overdraft" />
+            <StatLine label={<b>Change in cash</b>} value={<b><Money v={y('operatingCash') + y('investingCash') + y('financingCash')} sign /></b>} />
+          </div>
           <div className="panel col"><h3>Borrowing</h3>
             <div className="row wrap"><input type="number" value={loan} min={1} style={{ width: 110 }} aria-label="Loan amount in millions" onChange={(e) => setLoan(Number(e.target.value))} /><span className="muted">million</span>
               <button className="btn" onClick={() => act((gg) => takeLoan(gg, loan * 1e6), 'Loan drawn.')}>Borrow</button><button className="btn" onClick={() => act((gg) => repayLoan(gg, loan * 1e6), 'Debt repaid.')}>Repay</button>
@@ -384,10 +401,10 @@ export function SavesView() {
       </div>
       <p className="small muted">Some embedded viewers block file downloads; the clipboard buttons move a save between browsers without a file.</p>
       {paste !== null && <Modal onClose={() => setPaste(null)}><h3>Paste a save</h3><textarea id="paste-save" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Paste the copied save text here" style={{ minHeight: 160, background: 'var(--bg2)', color: 'var(--ink)', border: '1px solid var(--line2)', borderRadius: 8, padding: 8, font: '12px ui-monospace, monospace' }} />
-        <div className="row end"><button className="btn" onClick={() => setPaste(null)}>Cancel</button><button className="btn primary" disabled={!paste.trim()} onClick={() => { try { const x = JSON.parse(paste); if (!x || !Array.isArray(x.companies) || !x.playerId || x.version !== SAVE_VERSION) throw new Error('This text is not a compatible Automotive Empire save.'); setPaste(null); start(x); notify('Save loaded.'); } catch (err) { notify((err as Error).message, true); } }}>Load</button></div></Modal>}
+        <div className="row end"><button className="btn" onClick={() => setPaste(null)}>Cancel</button><button className="btn primary" disabled={!paste.trim()} onClick={() => { try { let raw: unknown; try { raw = JSON.parse(paste); } catch { throw new Error('This text is not an Automotive Empire save.'); } const x = prepareLoadedGame(raw); setPaste(null); start(x); notify('Save loaded.'); } catch (err) { notify((err as Error).message, true); } }}>Load</button></div></Modal>}
       <div className="panel flush"><table><thead><tr><th>Save</th><th>Company</th><th>Date</th><th className="r">Cash</th><th>Saved</th><th /></tr></thead><tbody>
         {saves.map((s) => <tr key={s.slot}><td><b>{s.slot}</b></td><td>{s.company}</td><td>{MONTHS[s.month - 1]} {s.year}</td><td className="r">{fmtMoney(s.cash)}</td><td className="muted">{new Date(s.savedAt).toLocaleString()}</td>
-          <td className="r"><button className="btn sm" onClick={async () => { const x = await localSaves.load(s.slot); if (!x) return notify('Save not found.', true); if (x.version !== SAVE_VERSION) return notify('Incompatible save version.', true); start(x); notify('Game loaded.'); }}>Load</button> <button className="btn sm ghost" onClick={async () => { await localSaves.remove(s.slot); void refresh(); }}>Delete</button></td></tr>)}
+          <td className="r"><button className="btn sm" onClick={async () => { try { start(await loadSlot(s.slot)); notify('Game loaded.'); } catch (err) { notify((err as Error).message, true); } }}>Load</button> <button className="btn sm ghost" onClick={async () => { await localSaves.remove(s.slot); void refresh(); }}>Delete</button></td></tr>)}
         {saves.length === 0 && <tr><td colSpan={6} className="muted">No saves yet.</td></tr>}
       </tbody></table></div>
     </>

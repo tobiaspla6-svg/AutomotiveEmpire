@@ -130,6 +130,7 @@ export interface VehicleModel {
   lastUnitCost: number;
   salesHistory: number[]; // monthly units, most recent last (max 120)
   lifetimeRevenue: number;
+  inventoryValue: number; // cost of the cars in stock (inventory asset); released as COGS when sold
   recallRisk: number;
 }
 
@@ -143,13 +144,44 @@ export interface Factory {
   builtYear: number;
   historical: boolean;
   disruption: number; // months of disrupted output remaining
+  bookValue: number; // net book value (cost of plant, expansions, automation and tooling less depreciation)
 }
 
 export interface MonthLedger {
   y: number; m: number;
-  revenue: number; cogs: number; factoryFixed: number; wages: number; rd: number; marketing: number;
-  dev: number; logistics: number; motorsport: number; interest: number; tax: number; other: number;
-  profit: number; cash: number; debt: number; units: number;
+  // ---- income statement (accrual basis)
+  revenue: number; // car sales net of dealer margin, plus sponsorship and owner funding of a race team
+  otherIncome: number; // grants, prize money, fleet clearance sales
+  cogs: number; // cost of the cars SOLD this month (released from inventory at average cost)
+  factoryFixed: number; wages: number; rd: number; marketing: number;
+  dev: number; logistics: number; motorsport: number; interest: number; other: number;
+  oneOff: number; // one-off expenses: hiring/severance, settlements, recalls, inventory write-offs
+  depreciation: number; // non-cash: wear of plants, tooling, dealer networks, racing facilities, goodwill
+  assetGains: number; // non-cash part of asset sales (proceeds − book value) and bargain purchases; may be negative
+  tax: number; profit: number;
+  // ---- production and investment
+  production: number; // cost of cars BUILT this month (added to inventory, paid in cash)
+  capex: number; // cash invested in plants, tooling, dealers, facilities, acquisitions
+  units: number;
+  // ---- cash-flow statement (operating is derived indirectly from profit, see accounts.ts)
+  operatingCash: number; investingCash: number; financingCash: number;
+  // ---- balance sheet at month end (and cash at the start of the month)
+  cashStart: number; cash: number; debt: number; inventoryValue: number; fixedAssets: number; equity: number;
+}
+
+/** Cash movements made between monthly ticks (player actions, events); merged into the next ledger. */
+export interface Pending {
+  dev: number; motorsport: number; oneOff: number; // cash expenses
+  income: number; // cash income
+  writeOff: number; // non-cash expense (inventory written off; value already removed from stock)
+  capex: number; proceeds: number; acquiredCash: number; // investing cash flows
+  assetGain: number; // non-cash gain/loss
+  borrow: number; repay: number; // financing cash flows
+}
+export interface Books {
+  otherAssets: number; // book value of dealer networks, racing facilities and acquisition goodwill
+  pending: Pending;
+  close: { cash: number; debt: number; inventoryValue: number; fixedAssets: number }; // balances at the last month end
 }
 
 export interface Objective {
@@ -181,6 +213,7 @@ export interface Company {
   autoPrice: boolean; // index list prices to inflation every January
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
+  books: Books;
 }
 
 export interface Modifier {

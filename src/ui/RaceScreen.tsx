@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame, useStore } from '../store/game';
-import { applyRaceResult, buildRaceConfig, pendingRound, playerTeam, teamRegs, wingTable } from '../sim/racing/season';
+import { applyRaceResult, buildRaceConfig, pendingRound, playerTeam, raceWeather, teamRegs, wingTable } from '../sim/racing/season';
 import { RaceSim, wetPenalty, type CarState, type Mode } from '../sim/racing/race';
 import { TRACK } from '../sim/racing/tracks';
 import { fmtClock, fmtTime } from '../sim/util';
@@ -77,7 +77,7 @@ export function RaceScreen() {
   // ---------------------------------------------------------------- briefing
   if (phase === 'pre' && round) {
     const track = TRACK[round.trackId];
-    const preview = buildRaceConfig(g, p, div);
+    const forecast = raceWeather(g, div).forecast; // read-only: building the full race config would sign reserve drivers and post news
     const dry = regs.tyres.filter((t) => t.wetType === 0);
     return (
       <div className="main" style={{ height: '100%' }}>
@@ -86,7 +86,7 @@ export function RaceScreen() {
         <div className="grid g2">
           <div className="panel col"><h3>Circuit</h3><TrackMap trackId={round.trackId} height={260} zones />
             <div className="row wrap small dim" style={{ gap: 14 }}><span>{track.kind}</span><span>Overtaking: {track.overtake > 1.1 ? 'easy' : track.overtake > 0.8 ? 'average' : 'very difficult'}</span><span>Tyre wear: {track.abrasion > 1.1 ? 'high' : track.abrasion > 0.9 ? 'medium' : 'low'}</span><span>Pit-lane time loss: {track.pitLoss} s</span><span className="good">— overtaking zones</span></div>
-            <h3 style={{ marginTop: 6 }}>Weather forecast</h3><p>{preview.weather.forecast}</p>
+            <h3 style={{ marginTop: 6 }}>Weather forecast</h3><p>{forecast}</p>
             <p className="small muted">Slicks stop working at about 20% track wetness, where intermediates take over; full wets are fastest above about 55%.</p>
           </div>
           <div className="col">

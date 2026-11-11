@@ -7,11 +7,12 @@ import { MAKERS, type MsGroup } from '../../data/manufacturers';
 import { chance, gauss, hashStr, makeRng, pick, rnd, rndInt, rndRange, shuffle, type Rng } from '../rng';
 import { clamp, cpi } from '../util';
 import { modProduct } from '../market';
+import { receive } from '../accounts';
 import { news, uid } from '../company';
 import { getRegs, DISC_NAME, type Regs } from './regs';
 import { computeRaceCar, defaultRaceCar, checkLegal, raceEngineSpec } from './racecar';
 import { lapSim } from './lapsim';
-import { makeWeather, RaceSim, type RaceConfig, type RaceEntry } from './race';
+import { makeWeather, RaceSim, type RaceConfig, type RaceEntry, type Weather } from './race';
 import { TRACK, trackGeom } from './tracks';
 
 const FIRST: Record<string, string[]> = {
@@ -39,7 +40,7 @@ const PRIVATEERS: [string, string, string][] = [
 ];
 const SPONSORS = ['Meridian Bank', 'Altus Oil', 'Kestrel Watches', 'Nordlys Telecom', 'Vantor Tools', 'Sable Logistics', 'Orion Insurance', 'Halcyon Airlines'];
 const GROUP: Record<Discipline, MsGroup> = { f1: 'f1', hypercar: 'proto', lmdh: 'proto', gt: 'gt', touring: 'touring' };
-const LMDH_MAKERS = ['porsche', 'bmw', 'gm', 'honda', 'lamborghini', 'renault'];
+const LMDH_MAKERS = ['porsche', 'bmw', 'gm', 'honda', 'lamborghini', 'renault', 'hyundai'];
 const SERIES_WEIGHT: Record<Discipline, number> = { f1: 1, hypercar: 0.8, lmdh: 0.7, gt: 0.4, touring: 0.3 };
 
 export const budgetRef = (regs: Regs, year: number) => regs.budget2020 * cpi(year);
@@ -234,10 +235,18 @@ export function wingTable(c: Company, div: MotorsportDivision, trackId: string):
 
 export interface PlayerRaceChoices { wing: number[]; startCompound: (string | undefined)[]; auto: boolean[] }
 
+const roundSeed = (g: GameState, ch: Championship) => hashStr(`${g.id}:${ch.year}:${ch.nextRound}:${ch.discipline}`);
+/** Weather for the next round. Pure: safe to call while rendering the race briefing. */
+export function raceWeather(g: GameState, div: MotorsportDivision): Weather {
+  const ch = div.championship, round = ch.rounds[ch.nextRound], track = TRACK[round.trackId];
+  const duration = round.hours ? round.hours * 3600 : round.laps * (track.km / 5.5) * 100;
+  return makeWeather(track, duration, makeRng(roundSeed(g, ch) ^ 0x51ed27));
+}
+
 export function buildRaceConfig(g: GameState, c: Company, div: MotorsportDivision, choices?: PlayerRaceChoices): RaceConfig {
   const ch = div.championship;
   const round = ch.rounds[ch.nextRound];
-  const seed = hashStr(`${g.id}:${ch.year}:${ch.nextRound}:${ch.discipline}`);
+  const seed = roundSeed(g, ch);
   const rng = makeRng(seed ^ 0x9e3779b9);
   ensureDrivers(g, div, rng);
   const baseRegs = getRegs(ch.discipline, ch.year);
@@ -265,9 +274,7 @@ export function buildRaceConfig(g: GameState, c: Company, div: MotorsportDivisio
       });
     }
   }
-  const track = TRACK[round.trackId];
-  const duration = round.hours ? round.hours * 3600 : round.laps * (track.km / 5.5) * 100;
-  const weather = makeWeather(track, duration, makeRng(seed ^ 0x51ed27));
+  const weather = raceWeather(g, div);
   return { seed, trackId: round.trackId, regs: baseRegs, year: ch.year, name: round.name, laps: round.laps, duration: round.hours * 3600, entries, weather, pointsScale: round.pointsScale };
 }
 
@@ -304,7 +311,6 @@ export function applyRaceResult(g: GameState, c: Company, div: MotorsportDivisio
     news(g, 'motorsport', `${round.name}: ${wDrv?.name ?? '—'} wins for ${wTeam.name}`, `${div.teamName}: ${mine.map((r) => `Car ${r.carIdx + 1} ${r.status === 'finished' ? 'P' + r.pos : 'DNF (' + r.reason + ')'}`).join(' · ')}`);
   }
   if (wTeam.companyId && !wTeam.isPlayer) { const comp = g.companies.find((x) => x.id === wTeam.companyId); if (comp) { comp.prestige = Math.min(100, comp.prestige + 0.15 * w); comp.sportiness = Math.min(100, comp.sportiness + 0.25 * w); } }
-  c.cash -= 0; // race operations are charged monthly
   for (const t of ch.teams) if (!t.isPlayer) for (const k of ['aero', 'engine', 'chassis', 'reliability'] as (keyof DevLevels)[]) t.dev[k] = Math.min(1, t.dev[k] + (0.012 + 0.03 * t.tier) * (1 - t.dev[k]));
   void regs;
   if (ch.nextRound >= ch.rounds.length) endSeason(g, c, div);
@@ -327,7 +333,7 @@ function endSeason(g: GameState, c: Company, div: MotorsportDivision) {
   const pos = st.teams.findIndex((t) => t.id === div.teamId) + 1;
   const n = st.teams.length;
   const prize = B * 0.5 * Math.pow(1 - (pos - 1) / n, 1.5);
-  c.cash += prize; div.seasonIncome += prize;
+  receive(c, prize); div.seasonIncome += prize;
   if (champD) champD.titles++;
   const w = SERIES_WEIGHT[div.discipline];
   if (pos === 1) c.msGlow += 9 * w; else if (pos <= 3) c.msGlow += 3 * w;

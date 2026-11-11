@@ -13,13 +13,16 @@ import { gauss, hashStr, makeRng } from './rng';
 import { clamp, cpi, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
 import { budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
+import { emptyPending, openBooks } from './accounts';
 
 export const player = (g: GameState): Company => g.companies.find((c) => c.id === g.playerId)!;
 export const dateLabel = (g: GameState) => `${MONTHS[g.month - 1]} ${g.year}`;
-export const SAVE_VERSION = 1;
+import { SAVE_VERSION } from './migrate';
+export { SAVE_VERSION };
 
-function baseGame(mode: GameMode, year: number, difficulty: Difficulty, historyMode: HistoryMode, name: string, playerMaker: string | null): GameState {
-  const seed = (Date.now() ^ hashStr(name + year + mode)) >>> 0;
+function baseGame(mode: GameMode, year: number, difficulty: Difficulty, historyMode: HistoryMode, name: string, playerMaker: string | null, fixedSeed?: number): GameState {
+  // a fixed seed makes a new game fully reproducible (used by the automated tests)
+  const seed = (fixedSeed ?? (Date.now() ^ hashStr(name + year + mode))) >>> 0;
   const g: GameState = {
     version: SAVE_VERSION, id: `g${seed.toString(36)}`, name, mode, difficulty, historyMode, year, month: 1, startYear: year, rng: makeRng(seed), playerId: '', companies: [],
     macro: { fuelPrice: 1, materialCost: 1, interestBase: kf(INTEREST_BASE, year), modifiers: [], cycle: 0 }, otherShare: {}, news: [], decision: null,
@@ -51,10 +54,10 @@ function boardObjectives(g: GameState, c: Company, def: MakerDef): Objective[] {
   return out;
 }
 
-export interface CeoSetup { makerId: string; year: number; difficulty: Difficulty; historyMode: HistoryMode }
+export interface CeoSetup { makerId: string; year: number; difficulty: Difficulty; historyMode: HistoryMode; seed?: number }
 export function newCeoGame(o: CeoSetup): GameState {
   const def = MAKER[o.makerId];
-  const g = baseGame('ceo', o.year, o.difficulty, o.historyMode, `${def.name} ${o.year}`, o.makerId);
+  const g = baseGame('ceo', o.year, o.difficulty, o.historyMode, `${def.name} ${o.year}`, o.makerId, o.seed);
   const c = g.companies.find((x) => x.id === o.makerId)!;
   g.playerId = c.id;
   const k = o.difficulty === 'easy' ? 1.4 : o.difficulty === 'hard' ? 0.7 : 1;
@@ -69,6 +72,7 @@ export function newCeoGame(o: CeoSetup): GameState {
   }
   news(g, 'company', `You are the new CEO of ${def.name}`, era.text, 'historical');
   if (def.ownershipNote) news(g, 'company', 'A note on ownership', def.ownershipNote);
+  openBooks(player(g));
   return g;
 }
 
@@ -88,6 +92,7 @@ export const capitalOptions = (year: number) => [80e6, 250e6, 800e6, 2500e6].map
 export interface FounderSetup {
   name: string; country: string; year: number; capital: number; specialization: string; factory: number; engineers: number; research: number; workforce: number;
   color: string; difficulty: Difficulty; historyMode: HistoryMode;
+  seed?: number;
 }
 export function founderCosts(o: FounderSetup) {
   const f = FACTORY_SIZES[o.factory];
@@ -98,7 +103,7 @@ export function founderCosts(o: FounderSetup) {
   return { factory, eng, research, total: factory + eng + research, auto };
 }
 export function newFounderGame(o: FounderSetup): GameState {
-  const g = baseGame('founder', o.year, o.difficulty, o.historyMode, `${o.name} ${o.year}`, null);
+  const g = baseGame('founder', o.year, o.difficulty, o.historyMode, `${o.name} ${o.year}`, null, o.seed);
   const region: RegionId = COUNTRY[o.country].region;
   const costs = founderCosts(o);
   const tech = industryTech(o.year, RESEARCH_LEVELS[o.research].lead);
@@ -115,11 +120,13 @@ export function newFounderGame(o: FounderSetup): GameState {
     prestige: sp === 'luxury' ? 38 : sp === 'sports' ? 30 : 18, reliabilityRep: sp === 'offroad' ? 62 : 50, sportiness: sp === 'sports' ? 55 : 25,
     factories: [], models: [], tech, rdBudget: { engine: 0, chassis: 0, aero: 0, electronics: 0, manufacturing: 0 }, engineers: ENGINEER_LEVELS[o.engineers].n, marketingBudget: 0,
     ledger: [], motorsport: null, board: null, alive: true, specialization: sp, baseVolume: 0, taxAccrued: 0, ytdProfit: 0, msGlow: 0, autoPrice: true, aiFactor: 1, troubleMonths: 0,
+    books: { otherAssets: 0, pending: emptyPending(), close: { cash: 0, debt: 0, inventoryValue: 0, fixedAssets: 0 } },
   };
   const f = FACTORY_SIZES[o.factory];
-  if (f.cap) c.factories.push({ id: uid(g, 'f'), name: `${o.name} Works`, country: o.country, region, capacity: f.cap, automation: costs.auto, lines: [], expansion: null, builtYear: o.year, historical: false, disruption: 0 });
+  if (f.cap) c.factories.push({ id: uid(g, 'f'), name: `${o.name} Works`, country: o.country, region, capacity: f.cap, automation: costs.auto, lines: [], expansion: null, builtYear: o.year, historical: false, disruption: 0, bookValue: costs.factory });
   g.companies.push(c);
   g.playerId = c.id;
+  openBooks(c); // opening equity = capital left after the founding investments, plus the plant at cost
   news(g, 'company', `${o.name} is founded`, `A new manufacturer opens its doors in ${COUNTRY[o.country].name} with $${(c.cash / 1e6).toFixed(1)}M in the bank. Design your first car in the Vehicles studio, develop it, assign it to a production line and set a price.`);
   return g;
 }
@@ -127,11 +134,12 @@ export function newFounderGame(o: FounderSetup): GameState {
 export interface MotorsportSetup {
   makerId: string | null; teamName: string; discipline: Discipline; year: number; budget: number; facilities: number; staff: number; target: number;
   color: string; color2: string; difficulty: Difficulty; historyMode: HistoryMode;
+  seed?: number;
 }
 export const MS_BUDGETS = [{ name: 'Privateer', k: 0.55 }, { name: 'Midfield', k: 0.9 }, { name: 'Front-runner', k: 1.35 }];
 export function newMotorsportGame(o: MotorsportSetup): GameState {
   const def = o.makerId ? MAKER[o.makerId] : null;
-  const g = baseGame('motorsport', o.year, o.difficulty, o.historyMode, `${o.teamName} ${o.year}`, null);
+  const g = baseGame('motorsport', o.year, o.difficulty, o.historyMode, `${o.teamName} ${o.year}`, null, o.seed);
   const regs = getRegs(o.discipline, o.year);
   const B = budgetRef(regs, o.year);
   const k = MS_BUDGETS[o.budget].k;
@@ -142,6 +150,7 @@ export function newMotorsportGame(o: MotorsportSetup): GameState {
     factories: [], models: [], tech: industryTech(o.year), rdBudget: { engine: 0, chassis: 0, aero: 0, electronics: 0, manufacturing: 0 }, engineers: 0, marketingBudget: 0,
     ledger: [], motorsport: null, board: { confidence: 60, objectives: [], note: def ? `You run the works ${regs.className} programme of ${def.name}. The board funds the team and expects results.` : 'You run an independent team. The owners fund it and expect results.' },
     alive: true, specialization: 'motorsport', baseVolume: 0, taxAccrued: 0, ytdProfit: 0, msGlow: 0, autoPrice: true, aiFactor: 1, troubleMonths: 0,
+    books: { otherAssets: 0, pending: emptyPending(), close: { cash: 0, debt: 0, inventoryValue: 0, fixedAssets: 0 } },
   };
   g.companies.push(c);
   g.playerId = c.id;
@@ -149,6 +158,7 @@ export function newMotorsportGame(o: MotorsportSetup): GameState {
   const upkeepK = clamp(1 - 0.06 * (o.facilities - 2) - (o.staff - 60) / 300, 0.6, 1.2);
   c.motorsport = createDivision(g, c, { discipline: o.discipline, teamName: o.teamName, color: o.color, color2: o.color2, facilities: o.facilities, staff: o.staff, ownerGrant: B * 0.72 * k * upkeepK, sponsorLevel: 0.45 * k, target: o.target }, g.rng);
   news(g, 'motorsport', `${o.teamName} enters the ${regs.seriesName}`, `${regs.className}. ${regs.note}`, 'historical');
+  openBooks(player(g));
   return g;
 }
 

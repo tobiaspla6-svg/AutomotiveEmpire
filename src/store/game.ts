@@ -28,7 +28,8 @@ export const useStore = create<Store>((set, get) => ({
   notify: (text, bad = false) => { const id = ++toastId; set({ toast: { text, bad, id } }); setTimeout(() => { if (get().toast?.id === id) set({ toast: null }); }, 4200); },
   act: (fn, okText) => {
     const g = get().game; if (!g) return false;
-    const err = fn(g);
+    let err: string | null | void;
+    try { err = fn(g); } catch (e) { err = `That action failed: ${(e as Error).message}`; console.error(e); }
     set({ tick: get().tick + 1 });
     if (typeof err === 'string') { get().notify(err, true); return false; }
     if (okText) get().notify(okText);
@@ -39,9 +40,16 @@ export const useStore = create<Store>((set, get) => ({
     set({ busy: true });
     // let the "working" state paint before a potentially heavy tick (endurance races are simulated in full)
     setTimeout(() => {
-      for (let i = 0; i < months && !g.gameOver && !g.decision; i++) advanceMonth(g);
-      set({ tick: get().tick + 1, busy: false });
-      void get().save('autosave');
+      try {
+        for (let i = 0; i < months && !g.gameOver && !g.decision; i++) advanceMonth(g);
+        void get().save('autosave');
+      } catch (e) {
+        // never autosave a half-simulated month; the previous autosave is still intact
+        console.error(e);
+        get().notify(`The simulation hit an error and this month was not saved: ${(e as Error).message}. Load your last save to continue.`, true);
+      } finally {
+        set({ tick: get().tick + 1, busy: false });
+      }
     }, 15);
   },
   decide: (i) => { const g = get().game; if (!g) return; resolveDecision(g, i, g.rng); set({ tick: get().tick + 1 }); },
