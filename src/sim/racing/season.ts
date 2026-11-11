@@ -7,6 +7,7 @@ import { MAKERS, type MsGroup } from '../../data/manufacturers';
 import { chance, gauss, hashStr, makeRng, pick, rnd, rndInt, rndRange, shuffle, type Rng } from '../rng';
 import { clamp, cpi } from '../util';
 import { modProduct } from '../market';
+import { receive } from '../accounts';
 import { news, uid } from '../company';
 import { getRegs, DISC_NAME, type Regs } from './regs';
 import { computeRaceCar, defaultRaceCar, checkLegal, raceEngineSpec } from './racecar';
@@ -304,7 +305,6 @@ export function applyRaceResult(g: GameState, c: Company, div: MotorsportDivisio
     news(g, 'motorsport', `${round.name}: ${wDrv?.name ?? '—'} wins for ${wTeam.name}`, `${div.teamName}: ${mine.map((r) => `Car ${r.carIdx + 1} ${r.status === 'finished' ? 'P' + r.pos : 'DNF (' + r.reason + ')'}`).join(' · ')}`);
   }
   if (wTeam.companyId && !wTeam.isPlayer) { const comp = g.companies.find((x) => x.id === wTeam.companyId); if (comp) { comp.prestige = Math.min(100, comp.prestige + 0.15 * w); comp.sportiness = Math.min(100, comp.sportiness + 0.25 * w); } }
-  c.cash -= 0; // race operations are charged monthly
   for (const t of ch.teams) if (!t.isPlayer) for (const k of ['aero', 'engine', 'chassis', 'reliability'] as (keyof DevLevels)[]) t.dev[k] = Math.min(1, t.dev[k] + (0.012 + 0.03 * t.tier) * (1 - t.dev[k]));
   void regs;
   if (ch.nextRound >= ch.rounds.length) endSeason(g, c, div);
@@ -327,7 +327,7 @@ function endSeason(g: GameState, c: Company, div: MotorsportDivision) {
   const pos = st.teams.findIndex((t) => t.id === div.teamId) + 1;
   const n = st.teams.length;
   const prize = B * 0.5 * Math.pow(1 - (pos - 1) / n, 1.5);
-  c.cash += prize; div.seasonIncome += prize;
+  receive(c, prize); div.seasonIncome += prize;
   if (champD) champD.titles++;
   const w = SERIES_WEIGHT[div.discipline];
   if (pos === 1) c.msGlow += 9 * w; else if (pos <= 3) c.msGlow += 3 * w;

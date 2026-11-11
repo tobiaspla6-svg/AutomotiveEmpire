@@ -5,6 +5,7 @@ import { COUNTRY, REGION_IDS } from '../data/world';
 import { computeVehicle } from './engineering';
 import { clamp, cpi, kf } from './util';
 import { modProduct, type MarketResult } from './market';
+import { closeMonth, depreciate, mergePending } from './accounts';
 
 export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
 export const TECH_AREAS: TechArea[] = ['engine', 'chassis', 'aero', 'electronics', 'manufacturing'];
@@ -26,7 +27,7 @@ export function makeModel(g: GameState, name: string, spec: VehicleSpec, segment
   return {
     id: uid(g, 'm'), name, spec, segment, status: 'design', devMonthsLeft: 0, devMonthsTotal: 0, devCostPaid: 0, devCostTotal: 0,
     frozenTech: { ...tech }, designYear, launchYear: 0, launchMonth: 1, price: 0, inventory: 0, cumulativeUnits: 0, generation: 1, stats,
-    historical: false, volumeWeight: 1, lastSales: zeroRegions(), lastDemand: 0, lastUnitCost: 0, salesHistory: [], lifetimeRevenue: 0, recallRisk: 0,
+    historical: false, volumeWeight: 1, lastSales: zeroRegions(), lastDemand: 0, lastUnitCost: 0, salesHistory: [], lifetimeRevenue: 0, recallRisk: 0, inventoryValue: 0,
   };
 }
 /** Re-evaluate a model against the current year: costs inflate, and scores are relative to rising era norms. */
@@ -78,7 +79,11 @@ export const researchRef = (year: number) => 1.5e6 * cpi(year) * kf([[1950, 0.15
 export const devEngineersNeeded = (g: GameState, c: Company, m: VehicleModel) => Math.max(5, (m.devCostTotal * 0.3) / (Math.max(m.devMonthsTotal, 1) * engineerCost(c, g.year)));
 
 export function emptyLedger(g: GameState): MonthLedger {
-  return { y: g.year, m: g.month, revenue: 0, cogs: 0, factoryFixed: 0, wages: 0, rd: 0, marketing: 0, dev: 0, logistics: 0, motorsport: 0, interest: 0, tax: 0, other: 0, profit: 0, cash: 0, debt: 0, units: 0 };
+  return {
+    y: g.year, m: g.month, revenue: 0, otherIncome: 0, cogs: 0, factoryFixed: 0, wages: 0, rd: 0, marketing: 0, dev: 0, logistics: 0, motorsport: 0, interest: 0, other: 0,
+    oneOff: 0, depreciation: 0, assetGains: 0, tax: 0, profit: 0, production: 0, capex: 0, units: 0, operatingCash: 0, investingCash: 0, financingCash: 0,
+    cashStart: 0, cash: 0, debt: 0, inventoryValue: 0, fixedAssets: 0, equity: 0,
+  };
 }
 
 export function news(g: GameState, kind: GameState['news'][number]['kind'], title: string, body: string, tag?: string) {
@@ -122,7 +127,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       const uc = unitCost(g, m, f, totalCap);
       produced.set(m.id, (produced.get(m.id) ?? 0) + n);
       costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
-      L.cogs += n * uc;
+      L.production += n * uc; // paid now, held in inventory until the car is sold
     }
   }
 
@@ -132,6 +137,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
     if (made > 0) {
       m.lastUnitCost = (costSum.get(m.id) ?? 0) / made;
       m.inventory += made;
+      m.inventoryValue += costSum.get(m.id) ?? 0;
       m.cumulativeUnits += made;
       if (m.status === 'ready') m.status = 'production';
     }
@@ -155,7 +161,12 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         m.launchYear = g.year; m.launchMonth = g.month;
         news(g, 'company', `${c.name} ${m.name} goes on sale`, `First customer deliveries at ${Math.round(m.price).toLocaleString()} USD.`);
       }
+      // cost of sales at the average cost of the stock on hand
+      const cogs = m.inventory > 1e-9 ? m.inventoryValue * Math.min(1, sold / m.inventory) : 0;
+      L.cogs += cogs;
+      m.inventoryValue -= cogs;
       m.inventory -= sold;
+      if (m.inventory < 1e-6) { m.inventory = 0; m.inventoryValue = 0; }
       const rev = sold * m.price * 0.88; // 12 % dealer margin
       L.revenue += rev; L.units += sold; m.lifetimeRevenue += rev;
     }
@@ -206,11 +217,16 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   L.revenue += extra.msIncome;
   c.interestRate = interestRate(g, c);
   L.interest = (c.debt * c.interestRate) / 12 - (c.cash > 0 ? (c.cash * Math.max(0, g.macro.interestBase - 0.02)) / 12 : 0);
-  const pre = L.revenue - L.cogs - L.factoryFixed - L.wages - L.rd - L.marketing - L.dev - L.logistics - L.motorsport - L.interest - L.other;
+  // cash paid or received inside this tick (between-tick postings already moved their cash)
+  const tickCash = L.revenue - L.production - L.factoryFixed - L.wages - L.rd - L.marketing - L.dev - L.logistics - L.motorsport - L.interest - L.other;
+  L.depreciation = depreciate(c);
+  mergePending(c, L);
+  const pre = L.revenue + L.otherIncome + L.assetGains
+    - (L.cogs + L.factoryFixed + L.wages + L.rd + L.marketing + L.dev + L.logistics + L.motorsport + L.interest + L.other + L.oneOff + L.depreciation);
   c.ytdProfit += pre;
   L.tax = pre > 0 && c.ytdProfit > 0 ? Math.min(pre, c.ytdProfit) * 0.25 : 0;
   L.profit = pre - L.tax;
-  c.cash += L.profit;
+  c.cash += tickCash - L.tax;
 
   // ---- brand dynamics
   let wSum = 0, pre2 = 0, rel = 0, perf = 0;
@@ -233,11 +249,11 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   const awTarget = clamp(32 + 55 * (1 - Math.exp(-intensity / 0.03)) + c.prestige / 10 + 0.5 * c.msGlow, 0, 100);
   for (const r of REGION_IDS) c.awareness[r] += ((c.reach[r] > 0 ? awTarget : awTarget * 0.4) - c.awareness[r]) * 0.06;
 
-  // ---- solvency
-  if (c.cash < 0) { c.debt += -c.cash; c.cash = 0; }
+  // ---- solvency: a cash shortfall is drawn on the credit line
+  if (c.cash < 0) { L.financingCash += -c.cash; c.debt += -c.cash; c.cash = 0; }
   const limit = creditLimit(c, g.year);
   if (c.debt - c.cash > limit * 1.25) c.troubleMonths++; else c.troubleMonths = Math.max(0, c.troubleMonths - 1);
-  L.cash = c.cash; L.debt = c.debt;
+  closeMonth(c, L);
   c.ledger.push(L);
   if (c.ledger.length > 180) c.ledger.shift();
   return L;

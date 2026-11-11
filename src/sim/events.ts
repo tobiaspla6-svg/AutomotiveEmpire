@@ -7,6 +7,7 @@
 // early or late, and its magnitude is scaled — a plausible divergence, not a random walk.
 import type { Company, Decision, GameState, Modifier, RegionId } from './types';
 import { chance, pick, rnd, rndInt, rndRange, type Rng } from './rng';
+import { charge, receive } from './accounts';
 import { annualRevenue, engineerCost, news, TECH_AREAS, AREA_NAME } from './company';
 import { REGION_IDS, REGION_NAME } from '../data/world';
 import { cpi } from './util';
@@ -116,7 +117,7 @@ export function fireHistorical(g: GameState, rng: Rng) {
       const target = alt ? (candidates.length ? pick(rng, candidates) : null) : g.companies.find((c) => c.alive && c.dataId === 'vw') ?? null;
       if (target) {
         const fine = Math.max(annualRevenue(target), target.baseVolume * 20000) * 0.08 * sch.scale;
-        target.cash -= fine; target.prestige = Math.max(0, target.prestige - 6); target.reliabilityRep = Math.max(0, target.reliabilityRep - 5);
+        charge(target, fine); target.prestige = Math.max(0, target.prestige - 6); target.reliabilityRep = Math.max(0, target.reliabilityRep - 5);
         news(g, 'market', `${target.name} at the centre of the emissions scandal`, `Fines, recalls and settlements cost the company about $${(fine / 1e9).toFixed(1)} billion and badly damage trust in the brand.`);
       }
     }
@@ -179,12 +180,12 @@ export function rollRandomEvent(g: GameState, p: Company, rng: Rng) {
     add(0.6, () => {
       const f = pick(rng, p.factories);
       const cost = f.capacity * 400 * cpi(g.year);
-      f.disruption = Math.max(f.disruption, 2); p.cash -= cost;
+      f.disruption = Math.max(f.disruption, 2); charge(p, cost);
       news(g, 'company', `Fire at ${f.name}`, `The paint shop is badly damaged. Repairs cost ${money(cost)} and output is cut for two months.`);
     });
     add(0.7, () => {
       const grant = Math.max(1e6 * cpi(g.year), annualRevenue(p) * 0.01);
-      p.cash += grant;
+      receive(p, grant);
       news(g, 'company', 'Regional development grant', `The government of ${p.country} rewards investment in local jobs with a ${money(grant)} grant.`);
     });
   }
@@ -254,18 +255,18 @@ export function resolveDecision(g: GameState, optionIdx: number, rng: Rng) {
   const eff = d.options[optionIdx].effect;
   const cost = Number(d.data?.cost ?? 0);
   if (d.id === 'strike') {
-    if (eff === 'pay') { p.cash -= cost; news(g, 'company', 'Strike averted', 'A settlement is signed and the lines keep running.'); }
+    if (eff === 'pay') { charge(p, cost); news(g, 'company', 'Strike averted', 'A settlement is signed and the lines keep running.'); }
     else if (chance(rng, 0.6)) { const f = p.factories.find((x) => x.id === d.data?.factory); if (f) f.disruption = 2; news(g, 'company', 'Walk-out', 'The workforce strikes. Output at the plant collapses for two months.'); }
     else news(g, 'company', 'The union backs down', 'Without support for a strike, the dispute fades away.');
   } else if (d.id === 'recall') {
-    if (eff === 'recall') { p.cash -= cost; p.reliabilityRep = Math.max(0, p.reliabilityRep - 1); news(g, 'company', `${d.data?.model} recalled`, 'The recall is handled promptly. Owners are reassured.'); }
+    if (eff === 'recall') { charge(p, cost); p.reliabilityRep = Math.max(0, p.reliabilityRep - 1); news(g, 'company', `${d.data?.model} recalled`, 'The recall is handled promptly. Owners are reassured.'); }
     else {
-      p.cash -= cost * 0.25;
-      if (chance(rng, 0.4)) { p.reliabilityRep = Math.max(0, p.reliabilityRep - 8); p.prestige = Math.max(0, p.prestige - 4); p.cash -= cost * 1.5; news(g, 'company', 'Cover-up exposed', `Journalists reveal the hidden ${d.data?.model} defect. A forced recall, fines and a battered reputation follow.`); }
+      charge(p, cost * 0.25);
+      if (chance(rng, 0.4)) { p.reliabilityRep = Math.max(0, p.reliabilityRep - 8); p.prestige = Math.max(0, p.prestige - 4); charge(p, cost * 1.5); news(g, 'company', 'Cover-up exposed', `Journalists reveal the hidden ${d.data?.model} defect. A forced recall, fines and a battered reputation follow.`); }
       else news(g, 'company', 'Quiet fix', 'Cars are repaired at their next service. Nobody notices.');
     }
   } else if (d.id === 'poach') {
-    if (eff === 'pay') { p.cash -= cost; news(g, 'company', 'Team retained', 'Your engineers stay.'); }
+    if (eff === 'pay') { charge(p, cost); news(g, 'company', 'Team retained', 'Your engineers stay.'); }
     else { p.engineers = Math.round(p.engineers * 0.94); const a = pick(rng, TECH_AREAS); p.tech[a] -= 0.3; news(g, 'company', 'Engineers leave', `A design group departs for a rival, taking ${AREA_NAME[a].toLowerCase()} know-how with them.`); }
   }
   g.decision = null;

@@ -6,7 +6,8 @@ import type { Company, Factory, GameState, RegionId, Tech, VehicleModel, Vehicle
 import { MAKERS, makerStart, type MakerDef, type ModelRow } from '../data/manufacturers';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { BODY, CYL, computeVehicle, defaultVehicle } from './engineering';
-import { emptyLedger, industryTech, makeModel, news, refreshStats, uid, unitCost, wage, zeroRegions, INTEREST_BASE } from './company';
+import { emptyLedger, industryTech, makeModel, news, refreshStats, uid, unitCost, wage, zeroRegions, INTEREST_BASE, factoryValue } from './company';
+import { emptyPending, openBooks } from './accounts';
 import { suggestedPrice, type MarketResult } from './market';
 import { clamp, cpi, kf, lerp } from './util';
 import { rnd, type Rng } from './rng';
@@ -163,6 +164,7 @@ export function companyFromMaker(g: GameState, def: MakerDef, isPlayer: boolean)
     rdBudget: { engine: 0, chassis: 0, aero: 0, electronics: 0, manufacturing: 0 }, engineers: 0, marketingBudget: 0, ledger: [],
     motorsport: null, board: null, alive: true, specialization: def.archetype, baseVolume: volume, taxAccrued: 0, ytdProfit: 0,
     msGlow: def.ms.some(([, a, b]) => year >= a && year <= b) ? 8 : 0, autoPrice: true, aiFactor: 1, troubleMonths: 0,
+    books: { otherAssets: 0, pending: emptyPending(), close: { cash: 0, debt: 0, inventoryValue: 0, fixedAssets: 0 } },
   };
   for (const row of def.models) if (row.from <= year && row.to >= year) c.models.push(modelFromRow(g, c, def, row));
   if (!c.models.length) { // gap in the catalogue: keep the most recent model alive
@@ -176,8 +178,9 @@ export function companyFromMaker(g: GameState, def: MakerDef, isPlayer: boolean)
   const auto = kf([[1950, 0.1], [1980, 0.35], [2000, 0.55], [2020, 0.7]], year) * (def.archetype === 'exotic' ? 0.4 : 1);
   plants.forEach((p, i) => c.factories.push({
     id: uid(g, 'f'), name: p.name, country: p.country, region: COUNTRY[p.country].region, capacity: Math.max(10, ((volume / 12) * 1.15 * wts[i]) / wSum),
-    automation: auto, lines: [], expansion: null, builtYear: p.from, historical: true, disruption: 0,
+    automation: auto, lines: [], expansion: null, builtYear: p.from, historical: true, disruption: 0, bookValue: 0,
   }));
+  for (const f of c.factories) f.bookValue = factoryValue(f, year); // [E] plants carried at estimated depreciated value
   allocateLines(c, volume / 12);
   // [E] finances from the estimated "health" curve
   const wS = c.models.reduce((a, m) => a + m.volumeWeight, 0) || 1;
@@ -190,7 +193,8 @@ export function companyFromMaker(g: GameState, def: MakerDef, isPlayer: boolean)
   const rd = (revenue * (def.archetype === 'mass' ? 0.012 : 0.02)) / 12 / 5;
   c.rdBudget = { engine: rd, chassis: rd, aero: rd, electronics: rd, manufacturing: rd };
   c.marketingBudget = (revenue * 0.025) / 12;
-  for (const m of c.models) m.inventory = isPlayer ? ((volume * m.volumeWeight) / wS / 12) * 0.6 : 0;
+  for (const m of c.models) { m.inventory = isPlayer ? ((volume * m.volumeWeight) / wS / 12) * 0.6 : 0; m.inventoryValue = m.inventory * m.lastUnitCost; }
+  openBooks(c);
   return c;
 }
 
@@ -212,10 +216,15 @@ export function runAiMonth(g: GameState, c: Company, mk: MarketResult) {
   }
   L.other = L.revenue * 0.17 + c.baseVolume * 60 * cpi(g.year) / 12; // overheads, R&D, marketing, programmes
   L.interest = (c.debt * (g.macro.interestBase + 0.02)) / 12;
-  const pre = L.revenue - L.cogs - L.other - L.interest;
+  // AI makers build to order (no inventory); between-tick postings (e.g. fines) already moved their cash
+  const pd = c.books.pending;
+  L.oneOff = pd.oneOff + pd.dev + pd.motorsport + pd.writeOff;
+  L.otherIncome = pd.income;
+  c.books.pending = emptyPending();
+  const pre = L.revenue + L.otherIncome - L.cogs - L.other - L.interest - L.oneOff;
   L.tax = pre > 0 ? pre * 0.25 : 0;
   L.profit = pre - L.tax;
-  c.cash += L.profit;
+  c.cash += L.revenue - L.cogs - L.other - L.interest - L.tax;
   if (c.cash > 0 && c.debt > 0) { const pay = Math.min(c.cash * 0.1, c.debt); c.cash -= pay; c.debt -= pay; }
   if (c.cash < 0) { c.debt += -c.cash; c.cash = 0; }
   L.cash = c.cash; L.debt = c.debt;
@@ -262,7 +271,7 @@ export function runAiYear(g: GameState, c: Company, rng: Rng) {
   // new plants open on their historical dates
   for (const p of def.factories) {
     if (p.from === g.year && !c.factories.some((f) => f.name === p.name)) {
-      c.factories.push({ id: uid(g, 'f'), name: p.name, country: p.country, region: COUNTRY[p.country].region, capacity: 10, automation: 0.5, lines: [], expansion: null, builtYear: g.year, historical: true, disruption: 0 });
+      c.factories.push({ id: uid(g, 'f'), name: p.name, country: p.country, region: COUNTRY[p.country].region, capacity: 10, automation: 0.5, lines: [], expansion: null, builtYear: g.year, historical: true, disruption: 0, bookValue: 0 });
     }
   }
   const wts = c.factories.map((f, i) => (i === 0 || f.country === c.country ? 1 : 0.45));

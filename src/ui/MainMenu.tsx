@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../store/game';
-import { importFromFile, localSaves, type SaveMeta } from '../store/saves';
+import { importFromFile, loadSlot, localSaves, type SaveMeta } from '../store/saves';
 import { CarViewer } from '../three/CarViewer';
 import { RaceCar, RoadCar } from '../three/CarModel';
 import { defaultVehicle } from '../sim/engineering';
 import { fmtMoney, MONTHS } from '../sim/util';
-import { SAVE_VERSION } from '../sim/world';
 
 const MODE_LABEL: Record<string, string> = { ceo: 'Historical CEO', founder: 'Company Founder', motorsport: 'Motorsport Director' };
 
@@ -18,10 +17,7 @@ export function MainMenu() {
   const classic = useMemo(() => { const s = defaultVehicle(1966, 'coupe'); s.color = '#a3161b'; s.engine.layout = 'V12'; s.tireWidth = 205; s.wheelDia = 15; s.sport = 0.7; return s; }, []);
   const concept = useMemo(() => { const s = defaultVehicle(2024, 'hatch'); s.color = '#2f6fd6'; s.tireWidth = 225; s.wheelDia = 19; s.engine.layout = 'EV'; return s; }, []);
   const load = async (slot: string) => {
-    const g = await localSaves.load(slot);
-    if (!g) return notify('Save not found.', true);
-    if (g.version !== SAVE_VERSION) return notify('This save was made with an incompatible version.', true);
-    start(g);
+    try { start(await loadSlot(slot)); } catch (err) { notify((err as Error).message, true); }
   };
   return (
     <div className="menu">
