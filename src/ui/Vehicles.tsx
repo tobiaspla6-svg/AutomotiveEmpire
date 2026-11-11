@@ -248,7 +248,7 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
             <StatLine label="Segment reference price" value={fmtMoney(segPrice(seg, g.year))} />
             <StatLine label="Suggested price" value={<b>{fmtMoney(sug)}</b>} />
             <StatLine label="Margin at suggested price" value={<span className={sug * 0.88 - unit < 0 ? 'bad' : 'good'}>{fmtMoney(sug * 0.88 - unit)} / car</span>} />
-            <StatLine label="Development cost" value={fmtMoney(stats.devCost)} title="Reduced when a new generation re-uses the previous platform or engine" />
+            <StatLine label="Development cost" value={fmtMoney(stats.devCost)} title="The full budget is charged month by month as the work progresses. Reduced when a new generation re-uses the previous platform or engine." />
             <StatLine label="Development time" value={`≈ ${stats.devMonths} months with enough engineers`} />
             <StatLine label="Line tooling" value={`${fmtMoney(stats.toolingPerUnitCapacity)} per unit of monthly capacity`} />
             <label className="field"><span className="lab"><span>Model name</span></span><input type="text" value={name} maxLength={32} placeholder="e.g. GT 2000" onChange={(x) => setName(x.target.value)} /></label>

@@ -48,18 +48,22 @@ export function startDevelopment(g: GameState, name: string, spec: VehicleSpec, 
     cost *= k; months = Math.max(8, Math.round(months * (0.45 + 0.55 * k)));
     m.generation = base.generation + 1;
   }
-  m.status = 'development'; m.devCostTotal = cost; m.devMonthsTotal = months; m.devMonthsLeft = months;
-  const upfront = cost * 0.45 * 0.15;
-  const err = pay(c, g, upfront);
-  if (err) return err;
-  m.devCostPaid = upfront;
+  m.status = 'development'; m.devCostTotal = cost; m.devMonthsTotal = months; m.devMonthsLeft = months; m.devCostPaid = 0;
+  // the whole budget is charged month by month through the ledger (see runPlayerMonth); approval only
+  // checks that the company can fund the first stretch of the programme
+  const firstQuarter = (cost / months) * 3;
+  if (firstQuarter > c.cash + Math.max(0, creditLimit(c, g.year) - c.debt)) return `Not enough funds: the first three months of this programme cost $${(firstQuarter / 1e6).toFixed(1)}M.`;
   c.models.push(m);
   news(g, 'company', `Programme approved: ${m.name}`, `Budget $${(cost / 1e6).toFixed(1)}M over about ${months} months${base ? ` (successor to the ${base.name})` : ''}.`);
   return null;
 }
 export function cancelDevelopment(g: GameState, modelId: string) {
   const c = player(g);
-  c.models = c.models.filter((m) => !(m.id === modelId && m.status === 'development'));
+  const m = c.models.find((x) => x.id === modelId && x.status === 'development');
+  if (!m) return;
+  c.models = c.models.filter((x) => x !== m);
+  // money already spent stays in the books as development expense (sunk cost)
+  news(g, 'company', `Programme cancelled: ${m.name}`, `$${(m.devCostPaid / 1e6).toFixed(1)}M of the $${(m.devCostTotal / 1e6).toFixed(1)}M budget had been spent and is written off.`);
 }
 export function setPrice(g: GameState, modelId: string, price: number) { const m = player(g).models.find((x) => x.id === modelId); if (m) m.price = Math.max(0, price); }
 

@@ -168,10 +168,15 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   const need = projects.reduce((a, m) => a + devEngineersNeeded(g, c, m), 0);
   const speed = need > 0 ? clamp(c.engineers / need, 0.25, 1.3) : 1;
   for (const m of projects) {
-    const spend = (m.devCostTotal * 0.55) / m.devMonthsTotal * speed;
+    // The approved budget is spent in proportion to the work done: this month's share of the
+    // remaining work pays the same share of the remaining budget. The final month therefore pays
+    // exactly what is left and the programme always costs exactly devCostTotal, whatever the speed.
+    const progress = Math.min(speed, m.devMonthsLeft);
+    const share = m.devMonthsLeft > 0 ? progress / m.devMonthsLeft : 1;
+    const spend = Math.max(0, m.devCostTotal - m.devCostPaid) * share;
     m.devCostPaid += spend; L.dev += spend;
-    m.devMonthsLeft -= speed;
-    if (m.devMonthsLeft <= 0) {
+    m.devMonthsLeft -= progress;
+    if (m.devMonthsLeft <= 1e-9) {
       m.status = 'ready'; m.devMonthsLeft = 0;
       refreshStats(g, m);
       news(g, 'company', `${m.name} is ready for production`, 'Engineering sign-off complete. Assign it to a factory line and set a price to start selling.', 'ready');
