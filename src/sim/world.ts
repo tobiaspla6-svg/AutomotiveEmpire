@@ -18,8 +18,9 @@ export const player = (g: GameState): Company => g.companies.find((c) => c.id ==
 export const dateLabel = (g: GameState) => `${MONTHS[g.month - 1]} ${g.year}`;
 export const SAVE_VERSION = 1;
 
-function baseGame(mode: GameMode, year: number, difficulty: Difficulty, historyMode: HistoryMode, name: string, playerMaker: string | null): GameState {
-  const seed = (Date.now() ^ hashStr(name + year + mode)) >>> 0;
+function baseGame(mode: GameMode, year: number, difficulty: Difficulty, historyMode: HistoryMode, name: string, playerMaker: string | null, fixedSeed?: number): GameState {
+  // a fixed seed makes a new game fully reproducible (used by the automated tests)
+  const seed = (fixedSeed ?? (Date.now() ^ hashStr(name + year + mode))) >>> 0;
   const g: GameState = {
     version: SAVE_VERSION, id: `g${seed.toString(36)}`, name, mode, difficulty, historyMode, year, month: 1, startYear: year, rng: makeRng(seed), playerId: '', companies: [],
     macro: { fuelPrice: 1, materialCost: 1, interestBase: kf(INTEREST_BASE, year), modifiers: [], cycle: 0 }, otherShare: {}, news: [], decision: null,
@@ -51,10 +52,10 @@ function boardObjectives(g: GameState, c: Company, def: MakerDef): Objective[] {
   return out;
 }
 
-export interface CeoSetup { makerId: string; year: number; difficulty: Difficulty; historyMode: HistoryMode }
+export interface CeoSetup { makerId: string; year: number; difficulty: Difficulty; historyMode: HistoryMode; seed?: number }
 export function newCeoGame(o: CeoSetup): GameState {
   const def = MAKER[o.makerId];
-  const g = baseGame('ceo', o.year, o.difficulty, o.historyMode, `${def.name} ${o.year}`, o.makerId);
+  const g = baseGame('ceo', o.year, o.difficulty, o.historyMode, `${def.name} ${o.year}`, o.makerId, o.seed);
   const c = g.companies.find((x) => x.id === o.makerId)!;
   g.playerId = c.id;
   const k = o.difficulty === 'easy' ? 1.4 : o.difficulty === 'hard' ? 0.7 : 1;
@@ -88,6 +89,7 @@ export const capitalOptions = (year: number) => [80e6, 250e6, 800e6, 2500e6].map
 export interface FounderSetup {
   name: string; country: string; year: number; capital: number; specialization: string; factory: number; engineers: number; research: number; workforce: number;
   color: string; difficulty: Difficulty; historyMode: HistoryMode;
+  seed?: number;
 }
 export function founderCosts(o: FounderSetup) {
   const f = FACTORY_SIZES[o.factory];
@@ -98,7 +100,7 @@ export function founderCosts(o: FounderSetup) {
   return { factory, eng, research, total: factory + eng + research, auto };
 }
 export function newFounderGame(o: FounderSetup): GameState {
-  const g = baseGame('founder', o.year, o.difficulty, o.historyMode, `${o.name} ${o.year}`, null);
+  const g = baseGame('founder', o.year, o.difficulty, o.historyMode, `${o.name} ${o.year}`, null, o.seed);
   const region: RegionId = COUNTRY[o.country].region;
   const costs = founderCosts(o);
   const tech = industryTech(o.year, RESEARCH_LEVELS[o.research].lead);
@@ -127,11 +129,12 @@ export function newFounderGame(o: FounderSetup): GameState {
 export interface MotorsportSetup {
   makerId: string | null; teamName: string; discipline: Discipline; year: number; budget: number; facilities: number; staff: number; target: number;
   color: string; color2: string; difficulty: Difficulty; historyMode: HistoryMode;
+  seed?: number;
 }
 export const MS_BUDGETS = [{ name: 'Privateer', k: 0.55 }, { name: 'Midfield', k: 0.9 }, { name: 'Front-runner', k: 1.35 }];
 export function newMotorsportGame(o: MotorsportSetup): GameState {
   const def = o.makerId ? MAKER[o.makerId] : null;
-  const g = baseGame('motorsport', o.year, o.difficulty, o.historyMode, `${o.teamName} ${o.year}`, null);
+  const g = baseGame('motorsport', o.year, o.difficulty, o.historyMode, `${o.teamName} ${o.year}`, null, o.seed);
   const regs = getRegs(o.discipline, o.year);
   const B = budgetRef(regs, o.year);
   const k = MS_BUDGETS[o.budget].k;

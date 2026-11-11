@@ -3,13 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Automotive Empire — automotive CEO, engineering and motorsport simulation (browser, static, open-source stack)",
+  "description": "Automotive Empire \u2014 automotive CEO, engineering and motorsport simulation (browser, static, open-source stack)",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "sim:test": "tsx scripts/simcheck.ts"
+    "sim:test": "tsx scripts/simcheck.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ci": "npm run typecheck && npm test && vite build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -25,8 +28,10 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "fake-indexeddb": "^6.2.8",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.7"
+    "vite": "^8.3.7",
+    "vitest": "^5.1.0"
   }
 }
