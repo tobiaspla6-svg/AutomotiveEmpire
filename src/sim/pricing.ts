@@ -17,6 +17,7 @@ import { positionIn, strategyOf, type Strategy } from '../data/strategy';
 import { unitCost } from './company';
 import { sharedVolume } from './families';
 import { contractIndex } from './supply';
+import { regionalFactor, regionalValue } from './regional';
 import { annualSupply, appeal, computeMarket, fuelPrice, modelWeights, priceResponse, segVolume, tariff, valuePrice, type MarketResult } from './market';
 
 /** Share of the list price the manufacturer keeps after the dealer's margin. */
@@ -64,7 +65,8 @@ export function demandCurve(g: GameState, c: Company, m: VehicleModel, monthlySu
     for (const e of cell.entries) { sumDq += e.D * e.q; if (e.model.id === m.id) own += e.D * e.q; if (!e.company.isPlayer) { aiDq += e.D * e.q; aiD += e.D; } }
     const qBar = aiD > 0 ? aiDq / aiD : 1;
     const dOther = (g.otherShare[key] ?? 0.3) * segVolume(r, m.segment, g.year);
-    const t = tariff(g, c, m, r);
+    // price seen by buyers here per dollar of world price: regional price, tariff, and what the car is worth here
+    const t = (regionalFactor(g, m, r) * (1 + tariff(g, c, m, r))) / regionalValue(g, r) - 1;
     // appeal at the value price with the price term divided out again: everything but the price
     const base = appeal(g, c, probe, r, fuel, value) / priceResponse(m.segment, 1 + t);
     rows.push({ vol: cell.volume, D, base, rest: sumDq - own + dOther * qBar, t });

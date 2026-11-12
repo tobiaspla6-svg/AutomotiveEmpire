@@ -11,6 +11,7 @@ import { categoryShares, contractIndex, effectiveCapacity, inspectionHours, part
 import { CATEGORIES, CATEGORY_NAME } from '../data/suppliers';
 import { rnd } from './rng';
 import { cancelRate, hasOrderBook, personalCost, personalUplift } from './orders';
+import { regionalFactor } from './regional';
 import { aggregateTrims, faceliftCost, hasTrims, productionMix, refreshTrims, trimKey, trimView, trimsOf } from './trims';
 
 export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
@@ -341,7 +342,8 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         u.inventory -= sold;
         if (u.inventory < 1e-6) { u.inventory = 0; u.inventoryValue = 0; }
         const uplift = personalUplift((trim ? trim.personal : m.personal) ?? 0, c.prestige);
-        const rev = sold * u.price * (1 + uplift) * 0.88; // 12 % dealer margin; personalisation adds to the price paid
+        // revenue per region at the dollar value of the regional price; 12 % dealer margin; personalisation on top
+        const rev = REGION_IDS.reduce((a, r) => a + u.lastSales[r] * u.price * regionalFactor(g, m, r), 0) * (1 + uplift) * 0.88;
         L.revenue += rev; L.units += sold;
         soldAll += sold; revAll += rev;
         if (trim) { trim.revenue += rev; trim.cogs += cogs; }

@@ -12,6 +12,7 @@ import { annualSupply, modelWeights, suggestedPrice, valuePrice, type MarketResu
 import { aiTargetPrice, companyStrategy, DEALER_NET } from './pricing';
 import { strategyOf } from '../data/strategy';
 import { sharedVolume } from './families';
+import { regionalPrice } from './regional';
 import { clamp, cpi, kf, lerp } from './util';
 import { rnd, type Rng } from './rng';
 
@@ -318,12 +319,13 @@ export function respondToMarket(g: GameState, c: Company, mk: MarketResult) {
     if (!(recent < before * 0.9)) continue;
     // demand-weighted price/value ratio of the rivals this model meets
     let rw = 0, rv = 0;
-    for (const cell of Object.values(mk.cells)) {
+    for (const [key, cell] of Object.entries(mk.cells)) {
       if (!cell.entries.some((e) => e.model === m)) continue;
+      const region = key.split(':')[0] as RegionId;
       for (const e of cell.entries) {
         if (e.company === c || e.model.segment !== m.segment || !(e.model.price > 0)) continue;
         const v = valuePrice(e.model, e.company, g.year, annualSupply(e.company, e.model));
-        rw += e.demand; rv += e.demand * (e.model.price / v);
+        rw += e.demand; rv += e.demand * (regionalPrice(g, e.model, region) / v); // rivals' price as charged in that region
       }
     }
     if (rw <= 0) continue;

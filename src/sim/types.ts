@@ -205,6 +205,8 @@ export interface VehicleModel {
   facelift?: { monthsLeft: number; months: number; cost: number; paid: number } | null; facelifts?: number;
   /** exclusivity (Phase 3): cars a year the company is willing to build, and the order book that forms above it */
   annualCap?: number; orders?: number; allocation?: 'loyal' | 'open'; personal?: number;
+  /** regional prices (Phase 3): multiple of the world price, fixed in local currency at exchange index `fx` */
+  regional?: Partial<Record<RegionId, { ratio: number; fx: number }>>;
   /** shared engineering (Phase 3); absent on AI cars and on cars from older saves that were not migrated */
   engineFamilyId?: string; engineVariantId?: string; platformId?: string;
   id: string;
@@ -457,7 +459,9 @@ export interface GameState {
   rng: { s: number };
   playerId: string;
   companies: Company[];
-  macro: { fuelPrice: number; materialCost: number; interestBase: number; modifiers: Modifier[]; cycle: number };
+  macro: { fuelPrice: number; materialCost: number; interestBase: number; modifiers: Modifier[]; cycle: number;
+    /** Phase 3: exchange-rate index per region (local units per dollar, 1.0 = start); absent = 1 */
+    fx?: Partial<Record<RegionId, number>> };
   otherShare: Record<string, number>; // `${region}:${segment}` -> D_other (units/yr at start-year scale, as share of segment volume)
   news: NewsItem[];
   decision: Decision | null;

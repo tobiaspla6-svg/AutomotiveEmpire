@@ -18,6 +18,8 @@ import type { Company, GameState, RegionId, SegmentId, VehicleModel } from './ty
 import { EV_ACCEPTANCE, FUEL_BASE, REGION_IDS, REGION_VOLUME, SEG, SEGMENTS, SEGMENT_IDS, TARIFF, segPrice } from '../data/world';
 import { clamp, cpi, kf } from './util';
 import { dealerMix, hasTrims, trimKey, trimView, trimsOf } from './trims';
+import { regionalPrice, regionalValue, regionalFactor } from './regional';
+export { regionalFactor };
 
 const shareCache = new Map<string, number>();
 /** Annual unit volume of a segment in a region. */
@@ -178,8 +180,9 @@ export function appeal(g: GameState, c: Company, m: VehicleModel, region: Region
   const s = m.stats.scores;
   const u = utilityOf(m, m.segment) + (fuel - 1) * 0.25 * ((s.economy - 50) / 100);
   let q = Math.exp(4 * (u - 0.5)) * (def.bodyFit[m.spec.body] ?? 0.3);
-  const eff = m.price * (1 + tariff(g, c, m, region));
-  q *= priceResponse(m.segment, eff / (value ?? valuePrice(m, c, g.year, annualSupply(c, m))));
+  // the price buyers in this region see (regional price, tariff) against what the car is worth to them here
+  const eff = regionalPrice(g, m, region) * (1 + tariff(g, c, m, region));
+  q *= priceResponse(m.segment, eff / ((value ?? valuePrice(m, c, g.year, annualSupply(c, m))) * regionalValue(g, region)));
   const wP = def.weights.prestige ?? 0, wR = def.weights.reliability ?? 0;
   q *= Math.pow(0.55 + (0.9 * c.prestige) / 100, wP * 3 + 0.3);
   q *= Math.pow(0.7 + (0.6 * c.reliabilityRep) / 100, wR * 3 + 0.3);

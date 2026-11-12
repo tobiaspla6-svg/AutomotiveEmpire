@@ -8,6 +8,7 @@ import { priceGuide } from './pricing';
 import { CYL, defaultVehicle } from './engineering';
 import { aggregateTrims, faceliftCost, FACELIFT_AFTER, makeTrim, refreshTrim, trimView } from './trims';
 import { annualSupply } from './market';
+import { fxNow } from './regional';
 import { emptySupply, inHouseCost, quote, STAGE_WEIGHT, supplierCapacity } from './supply';
 import { CATEGORY_NAME, IN_HOUSE, SUPPLIER_BY_ID } from '../data/suppliers';
 import {
@@ -158,6 +159,21 @@ export function removeTrim(g: GameState, modelId: string, trimId: string): strin
     refreshStats(g, m, c);
   }
   aggregateTrims(m);
+  return null;
+}
+/**
+ * Set a model's price in one region (in dollars at today's exchange rate; it is then fixed in local currency, so its
+ * dollar value moves with the currency). null returns the region to the world price. Trims move in proportion.
+ */
+export function setRegionalPrice(g: GameState, modelId: string, region: RegionId, usd: number | null): string | null {
+  const m = player(g).models.find((x) => x.id === modelId);
+  if (!m) return 'Unknown model.';
+  if (!REGION_IDS.includes(region)) return 'Unknown region.';
+  if (usd === null) { if (m.regional) delete m.regional[region]; return null; }
+  if (!finite(usd) || usd < 1) return 'Enter a price above zero.';
+  if (!(m.price > 0)) return 'Set the world price first.';
+  m.regional ??= {};
+  m.regional[region] = { ratio: usd / m.price, fx: fxNow(g, region) };
   return null;
 }
 /** Exclusivity strategy: build at most `cap` cars of this model a year (null removes the cap). Demand above it waits in the order book. */
