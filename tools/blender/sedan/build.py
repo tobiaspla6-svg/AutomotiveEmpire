@@ -1,7 +1,7 @@
 """Build the Automotive Empire reference sedan in Blender and export it for the game.
 
 Run (Blender 4.5 LTS, no GPU needed):
-    blender -b --factory-startup --python tools/blender/sedan/build.py -- [--renders] [--no-export] [--out DIR]
+    blender -b --factory-startup --python tools/blender/sedan/build.py -- [--renders] [--no-export] [--no-ao] [--references=DIR]
 
 Outputs (default):
     public/assets/vehicles/sedan-ref/sedan.lod0.glb, sedan.lod1.glb, wheels.glb
@@ -46,8 +46,9 @@ def build_body(mats):
     G, par, st = S.body_grid()
     Uc, Vc, _ = G.shape
     uv = np.zeros((Uc, Vc, 2))
-    uv[..., 0] = np.linspace(0, 1, Uc)[:, None]
-    uv[..., 1] = np.linspace(0, 1, Vc)[None, :]
+    # half-texel inset: the grid's edges (the mirror plane) map to texel centres, so filtering never reads unused texels
+    uv[..., 0] = ((0.5 + np.linspace(0, 1, Uc) * (SM.TW - 1)) / SM.TW)[:, None]
+    uv[..., 1] = ((0.5 + np.linspace(0, 1, Vc) * (SM.TH - 1)) / SM.TH)[None, :]
     floor_rows = sum(S.SPAN_COUNTS[:2])
     fm = np.full((Uc - 1, Vc - 1), "paint_body", dtype=object)
     fm[:, :floor_rows] = "underbody"
@@ -60,9 +61,33 @@ def build_body(mats):
     U.link(ob)
     U.mirror_merge(ob)
     U.recalc_normals(ob)
+    fair_tops(ob)
     log("body skin", len(ob.data.polygons), "faces")
     bake_seams(G, mats)
     return ob, par
+
+
+def fair_tops(ob, iterations=24):
+    """Height-only Laplacian fairing of the hood and trunk-lid tops: removes the slight undulation the loft leaves
+    between the fender crest and the centre line (clear coat makes such ripples obvious). Outlines, seams and UVs
+    are unchanged; only z moves, by at most a few millimetres."""
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bm.normal_update()
+    sel = []
+    for v in bm.verts:
+        x, y, z = v.co
+        top = v.normal.z > 0.55 and abs(y) < 0.80 and z > 0.7
+        if top and (x > D.X_COWL + 0.03 or x < D.X_DECK - 0.03) and not v.is_boundary:
+            sel.append(v)
+    z0 = {v: v.co.z for v in sel}
+    for _ in range(iterations):
+        bmesh.ops.smooth_vert(bm, verts=sel, factor=0.5, use_axis_x=False, use_axis_y=False, use_axis_z=True)
+    moved = max((abs(v.co.z - z0[v]) for v in sel), default=0.0)
+    bm.to_mesh(ob.data)
+    bm.free()
+    log("faired %d top vertices, max move %.1f mm" % (len(sel), moved * 1000))
 
 
 def bake_seams(G, mats):
@@ -104,7 +129,7 @@ def open_cabin(body, par):
         c = f.calc_center_median()
         if not (D.X_DECK < c.x < D.X_COWL):
             return False
-        v = sum(l[uv].uv.y for l in f.loops) / len(f.loops)
+        v = (sum(l[uv].uv.y for l in f.loops) / len(f.loops) * SM.TH - 0.5) / (SM.TH - 1)
         return v > v_belt + 1e-4
 
     U.delete_faces(body, pred)
@@ -151,6 +176,83 @@ def build_glasshouse(mats):
     glass = U.separate_by_material(ob, {"glass"}, "Glass")
     log("glasshouse", len(ob.data.polygons), "glass", len(glass.data.polygons))
     return ob, glass
+
+
+REF_VIEWS = {  # file stem -> (location, rotation, size) of an image empty in the scene
+    "front": ((3.2, 0, 0.75), (math.radians(90), 0, math.radians(90)), 2.2),
+    "side": ((0, -1.6, 0.75), (math.radians(90), 0, 0), 5.2),
+    "rear": ((-3.3, 0, 0.75), (math.radians(90), 0, math.radians(-90)), 2.2),
+    "front34": ((3.0, -3.0, 1.2), (math.radians(90), 0, math.radians(45)), 3.0),
+    "interior": ((0, 3.2, 1.2), (math.radians(90), 0, math.radians(180)), 2.5),
+}
+
+
+def add_references(ref_dir):
+    """Optional: load reference images (front/side/rear/front34/interior .png|.jpg) as image empties in the .blend,
+    aligned with the model's axes, to guide manual modelling. They are never exported."""
+    if not ref_dir or not os.path.isdir(ref_dir):
+        return 0
+    n = 0
+    coll = U.collection("References")
+    for stem, (loc, rot, size) in REF_VIEWS.items():
+        for ext in (".png", ".jpg", ".jpeg", ".webp"):
+            f = os.path.join(ref_dir, stem + ext)
+            if os.path.exists(f):
+                e = bpy.data.objects.new("ref_" + stem, None)
+                e.empty_display_type = "IMAGE"
+                e.data = bpy.data.images.load(f)
+                e.empty_display_size = size
+                e.location, e.rotation_euler = loc, rot
+                e.hide_render = True
+                coll.objects.link(e)
+                n += 1
+                break
+    log("reference images", n)
+    return n
+
+
+def bake_ao(body, size=(2048, 1024), samples=48):
+    """Bake ambient occlusion of the body (with the glasshouse, details, interior and wheels as occluders) and
+    multiply it into the panel-gap mask, so the asset carries its own contact shadows on every renderer."""
+    t = time.time()
+    sc = bpy.context.scene
+    sc.render.engine = "CYCLES"
+    sc.cycles.device = "CPU"
+    sc.cycles.samples = samples
+    img = bpy.data.images.new("body_ao", size[0], size[1], alpha=False, float_buffer=True)
+    nodes = []
+    for m in body.data.materials:
+        if m is None:
+            continue
+        n = m.node_tree.nodes.new("ShaderNodeTexImage")
+        n.image = img
+        m.node_tree.nodes.active = n
+        nodes.append((m, n))
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    sc.render.bake.margin = 6
+    sc.world.light_settings.distance = 0.6 if sc.world else 0
+    bpy.ops.object.bake(type="AO", margin=6, use_clear=True)
+    for m, n in nodes:
+        m.node_tree.nodes.remove(n)
+    ao = np.array(img.pixels[:], np.float32).reshape(size[1], size[0], 4)[..., 0]
+    # upsample to the mask resolution (bilinear) and fold into the mask
+    mimg = bpy.data.images["body_seams"]
+    H, Wd = mimg.size[1], mimg.size[0]
+    ys = np.linspace(0, size[1] - 1, H)
+    xs = np.linspace(0, size[0] - 1, Wd)
+    y0 = np.floor(ys).astype(int); y1 = np.minimum(y0 + 1, size[1] - 1); fy = (ys - y0)[:, None]
+    x0 = np.floor(xs).astype(int); x1 = np.minimum(x0 + 1, size[0] - 1); fx = (xs - x0)[None, :]
+    a = ao[y0][:, x0] * (1 - fx) + ao[y0][:, x1] * fx
+    b = ao[y1][:, x0] * (1 - fx) + ao[y1][:, x1] * fx
+    up = a * (1 - fy) + b * fy
+    occl = 0.30 + 0.70 * np.clip(up, 0, 1) ** 1.2
+    px = np.array(mimg.pixels[:], np.float32).reshape(H, Wd, 4)
+    px[..., :3] *= occl[..., None]
+    mimg.pixels.foreach_set(px.reshape(-1))
+    mimg.save()
+    log("ao baked %.1fs" % (time.time() - t))
 
 
 def build_wheels(mats):
@@ -234,6 +336,10 @@ def main():
     sets = build_wheels(mats)
     mount_wheels(sets)
     log("geometry done in %.1fs" % (time.time() - t0))
+    if "--no-ao" not in ARGS and STAGE not in ("preview", "detail"):
+        if bpy.context.scene.world is None:
+            bpy.context.scene.world = bpy.data.worlds.new("BakeWorld")
+        bake_ao(body)
     # the default look for renders: ICE grille, dual exhausts, no aero kit
     shown = {"body", "grille_ice", "exhaust_dual", "interior"}
     for k, objs in cats.items():
@@ -247,6 +353,7 @@ def main():
             studio.render(cam, v, os.path.join(OUT_SRC, "renders", f"{STAGE}-{v}.png"), target=(0.6, 0.9, 1.0) if v == "detail_mirror" else ((0.0, 0.0, 0.85) if v == "interior" else (0, 0, 0.68)))
             log("render", v, "%.1fs" % (time.time() - t0))
     os.makedirs(OUT_SRC, exist_ok=True)
+    add_references(next((a.split("=", 1)[1] for a in ARGS if a.startswith("--references=")), os.path.join(OUT_SRC, "references")))
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_SRC, "sedan.blend"), compress=True)
     if EXPORT and STAGE not in ("preview", "detail"):
         import export as E

@@ -54,7 +54,7 @@ def _locate(G, N, proj, facing, pts2):
     """(u, v) grid coordinates of 2D points on the surface region facing the given way."""
     a, b = AX[proj]
     if facing == "side":
-        mask = N[..., 1] > 0.35
+        mask = (N[..., 1] > 0.35) & (G[..., 1] > 0.45)   # the outer flank only (never near the centre line)
     elif facing == "top":
         mask = N[..., 2] > 0.3
     else:

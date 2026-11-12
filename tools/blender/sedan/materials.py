@@ -82,6 +82,7 @@ def attach_paint_maps(mat, color_img, normal_img):
     b = nt.nodes["Principled BSDF"]
     tex = nt.nodes.new("ShaderNodeTexImage")
     tex.image = color_img
+    tex.extension = "EXTEND"
     tex.location = (-700, 300)
     mix = nt.nodes.new("ShaderNodeMix")
     mix.data_type = "RGBA"
@@ -93,6 +94,7 @@ def attach_paint_maps(mat, color_img, normal_img):
     if normal_img is not None:
         nt2 = nt.nodes.new("ShaderNodeTexImage")
         nt2.image = normal_img
+        nt2.extension = "EXTEND"
         normal_img.colorspace_settings.name = "Non-Color"
         nm = nt.nodes.new("ShaderNodeNormalMap")
         nt2.location = (-700, -100)

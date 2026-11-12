@@ -56,7 +56,7 @@ def _bevel(ob, width=0.0015, segments=2, angle=35):
     U.apply_modifiers(ob)
 
 
-def _window_outline(t0, t1, r_in, r_out, half_w, twist=0.0, n=14, corner=0.35):
+def _window_outline(t0, t1, r_in, r_out, half_w, twist=0.0, n=9, corner=0.35):
     """Opening between two spokes centred at angles t0 < t1 (radians), as (x, z) points.
     half_w(r): half width of a spoke at radius r. twist: extra angle at r_out (curved spokes)."""
     def ang(r, base, side):
@@ -71,15 +71,15 @@ def _window_outline(t0, t1, r_in, r_out, half_w, twist=0.0, n=14, corner=0.35):
     a_in0, a_in1 = right[-1][1], left[0][1]
     for r, a in left:
         pts.append((r, a))
-    for a in np.linspace(a_out0, a_out1, 10)[1:-1]:
+    for a in np.linspace(a_out0, a_out1, 7)[1:-1]:
         pts.append((r_out, a))
     for r, a in right:
         pts.append((r, a))
-    for a in np.linspace(a_in0, a_in1, 6)[1:-1]:
+    for a in np.linspace(a_in0, a_in1, 4)[1:-1]:
         pts.append((r_in, a))
     xy = [(r * math.cos(a), r * math.sin(a)) for r, a in pts]
     # round the corners: Chaikin smoothing on the closed polygon
-    for _ in range(3):
+    for _ in range(2):
         P = np.array(xy)
         Q = []
         for i in range(len(P)):
@@ -97,7 +97,7 @@ def rim(name, mats, design):
         (RIM_R + 0.010, FACE_Y + 0.016), (RIM_R + 0.0185, FACE_Y + 0.010), (RIM_R + 0.016, FACE_Y + 0.003),
         (RIM_R + 0.004, FACE_Y - 0.004), (RIM_R - 0.010, FACE_Y - 0.012), (RIM_R - 0.016, 0.03),
         (RIM_R - 0.03, 0.0), (RIM_R - 0.032, -0.06), (RIM_R - 0.012, -0.095), (RIM_R + 0.004, -0.108),
-    ], steps=128, mat=mats["rim_alloy"])
+    ], steps=72, mat=mats["rim_alloy"])
     m = barrel.modifiers.new("Solid", "SOLIDIFY")
     m.thickness = 0.006
     m.offset = -1
@@ -108,7 +108,7 @@ def rim(name, mats, design):
     front = [(0.0, hub_y + 0.012), (0.03, hub_y + 0.012), (0.05, hub_y + 0.006), (0.075, hub_y + 0.004),
              (0.11, hub_y + 0.010), (0.15, hub_y + 0.022), (0.19, FACE_Y - 0.004), (face_r, FACE_Y + 0.002)]
     back = [(face_r, FACE_Y - 0.03), (0.17, hub_y - 0.002), (0.11, hub_y - 0.016), (0.06, hub_y - 0.024), (0.0, hub_y - 0.024)]
-    disc = lathe(name, front + back, steps=160, mat=mats["rim_alloy"], close=True)
+    disc = lathe(name, front + back, steps=96, mat=mats["rim_alloy"], close=True)
     U.recalc_normals(disc)
     spec = {
         "sport5": dict(n=5, r_in=0.078, r_out=face_r - 0.016, w=lambda r: 0.020 + 0.028 * (r - 0.078) / 0.12, twist=0.0),
