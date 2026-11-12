@@ -19,6 +19,7 @@ import { equity, fixedAssets, inventoryValue } from '../sim/accounts';
 import { BarList, Kpi, LineChart, Meter, Modal, Money, PageHead, PALETTE, Select, Slider, StatLine, Tag } from './common';
 import { MAKER } from '../data/manufacturers';
 import { companyStrategy } from '../sim/pricing';
+import { ImpactPreview } from './Impact';
 import { RESTRUCTURE, restructuringSaving } from '../sim/company';
 import { startRestructuring } from '../sim/actions';
 
@@ -111,6 +112,10 @@ export function FactoriesView() {
                 <button className="btn sm danger" onClick={() => ask(`Sell ${f.name}?`, () => { act((gg) => sellFactory(gg, f.id)); })}>Sell</button>
               </div>
             </div>
+              {f.capacity > 0 && !f.expansion && <details className="small"><summary className="muted">Impact of expanding or automating (estimates)</summary>
+                <div className="grid g2"><div><b className="small">Expand +50%</b><ImpactPreview deps={[f.id, f.capacity, 'x']} horizon={18} run={(gg) => expandFactory(gg, f.id, Math.round(f.capacity * 0.5))} /></div>
+                  {f.automation < mAuto - 0.01 && <div><b className="small">Automate +15%</b><ImpactPreview deps={[f.id, f.automation, 'a']} horizon={12} run={(gg) => upgradeAutomation(gg, f.id, Math.min(mAuto, f.automation + 0.15))} /></div>}</div>
+              </details>}
             <div className="grid g4">
               <Kpi label="Capacity" value={`${fmtNum(f.capacity)} / mo`} detail={f.expansion ? `+${fmtNum(f.expansion.add)} in ${f.expansion.monthsLeft} months` : undefined} />
               <Kpi label="Allocated" value={`${Math.round(used * 100)}%`} detail={<Meter value={used * 100} />} />
@@ -147,6 +152,7 @@ export function FactoriesView() {
           <Slider label="Automation" value={Math.min(nf.automation, mAuto)} min={0} max={mAuto} step={0.05} onChange={(v) => setNf({ ...nf, automation: v })} fmt={(v) => `${Math.round(v * 100)}%`} hint="Automation cuts labour hours per car but raises investment and fixed costs." />
           <StatLine label="Investment" value={<b>{fmtMoney(factoryBuildCost(nf.capacity, Math.min(nf.automation, mAuto), g.year))}</b>} />
           <StatLine label="Construction time" value="15 months" />
+          <ImpactPreview deps={[nf.country, nf.capacity, nf.automation]} horizon={18} run={(gg) => buildFactory(gg, nf.name || 'New plant', nf.country, nf.capacity, Math.min(nf.automation, mAuto))} />
           <div className="row end"><button className="btn" onClick={() => setBuild(false)}>Cancel</button><button className="btn primary" onClick={() => { if (act((gg) => buildFactory(gg, nf.name, nf.country, nf.capacity, Math.min(nf.automation, mAuto)), 'Construction started.')) setBuild(false); }}>Build</button></div>
         </Modal>
       )}
@@ -205,6 +211,7 @@ export function MarketView() {
                     <button className="btn sm" title={`≈ +${fmtNum(a / dealerCostPerUnit(g, p, r.id as RegionId))} cars / year of reach`} onClick={() => act((gg) => investDealers(gg, r.id as RegionId, a), 'Dealer network expanded.')}>Invest</button></div></td></tr>); })}
             </tbody></table>
             <Slider label="Marketing budget per month" value={p.marketingBudget} min={0} max={Math.max(2e6, annualRevenue(p) * 0.08 / 12, p.marketingBudget)} step={Math.max(1e4, Math.round(annualRevenue(p) * 0.0005 / 12 / 1e4) * 1e4)} onChange={(v) => act((gg) => setMarketing(gg, v))} fmt={(v) => `${fmtMoney(v)} (${annualRevenue(p) ? ((v * 12 / annualRevenue(p)) * 100).toFixed(1) : '0'}% of revenue)`} />
+            <ImpactPreview deps={[amount]} run={(gg) => { for (const r of REGIONS) { const v = amount[r.id]; if (v) { const e = investDealers(gg, r.id as RegionId, v); if (e) return e; } } return Object.values(amount).some((v) => v) ? null : 'Enter an amount for at least one region first.'; }} />
             <p className="tiny muted">Reach is how many cars a year your dealers can move at average appeal. Awareness drifts toward a level set by marketing spend relative to revenue, prestige and racing success.</p>
           </div>
           <div className="panel col"><h3>Manufacturers</h3>
@@ -250,6 +257,7 @@ export function ResearchView() {
           <Slider label="Engineers" value={eng} min={0} max={Math.max(400, p.engineers * 2)} step={p.engineers > 2000 ? 50 : 5} onChange={setEng} fmt={(v) => `${fmtNum(v)} (${fmtMoney(v * engineerCost(p, g.year))} / month)`} />
           <div className="row between"><span className="small dim">{delta === 0 ? 'No change' : delta > 0 ? `Hire ${delta}: recruitment costs ${fmtMoney(delta * engineerCost(p, g.year) * 2)}` : `Lay off ${-delta}: severance costs ${fmtMoney(-delta * engineerCost(p, g.year) * 3)}`}</span>
             <button className="btn sm primary" disabled={delta === 0} onClick={() => act((gg) => setEngineers(gg, eng), 'Staffing changed.')}>Apply</button></div>
+          {delta !== 0 && <ImpactPreview deps={[eng]} horizon={12} run={(gg) => setEngineers(gg, eng)} />}
           <p className="small muted">Vehicle programmes share this team. Understaffed programmes run slower (down to a quarter speed); a surplus speeds them up by at most 30%.</p>
           {p.motorsport && <p className="small good">Your racing programme transfers technology to powertrain, aerodynamics and chassis research every month.</p>}
         </div>
@@ -311,6 +319,7 @@ export function FinanceView() {
             <div className="row wrap"><input type="number" value={loan} min={1} style={{ width: 110 }} aria-label="Loan amount in millions" onChange={(e) => setLoan(Number(e.target.value))} /><span className="muted">million</span>
               <button className="btn" onClick={() => act((gg) => takeLoan(gg, loan * 1e6), 'Loan drawn.')}>Borrow</button><button className="btn" onClick={() => act((gg) => repayLoan(gg, loan * 1e6), 'Debt repaid.')}>Repay</button>
               <button className="btn ghost" onClick={() => act((gg) => repayLoan(gg, p.debt), 'Debt repaid.')}>Repay all possible</button></div>
+            <ImpactPreview deps={[loan]} horizon={12} run={(gg) => takeLoan(gg, loan * 1e6)} />
             <p className="small muted">Lenders extend up to half a year's revenue plus 60% of the value of your plants. If net debt stays more than 25% above the limit, creditors force insolvency. A cash shortfall is covered automatically by overdraft.</p>
           </div>
         </div>
