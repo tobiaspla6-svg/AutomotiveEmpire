@@ -217,6 +217,10 @@ export interface Company {
   ytdProfit: number;
   msGlow: number; // decaying brand halo from motorsport results
   autoPrice: boolean; // index list prices to inflation every January
+  /** AI only: months left of a cost-cutting programme / of crisis price cuts (absent = none; older saves have neither). */
+  aiCostCut?: number; aiPriceCut?: number;
+  /** Player: months left of a restructuring programme (lower overheads and plant fixed costs). Absent = none. */
+  restructuring?: number;
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
   books: Books;

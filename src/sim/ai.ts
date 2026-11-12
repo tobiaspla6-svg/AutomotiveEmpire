@@ -8,8 +8,9 @@ import { COUNTRY, REGION_IDS } from '../data/world';
 import { BODY, CYL, computeVehicle, defaultVehicle, suggestFinalDrive } from './engineering';
 import { emptyLedger, industryTech, makeModel, news, refreshStats, uid, unitCost, wage, zeroRegions, INTEREST_BASE, factoryValue } from './company';
 import { emptyPending, openBooks } from './accounts';
-import { modelWeights, suggestedPrice, type MarketResult } from './market';
-import { aiTargetPrice } from './pricing';
+import { annualSupply, modelWeights, suggestedPrice, valuePrice, type MarketResult } from './market';
+import { aiTargetPrice, companyStrategy, DEALER_NET } from './pricing';
+import { strategyOf } from '../data/strategy';
 import { clamp, cpi, kf, lerp } from './util';
 import { rnd, type Rng } from './rng';
 
@@ -142,6 +143,9 @@ export function makerTech(def: MakerDef, year: number): Tech {
   if (def.archetype === 'sports') { t.engine += 2; t.chassis += 2; t.aero += 2; }
   if (def.archetype === 'premium') { t.engine += 1.5; t.chassis += 1; t.electronics += 2; }
   if (def.archetype === 'mass') t.manufacturing += kf(def.reliability, year) > 80 ? 3 : 1;
+  // where the company puts its engineering effort (data/strategy.ts): up to about a year ahead in its focus areas
+  const focus = strategyOf(def).focus;
+  for (const k of ['engine', 'chassis', 'aero', 'electronics', 'manufacturing'] as const) t[k] += clamp((focus[k] - 1) * 0.8, -0.8, 1);
   return t;
 }
 
@@ -173,14 +177,20 @@ export function presenceAt(def: MakerDef, year: number): Record<RegionId, number
 }
 
 /** Set the list price of every car in an AI maker's range from its strategy (see pricing.ts). */
-export function priceLineup(g: GameState, c: Company, only?: VehicleModel) {
+export function priceLineup(g: GameState, c: Company, only?: VehicleModel, modelYear = false) {
   const w = modelWeights(c);
   const reach = REGION_IDS.reduce((a, r) => a + c.reach[r], 0);
+  const holds = companyStrategy(c).priceFollow <= 0;
   for (const m of c.models) {
     if (m.status !== 'production' || (only && m !== only)) continue;
     const supply = Math.max(12, reach * (w.get(m.id) ?? 0));
     if (!m.salesHistory.length) m.lastUnitCost = unitCost(g, m, c.factories[0] ?? { country: c.country, automation: 0.4 }, Math.max(25, supply / 12));
-    m.price = aiTargetPrice(g, c, m, supply);
+    const target = aiTargetPrice(g, c, m, supply);
+    if (modelYear && m.price > 0) {
+      // a new model year moves list prices gradually; makers that never discount do not lower them at all
+      const indexed = m.price * cpi(g.year) / cpi(g.year - 1);
+      m.price = clamp(target, holds ? indexed : indexed * 0.85, indexed * 1.2);
+    } else m.price = target;
   }
 }
 
@@ -244,11 +254,14 @@ export function companyFromMaker(g: GameState, def: MakerDef, isPlayer: boolean)
   const h = kf(def.health, year);
   c.cash = (revenue / 12) * (0.6 + 4 * h);
   c.debt = revenue * Math.max(0, 0.55 - 0.5 * h);
-  const eng = revenue * (def.archetype === 'mass' ? 0.012 : 0.03) / (12 * 1.6 * 170 * wage(def.country, year));
+  const strat = strategyOf(def);
+  const eng = revenue * strat.rdIntensity * 0.5 / (12 * 1.6 * 170 * wage(def.country, year));
   c.engineers = Math.max(20, Math.round(eng));
-  const rd = (revenue * (def.archetype === 'mass' ? 0.012 : 0.02)) / 12 / 5;
-  c.rdBudget = { engine: rd, chassis: rd, aero: rd, electronics: rd, manufacturing: rd };
-  c.marketingBudget = (revenue * 0.025) / 12;
+  // research budget split by the company's strategic focus
+  const fSum = Object.values(strat.focus).reduce((a, b) => a + b, 0);
+  const rdTotal = (revenue * strat.rdIntensity * 0.5) / 12;
+  c.rdBudget = { engine: rdTotal * strat.focus.engine / fSum, chassis: rdTotal * strat.focus.chassis / fSum, aero: rdTotal * strat.focus.aero / fSum, electronics: rdTotal * strat.focus.electronics / fSum, manufacturing: rdTotal * strat.focus.manufacturing / fSum };
+  c.marketingBudget = (revenue * strat.marketing) / 12;
   for (const m of c.models) { m.inventory = isPlayer ? ((volume * m.volumeWeight) / wS / 12) * 0.6 : 0; m.inventoryValue = m.inventory * m.lastUnitCost; }
   openBooks(c);
   return c;
@@ -270,7 +283,9 @@ export function runAiMonth(g: GameState, c: Company, mk: MarketResult) {
     L.revenue += sold * m.price * 0.88; L.cogs += sold * uc; L.units += sold;
     m.salesHistory.push(Math.round(sold)); if (m.salesHistory.length > 60) m.salesHistory.shift();
   }
-  L.other = L.revenue * 0.17 + c.baseVolume * 60 * cpi(g.year) / 12; // overheads, R&D, marketing, programmes
+  L.other = L.revenue * 0.17 * (c.aiCostCut ? 0.9 : 1) + c.baseVolume * 60 * cpi(g.year) / 12; // overheads, R&D, marketing, programmes
+  if (c.aiCostCut) c.aiCostCut = Math.max(0, c.aiCostCut - 1);
+  if (g.month % 3 === 0) respondToMarket(g, c, mk);
   L.interest = (c.debt * (g.macro.interestBase + 0.02)) / 12;
   // AI makers build to order (no inventory); between-tick postings (e.g. fines) already moved their cash
   const pd = c.books.pending;
@@ -287,6 +302,44 @@ export function runAiMonth(g: GameState, c: Company, mk: MarketResult) {
   c.ledger.push(L); if (c.ledger.length > 60) c.ledger.shift();
 }
 
+/**
+ * Quarterly price response. When rivals sell comparable cars for clearly less (relative to what each car is worth)
+ * and this model is losing sales, the company follows them down — as far as its strategy allows (Ferrari never,
+ * Hyundai almost all the way) and never below its minimum margin. Prices go back to the strategic level each January.
+ */
+export function respondToMarket(g: GameState, c: Company, mk: MarketResult) {
+  const strat = companyStrategy(c);
+  if (strat.priceFollow <= 0) return;
+  for (const m of c.models) {
+    if (m.status !== 'production' || m.salesHistory.length < 6) continue;
+    const h = m.salesHistory, n = h.length;
+    const recent = (h[n - 1] + h[n - 2] + h[n - 3]) / 3, before = (h[n - 4] + h[n - 5] + h[n - 6]) / 3;
+    if (!(recent < before * 0.9)) continue;
+    // demand-weighted price/value ratio of the rivals this model meets
+    let rw = 0, rv = 0;
+    for (const cell of Object.values(mk.cells)) {
+      if (!cell.entries.some((e) => e.model === m)) continue;
+      for (const e of cell.entries) {
+        if (e.company === c || e.model.segment !== m.segment || !(e.model.price > 0)) continue;
+        const v = valuePrice(e.model, e.company, g.year, annualSupply(e.company, e.model));
+        rw += e.demand; rv += e.demand * (e.model.price / v);
+      }
+    }
+    if (rw <= 0) continue;
+    const rivals = rv / rw;
+    const value = valuePrice(m, c, g.year, annualSupply(c, m));
+    const own = m.price / value;
+    if (own - rivals < 0.04) continue;
+    const floor = (m.lastUnitCost * (1 + strat.minMargin)) / DEALER_NET;
+    const next = Math.max(floor, value * (own - strat.priceFollow * Math.min(0.15, own - rivals)));
+    if (next < m.price * 0.995) {
+      if (row(m) && (m.lastDemand > 2000 || m.segment === 'supercar')) news(g, 'market', `${c.name} cuts the price of the ${m.name}`, `Rivals are selling comparable cars for less and ${m.name} sales are falling: the list price drops ${Math.round((1 - next / m.price) * 100)}%.`);
+      m.price = next;
+    }
+  }
+}
+const row = (m: VehicleModel) => m.historical;
+
 /** January housekeeping for an AI manufacturer: follow (or drift from) history. */
 export function runAiYear(g: GameState, c: Company, rng: Rng) {
   const def = MAKERS.find((d) => d.id === c.dataId);
@@ -301,12 +354,17 @@ export function runAiYear(g: GameState, c: Company, rng: Rng) {
       if (row.w >= 2 || row.seg === 'supercar') news(g, 'market', `${c.name} launches the ${row.name}`, `New ${row.seg} model enters the market.`);
     }
   }
+  const strat = strategyOf(def);
+  const player = g.companies.find((x) => x.isPlayer);
   for (const m of c.models) {
     if (m.status !== 'production') continue;
-    if (g.year - m.launchYear >= 9) { // long-running nameplates get re-engineered with current technology
+    // long-running nameplates get re-engineered with current technology on the company's own cadence, sooner when
+    // the player has a newer car taking a real share of the segment
+    const threat = !!player && player.models.some((pm) => pm.status === 'production' && pm.segment === m.segment && pm.launchYear > m.launchYear && pm.lastDemand > Math.max(200, m.lastDemand * 0.5));
+    if (g.year - m.launchYear >= strat.refreshYears + 2 || (threat && g.year - m.launchYear >= strat.refreshYears - 1)) {
       m.frozenTech = makerTech(def, g.year); m.launchYear = g.year; m.generation++; m.designYear = g.year;
+      if (threat && m.lastDemand > 1000) news(g, 'market', `${c.name} answers with a re-engineered ${m.name}`, `Under pressure from ${player!.name}, the ${m.name} gets a new generation of engines and equipment ahead of schedule.`);
     }
-    m.price *= cpi(g.year) / cpi(g.year - 1);
   }
   if (!c.models.some((m) => m.status === 'production')) {
     const last = c.models[c.models.length - 1];
@@ -335,11 +393,19 @@ export function runAiYear(g: GameState, c: Company, rng: Rng) {
   const wSum = wts.reduce((a, b) => a + b, 0);
   c.factories.forEach((f, i) => { f.capacity = Math.max(10, ((volume / 12) * 1.15 * wts[i]) / wSum); });
   allocateLines(c, volume / 12);
+  // a loss-making year: the company reacts according to its strategy
+  if (margin < 0 && c.ledger.length >= 12) {
+    if (strat.crisis === 'cut-costs') { c.aiCostCut = 18; news(g, 'market', `${c.name} launches a cost-cutting programme`, 'After a loss-making year, overheads are cut by a tenth for eighteen months.'); }
+    else if (strat.crisis === 'cut-prices') { c.aiPriceCut = 12; news(g, 'market', `${c.name} cuts prices to win back volume`, 'After a loss-making year, list prices fall about 4 % across the range.'); }
+  }
   if (c.debt > 0 && c.cash <= 0 && c.debt > 1.2 * c.ledger.slice(-12).reduce((a, l) => a + l.revenue, 0)) {
     c.debt *= 0.4; c.aiFactor *= 0.85;
     news(g, 'market', `${c.name} restructures its debt`, 'Creditors accept a restructuring; plants are consolidated and volume targets cut.');
   }
   for (const m of c.models) refreshStats(g, m);
+  // new model year: list prices follow the strategy again (an ageing car is worth less; costs and inflation move)
+  priceLineup(g, c, undefined, true);
+  if (c.aiPriceCut) { for (const m of c.models) if (m.status === 'production') m.price = Math.max(m.price * 0.96, (m.lastUnitCost * (1 + strat.minMargin * 0.5)) / DEALER_NET); c.aiPriceCut = Math.max(0, c.aiPriceCut - 12); }
 }
 
 export const makersAvailable = (year: number) => MAKERS.filter((d) => makerStart(d) <= year);
