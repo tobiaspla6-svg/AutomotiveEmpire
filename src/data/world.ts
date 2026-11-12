@@ -40,15 +40,15 @@ export interface SegmentDef {
 }
 /** How segment prices moved in real terms (exotics and luxury cars were relatively cheaper in the past). */
 const REAL_PRICE: Partial<Record<SegmentId, KF>> = {
-  supercar: [[1950, 0.38], [1970, 0.45], [1990, 0.62], [2010, 0.9], [2020, 1]], luxury: [[1950, 0.6], [1990, 0.8], [2020, 1]], premium: [[1950, 0.7], [2020, 1]],
+  supercar: [[1950, 0.4], [1970, 0.55], [1980, 0.72], [1986, 0.95], [1990, 1.05], [2000, 0.9], [2010, 0.92], [2020, 1]], luxury: [[1950, 0.6], [1990, 0.8], [2020, 1]], premium: [[1950, 0.7], [2020, 1]],
 };
 const REAL_DEFAULT: KF = [[1950, 0.8], [1990, 0.9], [2020, 1]];
 export const SEGMENTS: SegmentDef[] = [
-  { id: 'budget', name: 'Budget / City', price2020: 16000, elasticity: 3.2,
+  { id: 'budget', name: 'Budget / City', price2020: 18000, elasticity: 3.2,
     weights: { economy: 0.3, reliability: 0.25, practicality: 0.2, comfort: 0.1, safety: 0.1, performance: 0.05 },
     share: [[1950, 0.3], [1980, 0.33], [2000, 0.3], [2020, 0.2]], regionBias: { NA: 0.5, EU: 1.3, JP: 1.4, CN: 1.1, LATAM: 1.6, ROW: 1.4 },
     bodyFit: { hatch: 1, sedan: 0.92, wagon: 0.85, coupe: 0.6, suv: 0.75, roadster: 0.4, pickup: 0.5, supercar: 0.1 } },
-  { id: 'family', name: 'Family / Mid-size', price2020: 27000, elasticity: 2.6,
+  { id: 'family', name: 'Family / Mid-size', price2020: 26000, elasticity: 2.6,
     weights: { comfort: 0.2, practicality: 0.2, reliability: 0.2, economy: 0.15, safety: 0.15, performance: 0.05, prestige: 0.05 },
     share: [[1950, 0.4], [1980, 0.36], [2000, 0.3], [2020, 0.2]], regionBias: { NA: 1.1, EU: 1.0, JP: 0.9, CN: 1.1, LATAM: 0.8, ROW: 0.9 },
     bodyFit: { sedan: 1, wagon: 1, hatch: 0.9, suv: 0.85, coupe: 0.6, pickup: 0.5, roadster: 0.3, supercar: 0.1 } },
@@ -56,7 +56,7 @@ export const SEGMENTS: SegmentDef[] = [
     weights: { comfort: 0.25, prestige: 0.25, performance: 0.15, safety: 0.1, reliability: 0.1, drivability: 0.1, practicality: 0.05 },
     share: [[1950, 0.07], [1980, 0.08], [2000, 0.1], [2020, 0.11]], regionBias: { NA: 1.1, EU: 1.3, JP: 0.8, CN: 1.1, LATAM: 0.4, ROW: 0.6 },
     bodyFit: { sedan: 1, wagon: 0.9, coupe: 0.9, suv: 0.95, hatch: 0.7, roadster: 0.7, supercar: 0.4, pickup: 0.3 } },
-  { id: 'luxury', name: 'Luxury', price2020: 115000, elasticity: 1.2,
+  { id: 'luxury', name: 'Luxury', price2020: 88000, elasticity: 1.2,
     weights: { comfort: 0.35, prestige: 0.35, performance: 0.1, safety: 0.1, reliability: 0.1 },
     share: [[1950, 0.012], [1980, 0.01], [2020, 0.012]], regionBias: { NA: 1.3, EU: 1.0, JP: 0.7, CN: 1.3, LATAM: 0.3, ROW: 0.9 },
     bodyFit: { sedan: 1, suv: 0.95, coupe: 0.85, wagon: 0.6, roadster: 0.6, supercar: 0.4, hatch: 0.2, pickup: 0.2 } },
@@ -64,7 +64,7 @@ export const SEGMENTS: SegmentDef[] = [
     weights: { performance: 0.4, drivability: 0.2, prestige: 0.15, reliability: 0.1, comfort: 0.05, economy: 0.05, practicality: 0.05 },
     share: [[1950, 0.02], [1970, 0.04], [1990, 0.035], [2020, 0.02]], regionBias: { NA: 1.4, EU: 1.1, JP: 0.9, CN: 0.4, LATAM: 0.3, ROW: 0.5 },
     bodyFit: { coupe: 1, roadster: 1, hatch: 0.8, supercar: 0.9, sedan: 0.7, wagon: 0.4, suv: 0.3, pickup: 0.2 } },
-  { id: 'supercar', name: 'Supercar / Exotic', price2020: 290000, elasticity: 0.9,
+  { id: 'supercar', name: 'Supercar / Exotic', price2020: 250000, elasticity: 0.9,
     weights: { performance: 0.5, prestige: 0.35, drivability: 0.15 },
     share: [[1950, 0.0003], [1970, 0.0005], [1990, 0.0005], [2010, 0.0006], [2020, 0.0008]], regionBias: { NA: 1.3, EU: 1.3, JP: 0.7, CN: 0.7, LATAM: 0.2, ROW: 1.2 },
     bodyFit: { supercar: 1, coupe: 0.85, roadster: 0.85, sedan: 0.3, suv: 0.3, hatch: 0.1, wagon: 0.1, pickup: 0.05 } },

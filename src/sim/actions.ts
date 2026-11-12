@@ -3,13 +3,13 @@
 import type { Company, DevLevels, Discipline, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
-import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, toolingCost, uid, unitCost, valuation } from './company';
-import { suggestedPrice } from './market';
+import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
+import { priceGuide } from './pricing';
 import { CYL } from './engineering';
 import { cpi, kf } from './util';
 import { player } from './world';
 import { getRegs, disciplineAvailable } from './racing/regs';
-import { budgetRef, createDivision, driverSalary, playerTeam, teamRegs } from './racing/season';
+import { budgetRef, createDivision, driverSalary, playerTeam, teamRegs, teamScale } from './racing/season';
 import { checkLegal, raceEngineSpec } from './racing/racecar';
 import { borrow, clearStock, dispose, repay, spend, type SpendKind } from './accounts';
 
@@ -87,9 +87,8 @@ export function addLine(g: GameState, factoryId: string, modelId: string, units:
   const ex = f.lines.find((l) => l.modelId === modelId);
   if (ex) { const oldU = ex.share * f.capacity; ex.share = (oldU + units) / f.capacity; ex.ramp = (ex.ramp * oldU + 0.3 * units) / (oldU + units); }
   else f.lines.push({ modelId, share: units / f.capacity, ramp: 0.3, target: -1 });
-  if (!m.price) { // sensible opening price: the segment-positioned price, but never below cost plus a margin at this line's volume
-    const cost = unitCost(g, m, f, units);
-    m.price = Math.round(Math.max(suggestedPrice(m, c, g.year), (cost * 1.2) / 0.88) / 10) * 10;
+  if (!m.price) { // opening price: the recommended retail price at this line's volume (the player can change it at any time)
+    m.price = Math.max(10, Math.round(priceGuide(g, c, m, units).recommended / 10) * 10);
   }
   return null;
 }
@@ -178,6 +177,19 @@ export function setEngineers(g: GameState, n: number): string | null {
   c.engineers = n;
   return null;
 }
+/** Start a three-year restructuring programme (see RESTRUCTURE in company.ts). */
+export function startRestructuring(g: GameState): string | null {
+  const c = player(g);
+  if (c.restructuring) return 'A restructuring programme is already under way.';
+  const saving = restructuringSaving(g, c);
+  if (!(saving > 0)) return 'There is nothing to restructure yet.';
+  const err = pay(c, g, saving * RESTRUCTURE.upfrontYears, 'oneOff');
+  if (err) return err;
+  c.restructuring = RESTRUCTURE.months;
+  c.reliabilityRep = Math.max(0, c.reliabilityRep - RESTRUCTURE.reputation);
+  news(g, 'company', `${c.name} announces a restructuring programme`, `Severance and consultants cost about $${((saving * RESTRUCTURE.upfrontYears) / 1e6).toFixed(1)}M now; overheads should fall by about $${(saving / 1e6).toFixed(1)}M a year for three years (estimate).`);
+  return null;
+}
 export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35);
 export function investDealers(g: GameState, region: RegionId, amount: number): string | null {
   const c = player(g);
@@ -242,7 +254,7 @@ export function establishMotorsport(g: GameState, discipline: Discipline, teamNa
   const B = budgetRef(getRegs(discipline, g.year), g.year);
   const err = pay(c, g, B * 0.5, 'motorsport');
   if (err) return err;
-  c.motorsport = createDivision(g, c, { discipline, teamName: teamName.trim() || `${c.name} Racing`, color: c.color, color2: c.color2, facilities: 2, staff: 58, ownerGrant: 0, sponsorLevel: 0.3, target: 6 }, g.rng);
+  c.motorsport = createDivision(g, c, { discipline, teamName: teamName.trim() || `${c.name} Racing`, color: c.color, color2: c.color2, facilities: 2, staff: 58, ownerGrant: 0, sponsorLevel: 0.3, target: 6, scale: 0.7 }, g.rng);
   news(g, 'motorsport', `${c.name} goes racing`, `A motorsport division is founded to contest the ${c.motorsport.championship.name}. Results will shape the brand; its costs appear in the parent company's accounts, and its technology feeds back into road-car research.`);
   return null;
 }
@@ -310,12 +322,8 @@ export function redesignRaceCar(g: GameState, spec: RaceCarSpec): string | null 
   const team = playerTeam(div), regs = teamRegs(team, div.championship.year);
   const legal = checkLegal(raceEngineSpec(spec.engine, regs), regs);
   if (legal.length) return legal[0];
-  const old = team.car;
-  const engineNew = old.engine.layout !== spec.engine.layout || old.engine.displacement !== spec.engine.displacement || old.engine.aspiration !== spec.engine.aspiration || old.engine.valvetrain !== spec.engine.valvetrain;
-  const engineTune = JSON.stringify(old.engine) !== JSON.stringify(spec.engine);
-  const chassisNew = Math.abs(old.aeroBias - spec.aeroBias) > 0.15 || Math.abs(old.stiffness - spec.stiffness) > 0.25 || Math.abs(old.weightEffort - spec.weightEffort) > 0.2 || Math.abs(old.cooling - spec.cooling) > 0.25;
-  const B = budgetRef(regs, g.year);
-  const cost = B * ((engineNew ? 0.12 : engineTune ? 0.02 : 0) + (chassisNew ? 0.06 : 0) + spec.weightEffort * 0.02);
+  const { engineNew, chassisNew } = redesignKinds(team.car, spec);
+  const cost = redesignCost(g, c, team.car, spec);
   const err = pay(c, g, cost, 'motorsport');
   if (err) return err;
   if (engineNew) { team.dev.engine *= 0.5; team.dev.reliability *= 0.6; }
@@ -326,4 +334,17 @@ export function redesignRaceCar(g: GameState, spec: RaceCarSpec): string | null 
   return null;
 }
 export const raceCarRedesignCost = (g: GameState, c: Company) => budgetRef(teamRegs(playerTeam(c.motorsport!), g.year), g.year);
+/** What a change of race car costs. A small team builds fewer chassis and spares (and buys more parts in) than a works team, so it pays less. */
+export function redesignKinds(old: RaceCarSpec, spec: RaceCarSpec) {
+  const engineNew = old.engine.layout !== spec.engine.layout || old.engine.displacement !== spec.engine.displacement || old.engine.aspiration !== spec.engine.aspiration || old.engine.valvetrain !== spec.engine.valvetrain;
+  const engineTune = JSON.stringify(old.engine) !== JSON.stringify(spec.engine);
+  const chassisNew = Math.abs(old.aeroBias - spec.aeroBias) > 0.15 || Math.abs(old.stiffness - spec.stiffness) > 0.25 || Math.abs(old.weightEffort - spec.weightEffort) > 0.2 || Math.abs(old.cooling - spec.cooling) > 0.25;
+  return { engineNew, engineTune, chassisNew };
+}
+export function redesignCost(g: GameState, c: Company, old: RaceCarSpec, spec: RaceCarSpec): number {
+  const div = c.motorsport!; const team = playerTeam(div);
+  const B = budgetRef(teamRegs(team, div.championship.year), g.year);
+  const { engineNew, engineTune, chassisNew } = redesignKinds(old, spec);
+  return B * ((engineNew ? 0.12 : engineTune ? 0.02 : 0) + (chassisNew ? 0.06 : 0) + spec.weightEffort * 0.02) * (0.4 + 0.6 * teamScale(div));
+}
 export { driverSalary, kf };

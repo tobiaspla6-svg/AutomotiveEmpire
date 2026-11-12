@@ -156,7 +156,88 @@ export function createChampionship(g: GameState, discipline: Discipline, year: n
   return ch;
 }
 
-export interface DivisionOpts { discipline: Discipline; teamName: string; color: string; color2: string; facilities: number; staff: number; ownerGrant: number; sponsorLevel: number; target: number }
+export interface DivisionOpts { discipline: Discipline; teamName: string; color: string; color2: string; facilities: number; staff: number; ownerGrant: number; sponsorLevel: number; target: number; scale?: number }
+
+// ------------------------------------------------------------------------------------ team finances
+//
+// All amounts are fractions of the category's reference budget B (regs.budget2020 × CPI), so they
+// follow the era. A team's size (`scale`) sets its headcount and how many cars, parts and engines it
+// builds; facilities and staff quality add to that; development is the player's choice.
+// ESTIMATED GAME DATA, shaped on public descriptions of how racing teams spend: people ≈ 35–45 %,
+// car build and parts ≈ 20–25 %, development ≈ 15–25 %, travel ≈ 8–12 %, drivers the rest.
+
+/**
+ * Where the player's organisation stands on the same 0–1 scale as the AI teams' tier: people, facilities and size.
+ * Staff 80 / facilities 4 / front-runner size ≈ 0.78 (a strong works team); staff 55 / facilities 2 / privateer ≈ 0.26.
+ */
+export function playerTier(div: MotorsportDivision): number {
+  const staffAvg = (div.staff.technical + div.staff.aero + div.staff.raceOps + div.staff.strategy) / 4;
+  const facAvg = (div.facilities.windTunnel + div.facilities.simulator + div.facilities.workshop + div.facilities.engineShop) / 4;
+  return clamp(((staffAvg - 40) / 60) * 0.5 + (facAvg / 5) * 0.3 + (teamScale(div) - 0.5) * 0.25, 0.1, 0.95);
+}
+/** Development knowledge an organisation keeps whatever the season: the same floor the AI teams get. */
+export const devFloor = (tier: number) => 0.08 + 0.45 * tier;
+
+/** Size of the team relative to a typical entrant. Saves from before Phase 2 have none: 0.9. */
+export const teamScale = (div: MotorsportDivision) => clamp(div.scale ?? 0.9, 0.3, 2);
+/** Prize money for a championship position (base fee for every entrant plus a share that rises steeply with position). */
+export const prizeMoney = (B: number, pos: number, n: number) => B * (0.05 + 0.3 * Math.pow(Math.max(0, 1 - (pos - 1) / Math.max(1, n)), 1.5));
+/** Total sponsorship a team of this size can attract with a given championship result (0 = last, 1 = champion). */
+export const sponsorTarget = (B: number, scale: number, perf: number) => B * 0.5 * (0.25 + 0.75 * scale) * (0.45 + 0.9 * clamp(perf, 0, 1));
+/** Cash the owners let a team keep in reserve before they reduce their funding (share of a season's running cost). */
+export const RESERVE_ALLOWED = 0.35;
+
+export interface SeasonBudget {
+  B: number; scale: number;
+  personnel: number; facilities: number; carBuild: number; travel: number; drivers: number; development: number;
+  /** running costs of a season (all of the above, after cost modifiers) */
+  cost: number;
+  sponsors: number; owner: number;
+  /** prize money for the current (or, before the first race, the target) position */
+  prize: number; prizePos: number;
+  /** income − cost: a forecast at today's position, not a guarantee */
+  balance: number;
+}
+
+/** Annual budget of a racing division at its current size, staff, facilities and spending plan. */
+export function seasonBudget(g: GameState, c: Company, div: MotorsportDivision, over: { staffAvg?: number; facAvg?: number; devBudget?: number; scale?: number } = {}): SeasonBudget {
+  const ch = div.championship, team = playerTeam(div);
+  const regs = teamRegs(team, ch.year);
+  const B = budgetRef(regs, g.year);
+  const s = over.scale ?? teamScale(div);
+  const staffAvg = over.staffAvg ?? (div.staff.technical + div.staff.aero + div.staff.raceOps + div.staff.strategy) / 4;
+  const facAvg = over.facAvg ?? (div.facilities.windTunnel + div.facilities.simulator + div.facilities.workshop + div.facilities.engineShop) / 4;
+  const k = modProduct(g, (m) => m.motorsportCost);
+  const personnel = B * 0.28 * s * (0.6 + (0.8 * staffAvg) / 100) * k;
+  const facilities = B * 0.03 * facAvg * k;
+  const carBuild = B * 0.2 * (0.4 + 0.6 * s) * k;
+  const travel = B * 0.1 * (0.5 + 0.5 * s) * (Math.max(4, ch.rounds.length) / 10) * k;
+  const drivers = team.drivers.reduce((a, id) => a + (ch.drivers.find((d) => d.id === id)?.salary ?? 0), 0) * k;
+  const development = (over.devBudget ?? div.devBudget) * 12 * k;
+  const cost = personnel + facilities + carBuild + travel + drivers + development;
+  const sponsors = div.sponsors.reduce((a, x) => a + x.annual, 0);
+  const st = ch.results.length ? standings(ch) : null;
+  const n = ch.teams.length;
+  const prizePos = st ? st.teams.findIndex((t) => t.id === div.teamId) + 1 : Math.min(n, div.objective?.target ?? Math.ceil(n / 2));
+  const prize = prizeMoney(B, prizePos, n);
+  return { B, scale: s, personnel, facilities, carBuild, travel, drivers, development, cost, sponsors, owner: div.ownerGrant, prize, prizePos, balance: sponsors + div.ownerGrant + prize - cost };
+}
+
+/**
+ * Owner funding at the start: what a reference team of this size (staff ≈ 60–76, facilities ≈ 3) needs to break even
+ * at its target position with standard development and its current sponsors. Owners pay 60 % of the extra running cost of
+ * better staff or facilities than that; leaner choices return 60 % of the saving to them.
+ */
+export function breakEvenGrant(g: GameState, c: Company, div: MotorsportDivision): number {
+  const n = div.championship.teams.length, s = teamScale(div);
+  const B = budgetRef(teamRegs(playerTeam(div), div.championship.year), g.year);
+  const ref = seasonBudget(g, c, div, { staffAvg: 60 + 12 * s, facAvg: 2 + s, devBudget: (B * 0.2 * s) / 12 });
+  const mine = seasonBudget(g, c, div);
+  const cost = ref.cost + 0.6 * (mine.cost - mine.development - (ref.cost - ref.development));
+  const pos = clamp(div.objective?.target ?? Math.ceil(n / 2), 1, n);
+  return Math.max(0, cost - ref.sponsors - prizeMoney(B, pos, n));
+}
+
 
 export function createDivision(g: GameState, c: Company, o: DivisionOpts, rng: Rng): MotorsportDivision {
   const ch = createChampionship(g, o.discipline, g.year, rng, c.dataId);
@@ -175,13 +256,15 @@ export function createDivision(g: GameState, c: Company, o: DivisionOpts, rng: R
     discipline: o.discipline, teamId: team.id, teamName: o.teamName, founded: g.year, championship: ch,
     facilities: { windTunnel: o.facilities, simulator: o.facilities, workshop: o.facilities, engineShop: o.facilities },
     staff: { technical: o.staff, aero: o.staff, raceOps: o.staff, strategy: o.staff },
-    devBudget: (B * 0.2) / 12, devFocus: { aero: 1, engine: 1, chassis: 1, reliability: 1 }, ownerGrant: o.ownerGrant,
+    devBudget: (B * 0.2 * (o.scale ?? 0.9)) / 12, devFocus: { aero: 1, engine: 1, chassis: 1, reliability: 1 }, ownerGrant: o.ownerGrant, ownerBase: o.ownerGrant, scale: o.scale ?? 0.9,
     sponsors: [], history: [], seasonIncome: 0, seasonCost: 0, carDesignedYear: g.year,
     objective: { id: 'pos', kind: 'position', text: `Finish in the top ${o.target} of the teams' championship`, target: o.target, byYear: g.year + 1, progress: 0, done: false, failed: false },
   };
   const names = shuffle(rng, [...SPONSORS]);
   const total = B * o.sponsorLevel;
   div.sponsors = [{ name: names[0], annual: total * 0.6 }, { name: names[1], annual: total * 0.4 }].filter((s) => s.annual > 0);
+  const floor = devFloor(playerTier(div));
+  for (const k of ['aero', 'engine', 'chassis', 'reliability'] as (keyof DevLevels)[]) team.dev[k] = Math.max(team.dev[k], floor);
   ensureDrivers(g, div, rng, true);
   // skip rounds that have already passed this year
   for (const r of ch.rounds) if (r.month < g.month) { r.done = true; ch.nextRound++; }
@@ -197,7 +280,15 @@ export function ensureDrivers(g: GameState, div: MotorsportDivision, rng: Rng, i
   while (team.drivers.length < seats) {
     const free = ch.drivers.filter((d) => !d.teamId).sort((a, b) => overall(b) - overall(a));
     if (!free.length) { ch.drivers.push(makeDriver(g, rng, 60, regs, ch.year)); continue; }
-    const d = initial ? free[Math.min(free.length - 1, 3 + team.drivers.length)] : free[free.length - 1 - Math.min(2, free.length - 1)];
+    let d: Driver;
+    if (initial) {
+      // A new team signs the best drivers its standing attracts. When the free-agent market is too thin (the works
+      // teams have signed everyone), it recruits from other categories and the junior ranks at that level.
+      const want = 62 + 26 * playerTier(div);
+      const pick = free.find((x) => overall(x) <= want + 3);
+      if (pick && overall(pick) >= want - 5) d = pick;
+      else { d = makeDriver(g, rng, want, regs, ch.year); d.age = rndInt(rng, 22, 31); ch.drivers.push(d); }
+    } else d = free[free.length - 1 - Math.min(2, free.length - 1)];
     d.teamId = team.id; d.contractEnd = ch.year + (initial ? 1 : 0); team.drivers.push(d.id);
     if (!initial) news(g, 'motorsport', `${d.name} drafted in`, `With a seat empty before the race, ${team.name} signs ${d.name} for the rest of the season.`);
   }
@@ -206,7 +297,8 @@ export function ensureDrivers(g: GameState, div: MotorsportDivision, rng: Rng, i
 export function divisionTech(c: Company, div: MotorsportDivision, year: number): { techYear: number; quality: number } {
   const hasRoadCars = c.factories.length > 0;
   const parent = hasRoadCars ? (c.tech.engine + c.tech.aero + c.tech.chassis) / 3 : year - 1;
-  return { techYear: Math.max(parent, year - 2) + div.staff.technical / 50, quality: clamp(0.4 + div.staff.technical / 220 + div.facilities.engineShop * 0.04, 0.3, 1) };
+  const facAvg = (div.facilities.windTunnel + div.facilities.simulator + div.facilities.workshop + div.facilities.engineShop) / 4;
+  return { techYear: Math.max(parent, year - 2) + div.staff.technical / 50 + facAvg * 0.15, quality: clamp(0.4 + div.staff.technical / 220 + div.facilities.engineShop * 0.04, 0.3, 1) };
 }
 
 const wingCache = new Map<string, number>();
@@ -332,15 +424,20 @@ function endSeason(g: GameState, c: Company, div: MotorsportDivision) {
   const champT = st.teams[0], champD = st.drivers[0];
   const pos = st.teams.findIndex((t) => t.id === div.teamId) + 1;
   const n = st.teams.length;
-  const prize = B * 0.5 * Math.pow(1 - (pos - 1) / n, 1.5);
+  const prize = prizeMoney(B, pos, n);
   receive(c, prize); div.seasonIncome += prize;
   if (champD) champD.titles++;
   const w = SERIES_WEIGHT[div.discipline];
   if (pos === 1) c.msGlow += 9 * w; else if (pos <= 3) c.msGlow += 3 * w;
   if (champT.companyId && !champT.isPlayer) { const comp = g.companies.find((x) => x.id === champT.companyId); if (comp) comp.prestige = Math.min(100, comp.prestige + 1.5 * w); }
   div.history.push({ year: ch.year, discipline: div.discipline, driverChampion: champD ? `${champD.name}` : '—', teamChampion: champT.name, playerTeamPos: pos, playerPoints: ch.teamPoints[div.teamId] ?? 0 });
-  const mult = clamp(1.25 - 0.5 * ((pos - 1) / Math.max(1, n - 1)), 0.8, 1.25);
+  // Sponsors renegotiate towards what a team of this size and these results is worth to them: good seasons
+  // raise the backing, poor ones cut it, but it no longer compounds without limit.
+  const total = div.sponsors.reduce((a, s) => a + s.annual, 0);
+  const target = sponsorTarget(B, teamScale(div), 1 - (pos - 1) / Math.max(1, n - 1));
+  const mult = total > 0 ? clamp((total + 0.5 * (target - total)) / total, 0.6, 1.4) : 1;
   for (const s of div.sponsors) s.annual *= mult;
+  if (total <= 0 && target > 0) div.sponsors.push({ name: SPONSORS[(ch.year + pos) % SPONSORS.length], annual: target * 0.5 });
   news(g, 'motorsport', `${ch.year} ${ch.name}: ${champT.name} are champions`, `Drivers' title: ${champD?.name ?? '—'}. ${div.teamName} finish P${pos} of ${n} and receive $${(prize / 1e6).toFixed(1)}M in prize money. Sponsors ${mult >= 1 ? 'raise' : 'cut'} their backing by ${Math.abs(Math.round((mult - 1) * 100))}%.`, pos === 1 ? 'win' : undefined);
   if (div.objective && !div.objective.done) {
     div.objective.progress = pos;
@@ -390,6 +487,7 @@ export function startSeason(g: GameState, c: Company, div: MotorsportDivision, r
   const keep = changed ? 0.2 : 0.55;
   for (const t of ch.teams) {
     for (const k of ['aero', 'engine', 'chassis', 'reliability'] as (keyof DevLevels)[]) t.dev[k] *= keep;
+    if (t.isPlayer) for (const k of ['aero', 'engine', 'chassis', 'reliability'] as (keyof DevLevels)[]) t.dev[k] = Math.max(t.dev[k], devFloor(playerTier(div)));
     if (!t.isPlayer) {
       t.tier = clamp(t.companyId ? makerTier(t.companyId, ch.discipline, year) : t.tier + (rnd(rng) - 0.5) * 0.15, 0.1, 0.97);
       t.ruleset = makerRuleset(t.companyId ?? '', ch.discipline, year);
@@ -403,9 +501,31 @@ export function startSeason(g: GameState, c: Company, div: MotorsportDivision, r
   div.seasonIncome = 0; div.seasonCost = 0;
   // the whole paddock's money moves with the era: funding, sponsorship and spending plans scale with the category's budget level
   const ratio = budgetRef(regs, year) / budgetRef(oldRegs, old.year);
-  div.ownerGrant *= ratio; div.devBudget *= ratio;
+  div.ownerBase = (div.ownerBase ?? div.ownerGrant) * ratio; div.devBudget *= ratio;
   for (const s of div.sponsors) s.annual *= ratio;
+  // Owners do not keep topping up a team that sits on a large cash reserve: funding this season is cut by
+  // 60 % of whatever the team holds beyond about a third of a season's running cost.
+  // Owners who still believe in the team cover part of a deficit (up to a quarter of a season's running cost);
+  // owners who have lost faith do not, and the debt then has to be traded out of.
+  div.ownerGrant = div.ownerBase;
+  if (div.ownerBase > 0) {
+    const run = seasonBudget(g, c, div).cost;
+    const net = c.cash - c.debt;
+    const excess = net - RESERVE_ALLOWED * run;
+    if (excess > 0) {
+      div.ownerGrant = Math.max(0, div.ownerBase - 0.6 * excess);
+      news(g, 'motorsport', 'The owners reduce their funding', `With ${fmtM(net)} in the bank, the owners pay ${fmtM(div.ownerGrant)} this season instead of the agreed ${fmtM(div.ownerBase)}. Invest the reserve in the team, or they will keep holding back.`);
+    } else if (net < 0) {
+      const faith = clamp(((c.board?.confidence ?? 50) - 30) / 40, 0, 1);
+      const rescue = Math.min(-net, 0.25 * run) * faith;
+      if (rescue > 0) {
+        div.ownerGrant += rescue;
+        news(g, 'motorsport', 'The owners cover part of the deficit', `They add ${fmtM(rescue)} to this season's funding to reduce the team's ${fmtM(-net)} debt. Their support depends on their confidence in you (${Math.round(c.board?.confidence ?? 50)}%).`);
+      } else news(g, 'motorsport', 'No rescue from the owners', `The team owes ${fmtM(-net)} and the owners, with ${Math.round(c.board?.confidence ?? 50)}% confidence in you, will not cover it. Cut costs or improve results.`);
+    }
+  }
 }
+const fmtM = (x: number) => `$${(x / 1e6).toFixed(1)}M`;
 
 /** Monthly running costs, income and car development of the player's race team. */
 export function motorsportMonth(g: GameState, c: Company): { cost: number; income: number } {
@@ -413,11 +533,7 @@ export function motorsportMonth(g: GameState, c: Company): { cost: number; incom
   const ch = div.championship, team = playerTeam(div);
   const regs = teamRegs(team, ch.year);
   const B = budgetRef(regs, g.year);
-  const staffAvg = (div.staff.technical + div.staff.aero + div.staff.raceOps + div.staff.strategy) / 4;
-  const fac = div.facilities.windTunnel + div.facilities.simulator + div.facilities.workshop + div.facilities.engineShop;
-  const salaries = team.drivers.reduce((a, id) => a + (ch.drivers.find((d) => d.id === id)?.salary ?? 0), 0);
-  const costMult = modProduct(g, (m) => m.motorsportCost);
-  const cost = ((B * 0.25 * (0.5 + staffAvg / 100) + B * 0.03 * (fac / 4) + B * 0.35 + salaries) / 12 + div.devBudget) * costMult;
+  const cost = seasonBudget(g, c, div).cost / 12;
   const income = (div.sponsors.reduce((a, s) => a + s.annual, 0) + div.ownerGrant) / 12;
   div.seasonCost += cost; div.seasonIncome += income;
   // development: diminishing returns on spend, scaled by staff and the relevant facility

@@ -3,12 +3,12 @@ import type { Company, DevLevels, Discipline, EngineLayout, MotorsportDivision, 
 import { useGame, useStore } from '../store/game';
 import { CYL, LAYOUT_NAME } from '../sim/engineering';
 import { DISCIPLINES, DISC_NAME, disciplineAvailable, getRegs } from '../sim/racing/regs';
-import { budgetRef, divisionTech, overall, pendingRound, playerTeam, standings, teamRegs } from '../sim/racing/season';
+import { budgetRef, divisionTech, overall, pendingRound, playerTeam, RESERVE_ALLOWED, seasonBudget, standings, teamRegs } from '../sim/racing/season';
 import { computeRaceCar, tuneRedline } from '../sim/racing/racecar';
 import { lapSim } from '../sim/racing/lapsim';
 import { TRACK, trackGeom } from '../sim/racing/tracks';
 import {
-  closeMotorsport, establishMotorsport, facilityCost, recruitStaff, redesignRaceCar, releaseDriver, setDevBudget, setDevFocus, signDriver, staffCost, swapDriverOrder, upgradeFacility,
+  closeMotorsport, establishMotorsport, facilityCost, recruitStaff, redesignCost, redesignKinds, redesignRaceCar, releaseDriver, setDevBudget, setDevFocus, signDriver, staffCost, swapDriverOrder, upgradeFacility,
 } from '../sim/actions';
 import { fmtMoney, fmtTime, MONTHS } from '../sim/util';
 import { BarList, Kpi, LineChart, Meter, PageHead, Seg, Select, Slider, Src, StatLine } from './common';
@@ -75,6 +75,7 @@ function Overview({ p, div }: { p: Company; div: MotorsportDivision }) {
         <Kpi label="Season income" value={fmtMoney(div.seasonIncome)} detail={`sponsors ${fmtMoney(sponsors)} / yr${div.ownerGrant ? ` · owner ${fmtMoney(div.ownerGrant)} / yr` : ''}`} />
         <Kpi label="Season cost" value={fmtMoney(div.seasonCost)} detail={g.mode === 'motorsport' ? 'paid from team cash' : 'charged to the parent company'} />
       </div>
+      <SeasonBudgetPanel p={p} div={div} />
       {race && <div className="panel row between wrap"><div><h3>{race.name}</h3><span className="dim">{TRACK[race.trackId].name}, {TRACK[race.trackId].country} · {race.hours ? `${race.hours} hours` : `${race.laps} laps`}</span></div><button className="btn primary lg" onClick={() => go('race')}>Go to the race weekend →</button></div>}
       <div className="grid g2">
         <div className="panel col">
@@ -98,6 +99,28 @@ function Overview({ p, div }: { p: Company; div: MotorsportDivision }) {
         </div>
       </div>
     </>
+  );
+}
+
+function SeasonBudgetPanel({ p, div }: { p: Company; div: MotorsportDivision }) {
+  const { g } = useGame();
+  const b = seasonBudget(g, p, div);
+  const net = p.cash - p.debt;
+  return (
+    <div className="panel col" style={{ gap: 4 }}>
+      <h3>Season budget <span className="muted small">(forecast at today's plan and position — an estimate, not a promise)</span></h3>
+      <div className="grid g2" style={{ gap: 12 }}>
+        <BarList items={[{ label: 'People', value: b.personnel }, { label: 'Facilities upkeep', value: b.facilities }, { label: 'Car build & parts', value: b.carBuild }, { label: 'Travel & logistics', value: b.travel }, { label: 'Drivers', value: b.drivers }, { label: 'Development', value: b.development }]} fmt={(v) => fmtMoney(v)} total />
+        <div className="col" style={{ gap: 4 }}>
+          <StatLine label="Sponsors" value={fmtMoney(b.sponsors)} /><StatLine label={g.mode === 'motorsport' ? 'Owner funding' : 'Parent company'} value={g.mode === 'motorsport' ? fmtMoney(b.owner) : 'covers the balance'} />
+          <StatLine label={`Prize money at P${b.prizePos}`} value={fmtMoney(b.prize)} />
+          <StatLine label="Expected balance this season" value={<span className={b.balance < 0 ? 'bad' : 'good'}>{fmtMoney(b.balance)}</span>} />
+          <StatLine label="Development you could afford at break-even" value={`${fmtMoney(Math.max(0, b.development + b.balance) / 12)} / month`} title="Development budget at which the season's expected balance is zero." />
+          {g.mode === 'motorsport' && b.owner > 0 && net > RESERVE_ALLOWED * b.cost && <p className="tiny warn">Reserves above {fmtMoney(RESERVE_ALLOWED * b.cost)} lead the owners to cut next season's funding by 60% of the excess.</p>}
+          {g.mode === 'motorsport' && net < 0 && <p className="tiny warn">The team is {fmtMoney(-net)} in debt. Owners cover part of a deficit only while their confidence holds.</p>}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -166,7 +189,14 @@ function CarDesign({ p, div }: { p: Company; div: MotorsportDivision }) {
         </div>
         <div className="panel col">
           <h4>Commit the design</h4>
-          <p className="small dim">A new engine architecture costs about {fmtMoney(budgetRef(regs, g.year) * 0.12)} and halves power-unit development; a new chassis philosophy costs about {fmtMoney(budgetRef(regs, g.year) * 0.06)}. Tuning changes are cheap.</p>
+          {(() => {
+            const kinds = redesignKinds(team.car, spec), cost = redesignCost(g, p, team.car, spec), b = seasonBudget(g, p, div);
+            return <>
+              <StatLine label="Cost of this change (est.)" value={<b>{fmtMoney(cost)}</b>} title="A smaller team builds fewer chassis and spares, so the same change costs it less." />
+              <StatLine label="Share of this season's running budget" value={`${Math.round((cost / Math.max(1, b.cost)) * 100)}%`} />
+              <p className="small dim">{kinds.engineNew ? 'New engine architecture: power-unit development is halved and reliability work partly restarts. ' : kinds.engineTune ? 'Engine tuning only: cheap, no development lost. ' : ''}{kinds.chassisNew ? 'New chassis philosophy: aerodynamic and chassis development fall by a fifth. ' : ''}{!kinds.engineNew && !kinds.chassisNew && !kinds.engineTune ? 'Tuning changes are cheap.' : ''}{cost > p.cash ? ' This exceeds the team’s cash: it will be borrowed.' : ''}</p>
+            </>;
+          })()}
           <div className="row"><button className="btn" disabled={!changed} onClick={() => setSpec(JSON.parse(JSON.stringify(team.car)))}>Revert</button>
             <button className="btn primary" disabled={!changed || perf.legal.length > 0} onClick={() => act((gg) => redesignRaceCar(gg, spec), 'Car design committed.')}>Build this car</button></div>
         </div>

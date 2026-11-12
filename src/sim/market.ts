@@ -5,9 +5,15 @@
 //
 // D is the distribution strength a company devotes to the model in that region (dealer reach,
 // units/year); q is the model's appeal — exp(β·utility) from the segment's weighted 0–100 scores,
-// a constant-elasticity price term against the segment reference price, brand reputation,
-// model age, awareness, tariffs and (for EVs) market acceptance. "Other" stands for every
-// manufacturer that is not individually simulated and is assumed to be of average appeal.
+// brand reputation, model age, awareness and (for EVs) market acceptance, times the response to
+// its price. "Other" stands for every manufacturer that is not individually simulated and is
+// assumed to be of average appeal.
+//
+// Price (Phase 2). Every car has a VALUE PRICE: what buyers of its segment consider a fair price
+// for this car from this brand — the segment's reference price scaled by how good the car is, by
+// the brand's pricing power and, for prestige goods from prestigious makers, by how scarce it is.
+// Demand responds to the ratio of the price actually asked (plus tariff) to that value price with
+// the segment's elasticity, and falls away ever faster the further the price is pushed above it.
 import type { Company, GameState, RegionId, SegmentId, VehicleModel } from './types';
 import { EV_ACCEPTANCE, FUEL_BASE, REGION_IDS, REGION_VOLUME, SEG, SEGMENTS, SEGMENT_IDS, TARIFF, segPrice } from '../data/world';
 import { clamp, cpi, kf } from './util';
@@ -78,17 +84,93 @@ export function modelWeights(c: Company): Map<string, number> {
   return w;
 }
 
-export function appeal(g: GameState, c: Company, m: VehicleModel, region: RegionId, fuel: number): number {
+// ------------------------------------------------------------------------------------ value & price
+
+/**
+ * How buyers of each segment turn a car's qualities into willingness to pay.
+ *  u0 / p0  : utility and brand prestige of a typical car of the segment (measured on the historical catalogue)
+ *  beta     : how steeply the value price rises with the car's utility
+ *  brand    : pricing power of brand prestige;  reliab : of the reliability reputation
+ *  top      : extra pull of the very grandest names (prestige above 80) — what separates an exotic maker's
+ *             luxury car from an excellent executive saloon
+ *  scarcity : how much rarity adds for a prestigious maker (0 = a mass-market good)
+ */
+export const VALUE: Record<SegmentId, { u0: number; p0: number; beta: number; brand: number; reliab: number; top: number; scarcity: number }> = {
+  budget: { u0: 0.61, p0: 45, beta: 0.8, brand: 0.3, reliab: 0.8, top: 0, scarcity: 0 },
+  family: { u0: 0.6, p0: 50, beta: 1.0, brand: 1.0, reliab: 0.8, top: 0, scarcity: 0 },
+  premium: { u0: 0.71, p0: 70, beta: 1.4, brand: 1.0, reliab: 0.4, top: 0, scarcity: 0 },
+  luxury: { u0: 0.9, p0: 80, beta: 1.7, brand: 1.6, reliab: 0.3, top: 0.5, scarcity: 0.2 },
+  sports: { u0: 0.61, p0: 55, beta: 2.2, brand: 1.6, reliab: 0.3, top: 0, scarcity: 0.15 },
+  supercar: { u0: 0.82, p0: 90, beta: 2.0, brand: 1.8, reliab: 0.2, top: 0, scarcity: 0.5 },
+  suv: { u0: 0.64, p0: 48, beta: 1.1, brand: 0.8, reliab: 0.6, top: 0, scarcity: 0 },
+  pickup: { u0: 0.62, p0: 45, beta: 0.9, brand: 0.4, reliab: 0.8, top: 0, scarcity: 0 },
+};
+const brandIndex = (prestige: number, top: number) => 0.7 + (0.6 * prestige) / 100 + (top * Math.max(0, prestige - 80) ** 2) / 400;
+/** Steepness of the extra penalty for asking more than the value price. */
+export const OVERPRICE_K = 2;
+/** Largest scarcity premium. */
+export const MAX_SCARCITY = 8;
+
+/** Segment-weighted utility of a car, 0…1. */
+export function utilityOf(m: Pick<VehicleModel, 'stats'>, seg: SegmentId): number {
+  const def = SEG[seg];
+  let u = 0;
+  for (const k in def.weights) u += (def.weights as Record<string, number>)[k] * ((m.stats.scores as unknown as Record<string, number>)[k] / 100);
+  return u;
+}
+const worldVolCache = new Map<string, number>();
+/** Annual world volume of a segment. */
+export function worldSegVolume(seg: SegmentId, year: number): number {
+  const key = `${seg}:${year}`;
+  let v = worldVolCache.get(key);
+  if (v === undefined) { v = REGION_IDS.reduce((a, r) => a + segVolume(r, seg, year), 0); worldVolCache.set(key, v); }
+  return v;
+}
+/** Yearly volume of an ordinary model of the segment (3 % of the segment): fewer than this and a car counts as scarce. */
+export const scarcityRef = (seg: SegmentId, year: number) => worldSegVolume(seg, year) * 0.03;
+
+/** Cars a year the company can put on the market: line capacity for the player, distribution weight for the others. */
+export function annualSupply(c: Company, m: VehicleModel, weight?: number): number {
+  if (c.isPlayer) {
+    let cap = 0;
+    for (const f of c.factories) for (const l of f.lines) if (l.modelId === m.id) cap += f.capacity * l.share;
+    return Math.max(cap * 12, m.inventory, 12);
+  }
+  const w = weight ?? modelWeights(c).get(m.id) ?? 0;
+  return Math.max(REGION_IDS.reduce((a, r) => a + c.reach[r], 0) * w, 12);
+}
+/** Scarcity premium: only for prestige segments, only for makers whose badge is desirable, growing as supply shrinks. */
+export function scarcityPremium(seg: SegmentId, year: number, prestige: number, supply: number): number {
+  const k = VALUE[seg].scarcity;
+  if (k <= 0 || !(supply > 0)) return 1;
+  const raw = clamp(Math.pow(scarcityRef(seg, year) / supply, k), 1, MAX_SCARCITY);
+  return 1 + (raw - 1) * clamp((prestige - 50) / 40, 0, 1);
+}
+/**
+ * Value price: the price at which this car, from this company, is neither a bargain nor dear in its segment.
+ * `supply` (cars a year) adds the scarcity premium; leave it out for the price of an unconstrained volume model.
+ */
+export function valuePrice(m: Pick<VehicleModel, 'stats' | 'segment'>, c: Pick<Company, 'prestige' | 'reliabilityRep'>, year: number, supply?: number): number {
+  const v = VALUE[m.segment];
+  const quality = Math.exp(v.beta * (utilityOf(m, m.segment) - v.u0));
+  const brand = Math.pow(brandIndex(c.prestige, v.top) / brandIndex(v.p0, v.top), v.brand);
+  const trust = Math.pow((0.82 + (0.3 * c.reliabilityRep) / 100) / 1.0, v.reliab);
+  return segPrice(m.segment, year) * quality * brand * trust * (supply ? scarcityPremium(m.segment, year, c.prestige, supply) : 1);
+}
+/** Demand multiplier for a price `ratio` times the value price (1 at the value price). */
+export function priceResponse(seg: SegmentId, ratio: number): number {
+  const x = Math.log(clamp(ratio, 0.35, 50)); // cutting the price by more than about two thirds wins no further buyers
+  return Math.exp(-SEG[seg].elasticity * x - (x > 0 ? OVERPRICE_K * x * x : 0));
+}
+
+export function appeal(g: GameState, c: Company, m: VehicleModel, region: RegionId, fuel: number, value?: number): number {
   if (!(m.price > 0) || !Number.isFinite(m.price)) return 0; // no valid price: not on sale (a 0 price would make appeal infinite)
   const def = SEG[m.segment];
   const s = m.stats.scores;
-  let u = 0;
-  for (const k in def.weights) u += (def.weights as Record<string, number>)[k] * ((s as unknown as Record<string, number>)[k] / 100);
-  u += (fuel - 1) * 0.25 * ((s.economy - 50) / 100);
+  const u = utilityOf(m, m.segment) + (fuel - 1) * 0.25 * ((s.economy - 50) / 100);
   let q = Math.exp(4 * (u - 0.5)) * (def.bodyFit[m.spec.body] ?? 0.3);
-  const ref = segPrice(m.segment, g.year);
   const eff = m.price * (1 + tariff(g, c, m, region));
-  q *= Math.pow(eff / ref, -def.elasticity);
+  q *= priceResponse(m.segment, eff / (value ?? valuePrice(m, c, g.year, annualSupply(c, m))));
   const wP = def.weights.prestige ?? 0, wR = def.weights.reliability ?? 0;
   q *= Math.pow(0.55 + (0.9 * c.prestige) / 100, wP * 3 + 0.3);
   q *= Math.pow(0.7 + (0.6 * c.reliabilityRep) / 100, wR * 3 + 0.3);
@@ -100,6 +182,7 @@ export function appeal(g: GameState, c: Company, m: VehicleModel, region: Region
     if (m.stats.rangeKm < 300) q *= clamp(m.stats.rangeKm / 300, 0.2, 1);
   }
   if (s.safety < 25) q *= 0.6;
+  if (m.recallRisk > 0) q *= 1 - 0.3 * Math.min(1, m.recallRisk); // lost trust after a defect (recovers over months)
   q *= 0.4 + (0.6 * c.awareness[region]) / 100;
   if (c.homeRegion === region) q *= 1.12;
   const imp = modProduct(g, (x) => (builtInRegion(c, m.id, region) ? 1 : x.importPenalty?.[region]));
@@ -122,10 +205,11 @@ export function computeMarket(g: GameState): MarketResult {
     for (const m of c.models) {
       const wm = w.get(m.id);
       if (!wm) continue;
+      const value = valuePrice(m, c, g.year, annualSupply(c, m, wm));
       for (const r of REGION_IDS) {
         const D = c.reach[r] * wm;
         if (D <= 0) continue;
-        cells[`${r}:${m.segment}`].entries.push({ company: c, model: m, D, q: appeal(g, c, m, r, fuel), demand: 0 });
+        cells[`${r}:${m.segment}`].entries.push({ company: c, model: m, D, q: appeal(g, c, m, r, fuel, value), demand: 0 });
       }
     }
   }
@@ -150,13 +234,9 @@ export function computeMarket(g: GameState): MarketResult {
   return { demand, cells };
 }
 
-/** Price at which an average-appeal car of this quality would sit in its segment (UI hint + AI pricing). */
+/** Value price of the car as an unconstrained volume model (kept for callers that have no supply figure). */
 export function suggestedPrice(m: VehicleModel, c: Company, year: number): number {
-  const def = SEG[m.segment];
-  let u = 0;
-  for (const k in def.weights) u += (def.weights as Record<string, number>)[k] * ((m.stats.scores as unknown as Record<string, number>)[k] / 100);
-  const brand = 0.85 + (0.3 * c.prestige) / 100 * ((def.weights.prestige ?? 0) > 0.1 ? 1 : 0.4);
-  return segPrice(m.segment, year) * Math.exp(1.3 * (u - 0.62)) * brand;
+  return valuePrice(m, c, year);
 }
 
 /** Which segment a design fits best (utility × body fit, penalising distance from the segment's price band). */

@@ -12,7 +12,7 @@ import { computeMarket, modelWeights, segVolume } from './market';
 import { gauss, hashStr, makeRng } from './rng';
 import { clamp, cpi, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
-import { budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
+import { breakEvenGrant, sponsorTarget, budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
 import { emptyPending, openBooks } from './accounts';
 
 export const player = (g: GameState): Company => g.companies.find((c) => c.id === g.playerId)!;
@@ -68,7 +68,7 @@ export function newCeoGame(o: CeoSetup): GameState {
   const prog = (['f1', 'proto', 'gt', 'touring'] as const).find((grp) => def.ms.some(([gp, a, b]) => gp === grp && o.year >= a && o.year <= b));
   if (prog) {
     const disc: Discipline = prog === 'proto' ? (o.year >= 2023 && ['porsche', 'bmw', 'gm', 'honda', 'lamborghini', 'renault'].includes(def.id) ? 'lmdh' : 'hypercar') : prog;
-    if (disciplineAvailable(disc, o.year)) c.motorsport = createDivision(g, c, { discipline: disc, teamName: `${def.name} Works Team`, color: def.color, color2: def.color2, facilities: 3, staff: 72, ownerGrant: 0, sponsorLevel: 0.45, target: 3 }, g.rng);
+    if (disciplineAvailable(disc, o.year)) c.motorsport = createDivision(g, c, { discipline: disc, teamName: `${def.name} Works Team`, color: def.color, color2: def.color2, facilities: 3, staff: 72, ownerGrant: 0, sponsorLevel: 0.45, target: 3, scale: 1.1 }, g.rng);
   }
   news(g, 'company', `You are the new CEO of ${def.name}`, era.text, 'historical');
   if (def.ownershipNote) news(g, 'company', 'A note on ownership', def.ownershipNote);
@@ -154,9 +154,11 @@ export function newMotorsportGame(o: MotorsportSetup): GameState {
   };
   g.companies.push(c);
   g.playerId = c.id;
-  // facilities and staff quality consume part of the budget envelope
-  const upkeepK = clamp(1 - 0.06 * (o.facilities - 2) - (o.staff - 60) / 300, 0.6, 1.2);
-  c.motorsport = createDivision(g, c, { discipline: o.discipline, teamName: o.teamName, color: o.color, color2: o.color2, facilities: o.facilities, staff: o.staff, ownerGrant: B * 0.72 * k * upkeepK, sponsorLevel: 0.45 * k, target: o.target }, g.rng);
+  c.motorsport = createDivision(g, c, { discipline: o.discipline, teamName: o.teamName, color: o.color, color2: o.color2, facilities: o.facilities, staff: o.staff, ownerGrant: 0, sponsorLevel: sponsorTarget(1, k, 0.4), target: o.target, scale: k }, g.rng);
+  // The owners fund what a reference team of this size needs to break even in mid-field. Better facilities or
+  // staff than the reference cost more to run and come out of that envelope; leaner choices leave a margin.
+  const grant = breakEvenGrant(g, c, c.motorsport) * (o.difficulty === 'easy' ? 1.08 : o.difficulty === 'hard' ? 0.93 : 1);
+  c.motorsport.ownerGrant = grant; c.motorsport.ownerBase = grant;
   news(g, 'motorsport', `${o.teamName} enters the ${regs.seriesName}`, `${regs.className}. ${regs.note}`, 'historical');
   openBooks(player(g));
   return g;
@@ -230,6 +232,7 @@ export function advanceMonth(g: GameState) {
   if (g.month > 12) { g.month = 1; g.year++; newYear(g); }
   g.macro.interestBase = kf(INTEREST_BASE, g.year + (g.month - 1) / 12);
   fireHistorical(g, g.rng);
+  for (const m of p.models) if (m.recallRisk > 0) m.recallRisk = m.recallRisk < 0.02 ? 0 : m.recallRisk * 0.88; // trust returns over about a year
   if (!g.gameOver) rollRandomEvent(g, p, g.rng);
   void annualProfit; void annualUnits; void engineerCost;
 }

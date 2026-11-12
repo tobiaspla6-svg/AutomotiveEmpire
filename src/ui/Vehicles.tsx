@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { BodyType, EngineLayout, SegmentId, VehicleModel, VehicleSpec } from '../sim/types';
 import { useGame, useStore } from '../store/game';
-import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle } from '../sim/engineering';
+import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle, suggestFinalDrive } from '../sim/engineering';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { SEG, SEGMENTS, segPrice } from '../data/world';
 import { cancelDevelopment, retireModel, setPrice, startDevelopment, validateSpec } from '../sim/actions';
 import { devEngineersNeeded, estimateUnitCost, makeModel } from '../sim/company';
-import { suggestSegment, suggestedPrice } from '../sim/market';
+import { annualSupply, computeMarket, suggestSegment } from '../sim/market';
+import { DEALER_NET, TYPICAL_VOLUME, contributionAt, demandCurve, priceGuide } from '../sim/pricing';
 import { fmtMoney, fmtNum } from '../sim/util';
 import { BarList, LineChart, PageHead, ScoreBar, Seg, Select, Slider, StatLine, Tag } from './common';
 import { CarViewer } from '../three/CarViewer';
@@ -79,9 +80,18 @@ const nextName = (n: string) => { const m = n.match(/^(.*?)(?: Mk ?(\d+))?$/); r
 function ModelCard({ m }: { m: VehicleModel }) {
   const { g, p } = useGame();
   const s = m.stats;
+  const act = useStore((st) => st.act);
   const cost = m.lastUnitCost || estimateUnitCost(g, p, m);
-  const margin = m.price * 0.88 - cost;
-  const sug = suggestedPrice(m, p, g.year);
+  const margin = m.price * DEALER_NET - cost;
+  const onSale = m.status === 'production' || m.status === 'ready';
+  // price guidance at the volume the lines can build (or a typical volume before a line exists)
+  const hasLine = p.factories.some((f) => f.lines.some((l) => l.modelId === m.id));
+  const vol = hasLine ? annualSupply(p, m) / 12 : TYPICAL_VOLUME[m.segment];
+  const mk = useMemo(() => computeMarket(g), [g.year, g.month, g.companies.length]);
+  const guide = useMemo(() => priceGuide(g, p, m, vol, { mk }), [mk, m.id, m.price, vol, m.lastUnitCost]);
+  const curve = useMemo(() => demandCurve(g, p, m, vol, mk), [mk, m.id, vol]);
+  const at = (price: number) => { const d = Math.min(curve(price), vol); return { d, profit: contributionAt(price, guide.unitCost) * d }; };
+  const now = at(m.price), rec = at(guide.recommended);
   return (
     <div className="panel col" style={{ gap: 8 }}>
       <div className="row between"><h3>{m.name}</h3><span className="muted small">{STATUS[m.status]}</span></div>
@@ -90,9 +100,20 @@ function ModelCard({ m }: { m: VehicleModel }) {
         <StatLine label="Power / torque" value={`${Math.round(s.powerKw)} kW / ${Math.round(s.torqueNm)} Nm`} />
         <StatLine label="Mass" value={`${Math.round(s.mass)} kg`} /><StatLine label="Top speed" value={`${Math.round(s.topSpeed)} km/h`} />
         <StatLine label={s.engine.isEV ? 'Consumption' : 'Fuel (combined)'} value={s.engine.isEV ? `${s.fuelCombined.toFixed(1)} kWh/100 km` : `${s.fuelCombined.toFixed(1)} L/100 km`} />
-        <StatLine label="Price vs. suggested" value={<>{fmtMoney(m.price)} <span className="muted">/ {fmtMoney(sug)}</span></>} />
-        <StatLine label="Unit cost" value={fmtMoney(cost)} /><StatLine label="Margin per car (after dealer)" value={<span className={margin < 0 ? 'bad' : 'good'}>{fmtMoney(margin)}</span>} />
+        <StatLine label="Unit cost" value={fmtMoney(cost)} /><StatLine label="Contribution per car (after dealer)" value={<span className={margin < 0 ? 'bad' : 'good'}>{fmtMoney(margin)}{m.price > 0 ? ` · ${Math.round((margin / (m.price * DEALER_NET)) * 100)}%` : ''}</span>} />
       </div>
+      {onSale && <div className="col" style={{ gap: 3 }}>
+        <h4>Pricing at {fmtNum(vol)} cars / month <span className="muted tiny">(estimates from today's market)</span></h4>
+        <div className="grid g2" style={{ gap: 4 }}>
+          <StatLine label="Your price" value={<b>{fmtMoney(m.price)}</b>} /><StatLine label="Recommended retail price" value={<b>{fmtMoney(guide.recommended)}</b>} title="The price that earns the most contribution at this volume, given the demand curve and your competitors' current prices." />
+          <StatLine label="Worth to buyers" value={fmtMoney(guide.value)} title="What buyers of this segment consider a fair price for this car from your brand, including any scarcity premium. Above it, demand falls away quickly." /><StatLine label="Break-even price" value={<span className={m.price < guide.breakEven ? 'bad' : ''}>{fmtMoney(guide.breakEven)}</span>} title={`Unit cost plus ${fmtMoney(guide.devPerCar)} development and ${fmtMoney(guide.toolingPerCar)} tooling per car over ${fmtNum(guide.lifeUnits)} cars, after the dealer's ${Math.round((1 - DEALER_NET) * 100)}% margin.`} />
+          <StatLine label="Est. sales at your price" value={`${fmtNum(now.d)} / mo`} /><StatLine label="Est. sales at recommended" value={`${fmtNum(rec.d)} / mo`} />
+          <StatLine label="Est. contribution at your price" value={<span className={now.profit < 0 ? 'bad' : ''}>{fmtMoney(now.profit)} / mo</span>} /><StatLine label="Est. contribution at recommended" value={`${fmtMoney(rec.profit)} / mo`} />
+        </div>
+        {m.price < guide.breakEven && <div className="warnbox">Below break-even: at {fmtMoney(m.price)} each car fails to cover its share of development and tooling.</div>}
+        {m.price > guide.value * 1.35 && <div className="warnbox">Priced {Math.round((m.price / guide.value - 1) * 100)}% above what buyers think the car is worth: expect weak sales.</div>}
+        {Math.abs(m.price / guide.recommended - 1) > 0.03 && <div className="row"><button className="btn sm" onClick={() => act((gg) => setPrice(gg, m.id, Math.round(guide.recommended / 10) * 10), 'Price set to the recommended retail price.')}>Use recommended price</button></div>}
+      </div>}
       <div className="col" style={{ gap: 4 }}>{SCORE_KEYS.map((k) => <ScoreBar key={k} label={cap(k)} value={s.scores[k]} color={(SEG[m.segment].weights[k] ?? 0) >= 0.15 ? 'var(--accent)' : 'var(--s1)'} />)}</div>
       <p className="tiny muted">Scores are relative to the standards of {g.year}: an ageing design scores lower every year. Highlighted bars matter most to {SEG[m.segment].name.toLowerCase()} buyers.</p>
       {m.status === 'development' && <p className="small warn">In development: {Math.ceil(m.devMonthsLeft)} of {m.devMonthsTotal} months left · {fmtMoney(m.devCostPaid)} of {fmtMoney(m.devCostTotal)} spent · needs ≈{Math.round(devEngineersNeeded(g, p, m))} engineers.</p>}
@@ -119,7 +140,12 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
   const autoSeg = suggestSegment(stats.scores as unknown as Record<string, number>, spec.body, unit, g.year);
   const seg = segOverride ?? autoSeg;
   temp.segment = seg;
-  const sug = suggestedPrice(temp, p, g.year);
+  const [planVol, setPlanVol] = useState<number | null>(null);
+  const vol = planVol ?? TYPICAL_VOLUME[seg];
+  const mk = useMemo(() => computeMarket(g), [g.year, g.month, g.companies.length]);
+  const guide = useMemo(() => priceGuide(g, p, temp, vol, { mk, devCost: stats.devCost }), [mk, temp, seg, vol]);
+  const volToSlider = (v: number) => Math.round((Math.log(v / 5) / Math.log(4000)) * 100);
+  const sliderToVol = (t: number) => { const v = 5 * Math.pow(4000, t / 100); const stepSize = v < 50 ? 1 : v < 500 ? 10 : v < 5000 ? 50 : 500; return Math.round(v / stepSize) * stepSize; };
   const missing = missingTechs(spec, p.tech);
   const invalid = validateSpec(spec);
   const lock = (id: string) => !hasTech(p.tech, id);
@@ -186,6 +212,8 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
               <Select label="Gearbox" value={spec.gearbox} onChange={(v) => up({ gearbox: v })} options={[{ value: 'manual', label: 'Manual' }, { value: 'auto', label: 'Automatic (torque converter)' }, { value: 'dct', label: 'Dual-clutch', disabled: lock('dct'), note: note('dct') }]} />
               <Slider label="Number of gears" value={Math.min(spec.gears, maxGears)} min={3} max={maxGears} onChange={(v) => up({ gears: v })} fmt={(v) => `${v}-speed`} />
               <Slider label="Final drive ratio" value={spec.finalDrive} min={2.2} max={5.5} step={0.05} onChange={(v) => up({ finalDrive: v })} fmt={(v) => `${v.toFixed(2)} : 1`} hint="Shorter (higher number) = stronger acceleration, lower top speed and higher cruising revs." />
+              <div className="row small" style={{ gap: 8 }}><button className="btn" onClick={() => up({ finalDrive: suggestFinalDrive(spec, { year: g.year, tech: p.tech }) })}>Match gearing to top speed</button><span className="muted">engineer's suggestion: {suggestFinalDrive(spec, { year: g.year, tech: p.tech }).toFixed(2)} : 1</span></div>
+              {spec.enginePos === 'front' && spec.drive !== 'FWD' && <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!!spec.transaxle} onChange={(x) => up({ transaxle: x.target.checked })} /> Rear transaxle (gearbox at the rear axle: ≈ 4 % more weight on the driven wheels, costlier driveline)</label>}
             </>}
             {ev && <p className="small muted">Electric cars use a single-speed reduction gear.</p>}
             <StatLine label="Weight on front axle" value={`${Math.round(stats.weightFront * 100)}%`} />
@@ -238,6 +266,7 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
             <StatLine label="Torque" value={`${Math.round(stats.torqueNm)} Nm @ ${Math.round(stats.engine.torqueRpm)}`} />
             <StatLine label="Kerb mass" value={`${Math.round(stats.mass)} kg · ${Math.round(stats.powerToWeight)} kW/t`} />
             <StatLine label="0–100 km/h" value={`${stats.zeroTo100.toFixed(1)} s`} /><StatLine label="Quarter mile" value={`${stats.quarterMile.toFixed(1)} s`} />
+            <StatLine label="80–120 km/h" value={stats.passing80to120 != null ? `${stats.passing80to120.toFixed(1)} s` : '—'} title="Full-throttle overtaking, through the gears." /><StatLine label="0–200 km/h" value={stats.zeroTo200 != null ? `${stats.zeroTo200.toFixed(1)} s` : '—'} />
             <StatLine label="Top speed" value={`${Math.round(stats.topSpeed)} km/h`} /><StatLine label="Braking 100–0" value={`${stats.braking100.toFixed(1)} m`} />
             <StatLine label="Cornering" value={`${stats.lateralG.toFixed(2)} g`} />
             <StatLine label={ev ? 'Consumption' : 'Fuel urban / highway'} value={ev ? `${stats.fuelCombined.toFixed(1)} kWh/100 km` : `${stats.fuelUrban.toFixed(1)} / ${stats.fuelHighway.toFixed(1)} L/100 km`} />
@@ -251,10 +280,18 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
             <h4>Market & programme</h4>
             <Select label={`Target segment (best fit: ${SEG[autoSeg].name})`} value={seg} options={SEGMENTS.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => setSegOverride(v)} />
             {fit < 0.7 && <div className="warnbox">A {BODY[spec.body].name.toLowerCase()} is a poor fit for {def.name.toLowerCase()} buyers (body-style fit {Math.round(fit * 100)}%).</div>}
-            <StatLine label="Est. unit cost (400 / month)" value={fmtMoney(unit)} />
+            <Slider label="Planned volume" value={volToSlider(vol)} min={0} max={100} onChange={(t) => setPlanVol(sliderToVol(t))} fmt={() => `${fmtNum(vol)} cars / month`} hint="Unit cost, the share of development each car must carry, scarcity and the recommended price all depend on how many you plan to build." />
+            <StatLine label="Unit cost at this volume" value={fmtMoney(guide.unitCost)} title="Parts and assembly labour per car." />
+            <StatLine label="Development + tooling per car" value={fmtMoney(guide.devPerCar + guide.toolingPerCar)} title={`Spread over ${fmtNum(guide.lifeUnits)} cars: the planned volume for the ${Math.round(guide.lifeUnits / vol / 12)} years a ${def.name.toLowerCase()} model usually stays on sale.`} />
+            <StatLine label="Break-even price" value={fmtMoney(guide.breakEven)} title="List price at which a car covers its unit cost and its share of development and tooling after the dealer's margin." />
             <StatLine label="Segment reference price" value={fmtMoney(segPrice(seg, g.year))} />
-            <StatLine label="Suggested price" value={<b>{fmtMoney(sug)}</b>} />
-            <StatLine label="Margin at suggested price" value={<span className={sug * 0.88 - unit < 0 ? 'bad' : 'good'}>{fmtMoney(sug * 0.88 - unit)} / car</span>} />
+            <StatLine label="Worth to buyers (est.)" value={fmtMoney(guide.value)} title="What buyers of this segment consider a fair price for this car from your brand at this volume. Better cars, stronger brands and — for prestige makers — rarer cars are worth more." />
+            <StatLine label="Recommended retail price (est.)" value={<b>{fmtMoney(guide.recommended)}</b>} title="The price that earns the most contribution at the planned volume with competitors at today's prices. You can set any price once the car is on sale." />
+            <StatLine label="Contribution margin (est.)" value={<span className={guide.contribution < 0 ? 'bad' : 'good'}>{fmtMoney(guide.contribution)} / car · {Math.round(guide.contributionPct * 100)}%</span>} title="Net price after the dealer's margin minus unit cost, at the recommended price." />
+            <StatLine label="Demand at that price (est.)" value={guide.blind ? 'no dealers yet' : `${fmtNum(guide.rawDemand)} / month`} />
+            {!guide.viable && <div className="warnbox">Not viable at this volume: the break-even price is {Math.round((guide.breakEven / guide.recommended - 1) * 100)}% above the best price the market will pay. Raise the volume, cut cost, or accept a loss-making flagship.</div>}
+            {guide.viable && !guide.blind && guide.rawDemand < vol * 0.6 && <div className="warnbox">Estimated demand is well below the planned volume — plan a smaller line, or a cheaper or better car.</div>}
+            {!guide.blind && guide.rawDemand > vol * 1.5 && <p className="tiny muted">Demand exceeds the planned volume; the recommended price already rations the cars you can build.</p>}
             <StatLine label="Development cost" value={fmtMoney(stats.devCost)} title="The full budget is charged month by month as the work progresses. Reduced when a new generation re-uses the previous platform or engine." />
             <StatLine label="Development time" value={`≈ ${stats.devMonths} months with enough engineers`} />
             <StatLine label="Line tooling" value={`${fmtMoney(stats.toolingPerUnitCapacity)} per unit of monthly capacity`} />

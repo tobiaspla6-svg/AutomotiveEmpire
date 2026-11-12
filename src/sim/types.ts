@@ -46,6 +46,8 @@ export interface VehicleSpec {
   panels: PanelType;
   engine: EngineSpec;
   enginePos: 'front' | 'mid' | 'rear';
+  /** Gearbox mounted at the rear axle of a front-engined car (better weight distribution, dearer driveline). Absent = false. */
+  transaxle?: boolean;
   drive: 'FWD' | 'RWD' | 'AWD';
   gearbox: Gearbox;
   gears: number;
@@ -72,6 +74,8 @@ export interface Tech { engine: number; chassis: number; aero: number; electroni
 
 export interface CurvePoint { rpm: number; nm: number; kw: number }
 export interface EngineStats {
+  /** Battery pack share of cost2020 (electric cars); absent for combustion engines and in older saves. */
+  batteryCost2020?: number;
   isEV: boolean;
   powerKw: number; powerRpm: number; torqueNm: number; torqueRpm: number;
   curve: CurvePoint[];
@@ -95,6 +99,8 @@ export interface VehicleStats {
   massBreakdown: Record<string, number>;
   powerKw: number; torqueNm: number; powerToWeight: number; // kW/t
   zeroTo100: number; quarterMile: number; topSpeed: number; // s, s, km/h
+  /** 0–200 km/h in seconds (null if the car cannot reach it) and 80–120 km/h under full throttle. Absent in stats computed by older versions. */
+  zeroTo200?: number | null; passing80to120?: number | null;
   braking100: number; lateralG: number;
   cd: number; frontalArea: number; cdA: number; clA: number; downforce200: number; // kg at 200 km/h (negative = lift)
   fuelUrban: number; fuelHighway: number; fuelCombined: number; // L/100km (or kWh/100km for EV)
@@ -211,6 +217,10 @@ export interface Company {
   ytdProfit: number;
   msGlow: number; // decaying brand halo from motorsport results
   autoPrice: boolean; // index list prices to inflation every January
+  /** AI only: months left of a cost-cutting programme / of crisis price cuts (absent = none; older saves have neither). */
+  aiCostCut?: number; aiPriceCut?: number;
+  /** Player: months left of a restructuring programme (lower overheads and plant fixed costs). Absent = none. */
+  restructuring?: number;
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
   books: Books;
@@ -293,6 +303,10 @@ export interface MotorsportDivision {
   devBudget: number; // per month
   devFocus: DevLevels; // weights
   ownerGrant: number; // per year (motorsport mode: owner/parent funding)
+  /** Team size relative to a typical entrant of its category (Privateer 0.55 … Front-runner 1.35). Absent in saves before Phase 2. */
+  scale?: number;
+  /** Funding the owners have agreed per year; `ownerGrant` is what they actually pay this season. Absent in older saves. */
+  ownerBase?: number;
   sponsors: { name: string; annual: number }[];
   history: SeasonSummary[];
   seasonIncome: number; seasonCost: number;
