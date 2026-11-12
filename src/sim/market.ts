@@ -182,6 +182,7 @@ export function appeal(g: GameState, c: Company, m: VehicleModel, region: Region
     if (m.stats.rangeKm < 300) q *= clamp(m.stats.rangeKm / 300, 0.2, 1);
   }
   if (s.safety < 25) q *= 0.6;
+  if (m.recallRisk > 0) q *= 1 - 0.3 * Math.min(1, m.recallRisk); // lost trust after a defect (recovers over months)
   q *= 0.4 + (0.6 * c.awareness[region]) / 100;
   if (c.homeRegion === region) q *= 1.12;
   const imp = modProduct(g, (x) => (builtInRegion(c, m.id, region) ? 1 : x.importPenalty?.[region]));

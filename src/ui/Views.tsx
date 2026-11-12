@@ -18,6 +18,9 @@ import { prepareLoadedGame } from '../sim/migrate';
 import { equity, fixedAssets, inventoryValue } from '../sim/accounts';
 import { BarList, Kpi, LineChart, Meter, Modal, Money, PageHead, PALETTE, Select, Slider, StatLine, Tag } from './common';
 import { MAKER } from '../data/manufacturers';
+import { companyStrategy } from '../sim/pricing';
+import { RESTRUCTURE, restructuringSaving } from '../sim/company';
+import { startRestructuring } from '../sim/actions';
 
 const ledgerLabels = (l: MonthLedger[]) => l.map((x) => `${MONTHS[x.m - 1]} ${String(x.y).slice(2)}`);
 const yearly = (l: MonthLedger[], f: (x: MonthLedger) => number, n = 12) => l.slice(-n).reduce((a, x) => a + f(x), 0);
@@ -317,6 +320,32 @@ export function FinanceView() {
 }
 
 // ---------------------------------------------------------------------------------- Company
+function StrategyPanel() {
+  const { g, p } = useGame();
+  const act = useStore((s) => s.act), ask = useStore((s) => s.ask);
+  const st = companyStrategy(p);
+  const saving = restructuringSaving(g, p), upfront = saving * RESTRUCTURE.upfrontYears;
+  return (
+    <div className="grid g2">
+      <div className="panel col"><h3>Identity: {st.title} <Tag kind="e" title="Estimated game data">est.</Tag></h3>
+        <p className="small dim">{st.summary}</p>
+        <StatLine label="Strengths" value={st.strengths.join(' · ')} /><StatLine label="Risks" value={st.risks.join(' · ')} />
+        <p className="tiny muted">Rival manufacturers follow their own identities: how they price, how readily they follow a price cut, how often they renew a model and what they do after a bad year.</p>
+      </div>
+      <div className="panel col"><h3>Restructuring</h3>
+        {p.restructuring ? <p className="small">Programme under way: {p.restructuring} months left. Overheads {Math.round(RESTRUCTURE.overheadCut * 100)}% and plant fixed costs {Math.round(RESTRUCTURE.fixedCut * 100)}% lower.</p> : <>
+          <StatLine label="Up-front cost (severance, consultants)" value={fmtMoney(upfront)} />
+          <StatLine label="Estimated saving" value={`${fmtMoney(saving)} / year for ${RESTRUCTURE.months / 12} years`} />
+          <StatLine label="Estimated payback" value={saving > 0 ? `${Math.round((upfront / saving) * 12)} months` : '—'} />
+          <StatLine label="Risk" value={`reliability reputation −${RESTRUCTURE.reputation} (disruption)`} />
+          <p className="tiny muted">Estimates at the company's current size. For a deeper cut, also reduce engineers, research, marketing or plants — each saves money now and costs capability later.</p>
+          <div className="row"><button className="btn" disabled={!(saving > 0)} onClick={() => ask(`Start a restructuring programme? It costs about ${fmtMoney(upfront)} now and should save about ${fmtMoney(saving)} a year (estimate).`, () => act((gg) => startRestructuring(gg), 'Restructuring programme started.'))}>Start restructuring</button></div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
 export function CompanyView() {
   const { g, p } = useGame();
   const act = useStore((s) => s.act), ask = useStore((s) => s.ask);
@@ -340,6 +369,7 @@ export function CompanyView() {
           {p.dataId && MAKER[p.dataId]?.eras.map((e) => <div key={e.from} className="small"><Tag kind="h">{e.from}–{e.to > 2090 ? 'today' : e.to}</Tag> <span className="dim">{e.text}</span></div>)}
         </div>
       </div>
+      <StrategyPanel />
       <div className="panel col"><h3>Acquisitions</h3>
         <p className="small muted">Buying a competitor (30% premium over valuation) brings its plants, dealer network, engineers, technology and model range into your company. Its cars become yours to build, redesign or retire.</p>
         <div className="tablewrap" style={{ maxHeight: 380 }}><table><thead><tr><th>Company</th><th>Country</th><th className="r">Cars / yr</th><th className="r">Revenue / yr</th><th className="r">Profit / yr</th><th className="r">Prestige</th><th className="r">Price</th><th /></tr></thead><tbody>

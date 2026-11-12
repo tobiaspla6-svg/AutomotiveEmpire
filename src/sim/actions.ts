@@ -3,7 +3,7 @@
 import type { Company, DevLevels, Discipline, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
-import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, toolingCost, uid, unitCost, valuation } from './company';
+import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
 import { priceGuide } from './pricing';
 import { CYL } from './engineering';
 import { cpi, kf } from './util';
@@ -175,6 +175,19 @@ export function setEngineers(g: GameState, n: number): string | null {
   const err = pay(c, g, Math.abs(d) * engineerCost(c, g.year) * (d > 0 ? 2 : 3), 'oneOff'); // recruitment or severance
   if (err) return err;
   c.engineers = n;
+  return null;
+}
+/** Start a three-year restructuring programme (see RESTRUCTURE in company.ts). */
+export function startRestructuring(g: GameState): string | null {
+  const c = player(g);
+  if (c.restructuring) return 'A restructuring programme is already under way.';
+  const saving = restructuringSaving(g, c);
+  if (!(saving > 0)) return 'There is nothing to restructure yet.';
+  const err = pay(c, g, saving * RESTRUCTURE.upfrontYears, 'oneOff');
+  if (err) return err;
+  c.restructuring = RESTRUCTURE.months;
+  c.reliabilityRep = Math.max(0, c.reliabilityRep - RESTRUCTURE.reputation);
+  news(g, 'company', `${c.name} announces a restructuring programme`, `Severance and consultants cost about $${((saving * RESTRUCTURE.upfrontYears) / 1e6).toFixed(1)}M now; overheads should fall by about $${(saving / 1e6).toFixed(1)}M a year for three years (estimate).`);
   return null;
 }
 export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35);

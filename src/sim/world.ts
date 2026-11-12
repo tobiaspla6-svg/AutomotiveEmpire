@@ -232,6 +232,7 @@ export function advanceMonth(g: GameState) {
   if (g.month > 12) { g.month = 1; g.year++; newYear(g); }
   g.macro.interestBase = kf(INTEREST_BASE, g.year + (g.month - 1) / 12);
   fireHistorical(g, g.rng);
+  for (const m of p.models) if (m.recallRisk > 0) m.recallRisk = m.recallRisk < 0.02 ? 0 : m.recallRisk * 0.88; // trust returns over about a year
   if (!g.gameOver) rollRandomEvent(g, p, g.rng);
   void annualProfit; void annualUnits; void engineerCost;
 }

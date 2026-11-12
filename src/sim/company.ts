@@ -50,6 +50,18 @@ export function estimateUnitCost(g: GameState, c: Company, m: VehicleModel, mont
   return unitCost(g, m, f, monthlyVol || Math.max(20, m.lastDemand));
 }
 
+/**
+ * Restructuring programme: for three years administrative overheads fall by a quarter and plant fixed costs by a
+ * tenth. Severance and consultants cost half a year of the expected saving up front, and the disruption costs a
+ * little reliability reputation.
+ */
+export const RESTRUCTURE = { months: 36, overheadCut: 0.25, fixedCut: 0.1, upfrontYears: 0.5, reputation: 2 } as const;
+/** Expected annual saving of a restructuring programme at the company's current size. */
+export function restructuringSaving(g: GameState, c: Company): number {
+  const rev = annualRevenue(c);
+  const fixed = c.factories.reduce((a, f) => a + factoryFixedCost(f, g.year), 0) * 12;
+  return rev * 0.035 * RESTRUCTURE.overheadCut + fixed * RESTRUCTURE.fixedCut;
+}
 export const factoryBuildCost = (capacity: number, automation: number, year: number) => capacity * 12 * 4000 * (1 + automation) * cpi(year) * kf([[1950, 0.5], [1990, 0.85], [2020, 1]], year);
 export const factoryFixedCost = (f: Factory, year: number) => Math.max(f.capacity, 40) * (6 * wage(f.country, year) + 180 * cpi(year) * (1 + 1.5 * f.automation));
 export const factoryValue = (f: Factory, year: number) => factoryBuildCost(f.capacity, f.automation, year) * 0.45;
@@ -113,7 +125,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         news(g, 'company', `${f.name} expansion complete`, `Capacity is now ${Math.round(f.capacity).toLocaleString()} units per month.`);
       }
     }
-    L.factoryFixed += factoryFixedCost(f, g.year);
+    L.factoryFixed += factoryFixedCost(f, g.year) * (c.restructuring ? 1 - RESTRUCTURE.fixedCut : 1);
     const regionMult = prodAll * modProduct(g, (m) => m.production?.[f.region]) * (f.disruption > 0 ? 0.25 : 1);
     if (f.disruption > 0) f.disruption--;
     for (const l of f.lines) {
@@ -212,7 +224,8 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   }
 
   // ---- overheads
-  L.wages = c.engineers * engineerCost(c, g.year) + L.revenue * 0.035 + (c.factories.length ? 0.4e6 * cpi(g.year) : 0);
+  L.wages = c.engineers * engineerCost(c, g.year) + L.revenue * (c.restructuring ? 0.035 * (1 - RESTRUCTURE.overheadCut) : 0.035) + (c.factories.length ? 0.4e6 * cpi(g.year) : 0);
+  if (c.restructuring) c.restructuring = Math.max(0, c.restructuring - 1);
   L.marketing = c.marketingBudget;
   const reachTotal = REGION_IDS.reduce((a, r) => a + c.reach[r], 0);
   L.other = reachTotal * 5 * cpi(g.year);

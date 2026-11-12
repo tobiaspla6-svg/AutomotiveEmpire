@@ -5,7 +5,7 @@
 // In "historical" mode every event fires on its date. In "alternative history" mode each event
 // is re-rolled when the game is created: it may not happen at all, may arrive up to two years
 // early or late, and its magnitude is scaled — a plausible divergence, not a random walk.
-import type { Company, Decision, GameState, Modifier, RegionId } from './types';
+import type { Company, Decision, GameState, Modifier, RegionId, VehicleModel } from './types';
 import { chance, pick, rnd, rndInt, rndRange, type Rng } from './rng';
 import { charge, receive } from './accounts';
 import { annualRevenue, engineerCost, news, TECH_AREAS, AREA_NAME } from './company';
@@ -157,17 +157,10 @@ export function rollRandomEvent(g: GameState, p: Company, rng: Rng) {
       news(g, 'company', `Supplier failure halts ${f.name}`, 'A fire at a single-source parts supplier stops deliveries. Output at the plant falls to a quarter for a month.');
     });
     add(1.3, () => {
-      const cands = p.models.filter((m) => m.status === 'production' && m.cumulativeUnits > 200);
-      if (!cands.length) return;
-      const m = cands.sort((a, b) => a.stats.scores.reliability - b.stats.scores.reliability)[rndInt(rng, 0, Math.min(1, cands.length - 1))];
-      if (!chance(rng, (100 - m.stats.scores.reliability) / 55)) return;
-      const units = m.salesHistory.slice(-24).reduce((a, b) => a + b, 0);
-      const cost = Math.max(units * m.stats.partsCost * 0.035, 0.2e6 * cpi(g.year));
-      setDecision(g, { id: 'recall', title: `Defect found in the ${m.name}`, body: `Warranty engineers trace a pattern of failures to a component fitted to about ${Math.round(units).toLocaleString()} cars.`,
-        options: [
-          { label: 'Recall every car', detail: `Costs ${money(cost)}; customers notice that you stand behind the product.`, effect: 'recall' },
-          { label: 'Fix quietly at service', detail: `Costs ${money(cost * 0.25)}; 40% chance the press finds out.`, effect: 'quiet' },
-        ], data: { cost, model: m.name } });
+      // a defect surfaces in the engine family with the highest hazard (volume × weak engine reliability × new design)
+      const fam = pickDefectFamily(g, p, rng);
+      if (!fam || !chance(rng, (100 - fam.reliability) / 55)) return;
+      setDecision(g, engineDefectDecision(g, p, fam.key));
     });
     add(1.0, () => {
       const m = p.models.filter((x) => x.status === 'production').sort((a, b) => b.launchYear - a.launchYear)[0];
@@ -249,6 +242,61 @@ export function rollRandomEvent(g: GameState, p: Company, rng: Rng) {
 
 function setDecision(g: GameState, d: Decision) { g.decision = d; }
 
+// ------------------------------------------------------------------------------------- engine families
+/** Models of one company that share a layout, aspiration and (within about ±10 %) displacement use one engine. */
+export function engineFamily(m: VehicleModel): string {
+  const e = m.spec.engine;
+  return e.layout === 'EV' ? `EV:${Math.round(e.motorKw / 25)}` : `${e.layout}:${e.aspiration}:${Math.round(Math.log(e.displacement) / Math.log(1.1))}`;
+}
+const onSale = (m: VehicleModel) => m.status === 'production' || (m.status === 'ready' && m.inventory > 0);
+/** Cars of each family sold in the last two years, their weakest engine reliability and a defect hazard. */
+export function engineFamilies(g: GameState, c: Company) {
+  const out = new Map<string, { key: string; models: VehicleModel[]; units: number; reliability: number; hazard: number; layout: string }>();
+  for (const m of c.models) {
+    if (!onSale(m)) continue;
+    const key = engineFamily(m);
+    const f = out.get(key) ?? { key, models: [], units: 0, reliability: 100, hazard: 0, layout: m.spec.engine.layout };
+    f.models.push(m);
+    f.units += m.salesHistory.slice(-24).reduce((a, b) => a + b, 0);
+    f.reliability = Math.min(f.reliability, m.stats.engine.reliability);
+    out.set(key, f);
+  }
+  for (const f of out.values()) {
+    const young = f.models.some((m) => m.designYear >= g.year - 2) ? 1.5 : 1; // early production of a new engine
+    f.hazard = f.units * Math.pow((100 - f.reliability) / 50, 2) * young;
+  }
+  return out;
+}
+export function pickDefectFamily(g: GameState, c: Company, rng: Rng) {
+  const fams = [...engineFamilies(g, c).values()].filter((f) => f.units > 200 && f.hazard > 0);
+  const total = fams.reduce((a, f) => a + f.hazard, 0);
+  if (!total) return null;
+  let r = rnd(rng) * total;
+  for (const f of fams) { r -= f.hazard; if (r <= 0) return f; }
+  return fams[fams.length - 1];
+}
+/** The decision put to the player when a defect is found in an engine family. */
+export function engineDefectDecision(g: GameState, c: Company, key: string): Decision {
+  const f = engineFamilies(g, c).get(key)!;
+  // repair cost: a share of the engine's cost for every car built in the last two years
+  const perCar = f.models.reduce((a, m) => a + (m.stats.costBreakdown.Powertrain ?? m.stats.partsCost * 0.25), 0) / f.models.length;
+  const cost = Math.max(f.units * perCar * 0.12, 0.2e6 * cpi(g.year));
+  const names = f.models.map((m) => m.name);
+  const all = c.models.filter(onSale).reduce((a, m) => a + m.salesHistory.slice(-24).reduce((x, y) => x + y, 0), 0) || 1;
+  const share = f.units / all;
+  const engine = f.layout === 'EV' ? 'electric drive unit' : `${f.layout} engine`;
+  const money = (x: number) => `$${x >= 1e9 ? (x / 1e9).toFixed(2) + 'B' : x >= 1e6 ? (x / 1e6).toFixed(1) + 'M' : (x / 1e3).toFixed(0) + 'k'}`;
+  return {
+    id: 'recall', title: `Defect found in the ${engine} of the ${names.join(', ')}`,
+    body: `Warranty engineers trace a pattern of failures to the ${engine} shared by ${names.length > 1 ? `${names.length} models` : 'the ' + names[0]} — about ${Math.round(f.units).toLocaleString()} cars built in the last two years, ${Math.round(share * 100)}% of your sales. Its reliability rating is ${Math.round(f.reliability)}/100.`,
+    options: [
+      { label: 'Recall every car', detail: `Costs ${money(cost)}. Buyers' trust in these models dips for a few months; your reliability reputation takes a small hit.`, effect: 'recall' },
+      { label: 'Fix quietly at service', detail: `Costs ${money(cost * 0.25)}. 40% chance the press finds out: then a forced recall at 1.5× the cost, a large reputation loss and buyers shunning every model with this engine.`, effect: 'quiet' },
+    ],
+    data: { cost, model: names.join(', '), family: key, share },
+  };
+}
+
 export function resolveDecision(g: GameState, optionIdx: number, rng: Rng) {
   const d = g.decision; if (!d) return;
   const p = g.companies.find((c) => c.id === g.playerId)!;
@@ -259,11 +307,20 @@ export function resolveDecision(g: GameState, optionIdx: number, rng: Rng) {
     else if (chance(rng, 0.6)) { const f = p.factories.find((x) => x.id === d.data?.factory); if (f) f.disruption = 2; news(g, 'company', 'Walk-out', 'The workforce strikes. Output at the plant collapses for two months.'); }
     else news(g, 'company', 'The union backs down', 'Without support for a strike, the dispute fades away.');
   } else if (d.id === 'recall') {
-    if (eff === 'recall') { charge(p, cost); p.reliabilityRep = Math.max(0, p.reliabilityRep - 1); news(g, 'company', `${d.data?.model} recalled`, 'The recall is handled promptly. Owners are reassured.'); }
-    else {
+    const family = d.data?.family ? String(d.data.family) : null;
+    const share = Number(d.data?.share ?? 0.3);
+    const affected = family ? p.models.filter((m) => engineFamily(m) === family) : p.models.filter((m) => m.name === d.data?.model);
+    if (eff === 'recall') {
+      charge(p, cost); p.reliabilityRep = Math.max(0, p.reliabilityRep - (1 + 3 * share));
+      for (const m of affected) m.recallRisk = Math.max(m.recallRisk ?? 0, 0.25);
+      news(g, 'company', `${d.data?.model} recalled`, 'The recall is handled promptly. Owners are reassured, though showroom traffic dips for a while.');
+    } else {
       charge(p, cost * 0.25);
-      if (chance(rng, 0.4)) { p.reliabilityRep = Math.max(0, p.reliabilityRep - 8); p.prestige = Math.max(0, p.prestige - 4); charge(p, cost * 1.5); news(g, 'company', 'Cover-up exposed', `Journalists reveal the hidden ${d.data?.model} defect. A forced recall, fines and a battered reputation follow.`); }
-      else news(g, 'company', 'Quiet fix', 'Cars are repaired at their next service. Nobody notices.');
+      if (chance(rng, 0.4)) {
+        p.reliabilityRep = Math.max(0, p.reliabilityRep - (5 + 8 * share)); p.prestige = Math.max(0, p.prestige - 4); charge(p, cost * 1.5);
+        for (const m of affected) m.recallRisk = 1;
+        news(g, 'company', 'Cover-up exposed', `Journalists reveal the hidden defect in the ${d.data?.model}. A forced recall, fines and a battered reputation follow; buyers avoid every model with that engine.`);
+      } else news(g, 'company', 'Quiet fix', 'Cars are repaired at their next service. Nobody notices.');
     }
   } else if (d.id === 'poach') {
     if (eff === 'pay') { charge(p, cost); news(g, 'company', 'Team retained', 'Your engineers stay.'); }
