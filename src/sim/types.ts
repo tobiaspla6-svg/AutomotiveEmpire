@@ -299,6 +299,10 @@ export interface MotorsportDivision {
   devBudget: number; // per month
   devFocus: DevLevels; // weights
   ownerGrant: number; // per year (motorsport mode: owner/parent funding)
+  /** Team size relative to a typical entrant of its category (Privateer 0.55 … Front-runner 1.35). Absent in saves before Phase 2. */
+  scale?: number;
+  /** Funding the owners have agreed per year; `ownerGrant` is what they actually pay this season. Absent in older saves. */
+  ownerBase?: number;
   sponsors: { name: string; annual: number }[];
   history: SeasonSummary[];
   seasonIncome: number; seasonCost: number;

@@ -9,7 +9,7 @@ import { CYL } from './engineering';
 import { cpi, kf } from './util';
 import { player } from './world';
 import { getRegs, disciplineAvailable } from './racing/regs';
-import { budgetRef, createDivision, driverSalary, playerTeam, teamRegs } from './racing/season';
+import { budgetRef, createDivision, driverSalary, playerTeam, teamRegs, teamScale } from './racing/season';
 import { checkLegal, raceEngineSpec } from './racing/racecar';
 import { borrow, clearStock, dispose, repay, spend, type SpendKind } from './accounts';
 
@@ -241,7 +241,7 @@ export function establishMotorsport(g: GameState, discipline: Discipline, teamNa
   const B = budgetRef(getRegs(discipline, g.year), g.year);
   const err = pay(c, g, B * 0.5, 'motorsport');
   if (err) return err;
-  c.motorsport = createDivision(g, c, { discipline, teamName: teamName.trim() || `${c.name} Racing`, color: c.color, color2: c.color2, facilities: 2, staff: 58, ownerGrant: 0, sponsorLevel: 0.3, target: 6 }, g.rng);
+  c.motorsport = createDivision(g, c, { discipline, teamName: teamName.trim() || `${c.name} Racing`, color: c.color, color2: c.color2, facilities: 2, staff: 58, ownerGrant: 0, sponsorLevel: 0.3, target: 6, scale: 0.7 }, g.rng);
   news(g, 'motorsport', `${c.name} goes racing`, `A motorsport division is founded to contest the ${c.motorsport.championship.name}. Results will shape the brand; its costs appear in the parent company's accounts, and its technology feeds back into road-car research.`);
   return null;
 }
@@ -309,12 +309,8 @@ export function redesignRaceCar(g: GameState, spec: RaceCarSpec): string | null 
   const team = playerTeam(div), regs = teamRegs(team, div.championship.year);
   const legal = checkLegal(raceEngineSpec(spec.engine, regs), regs);
   if (legal.length) return legal[0];
-  const old = team.car;
-  const engineNew = old.engine.layout !== spec.engine.layout || old.engine.displacement !== spec.engine.displacement || old.engine.aspiration !== spec.engine.aspiration || old.engine.valvetrain !== spec.engine.valvetrain;
-  const engineTune = JSON.stringify(old.engine) !== JSON.stringify(spec.engine);
-  const chassisNew = Math.abs(old.aeroBias - spec.aeroBias) > 0.15 || Math.abs(old.stiffness - spec.stiffness) > 0.25 || Math.abs(old.weightEffort - spec.weightEffort) > 0.2 || Math.abs(old.cooling - spec.cooling) > 0.25;
-  const B = budgetRef(regs, g.year);
-  const cost = B * ((engineNew ? 0.12 : engineTune ? 0.02 : 0) + (chassisNew ? 0.06 : 0) + spec.weightEffort * 0.02);
+  const { engineNew, chassisNew } = redesignKinds(team.car, spec);
+  const cost = redesignCost(g, c, team.car, spec);
   const err = pay(c, g, cost, 'motorsport');
   if (err) return err;
   if (engineNew) { team.dev.engine *= 0.5; team.dev.reliability *= 0.6; }
@@ -325,4 +321,17 @@ export function redesignRaceCar(g: GameState, spec: RaceCarSpec): string | null 
   return null;
 }
 export const raceCarRedesignCost = (g: GameState, c: Company) => budgetRef(teamRegs(playerTeam(c.motorsport!), g.year), g.year);
+/** What a change of race car costs. A small team builds fewer chassis and spares (and buys more parts in) than a works team, so it pays less. */
+export function redesignKinds(old: RaceCarSpec, spec: RaceCarSpec) {
+  const engineNew = old.engine.layout !== spec.engine.layout || old.engine.displacement !== spec.engine.displacement || old.engine.aspiration !== spec.engine.aspiration || old.engine.valvetrain !== spec.engine.valvetrain;
+  const engineTune = JSON.stringify(old.engine) !== JSON.stringify(spec.engine);
+  const chassisNew = Math.abs(old.aeroBias - spec.aeroBias) > 0.15 || Math.abs(old.stiffness - spec.stiffness) > 0.25 || Math.abs(old.weightEffort - spec.weightEffort) > 0.2 || Math.abs(old.cooling - spec.cooling) > 0.25;
+  return { engineNew, engineTune, chassisNew };
+}
+export function redesignCost(g: GameState, c: Company, old: RaceCarSpec, spec: RaceCarSpec): number {
+  const div = c.motorsport!; const team = playerTeam(div);
+  const B = budgetRef(teamRegs(team, div.championship.year), g.year);
+  const { engineNew, engineTune, chassisNew } = redesignKinds(old, spec);
+  return B * ((engineNew ? 0.12 : engineTune ? 0.02 : 0) + (chassisNew ? 0.06 : 0) + spec.weightEffort * 0.02) * (0.4 + 0.6 * teamScale(div));
+}
 export { driverSalary, kf };
