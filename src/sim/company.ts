@@ -37,8 +37,11 @@ export function refreshStats(g: GameState, m: VehicleModel) {
 
 export function unitCost(g: GameState, m: VehicleModel, f: Factory | { country: string; automation: number }, monthlyVol: number): number {
   const learning = Math.max(0.8, Math.pow(Math.max(m.cumulativeUnits, 500) / 500, -0.04));
-  const parts = m.stats.partsCost * materialIndex(g) * (1 + 1.5 / (1 + monthlyVol / 100)) * learning;
-  const labour = m.stats.labourHours * (1 - 0.65 * f.automation) * wage(f.country, g.year);
+  // Manufacturing know-how ahead of (or behind) the industry when the car was engineered: less scrap and rework,
+  // fewer hours per car. Three years ahead ≈ 4 % off parts and 9 % off labour.
+  const lead = clamp(m.frozenTech.manufacturing - (m.designYear - 1), -6, 8);
+  const parts = m.stats.partsCost * materialIndex(g) * (1 + 1.5 / (1 + monthlyVol / 100)) * learning * (1 - 0.012 * lead);
+  const labour = m.stats.labourHours * (1 - 0.65 * f.automation) * wage(f.country, g.year) * (1 - 0.03 * lead);
   return parts + labour;
 }
 /** Quick estimate used by the UI and by pricing before a factory is chosen. */

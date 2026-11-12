@@ -4,7 +4,7 @@ import type { Company, DevLevels, Discipline, GameState, RaceCarSpec, RegionId, 
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, toolingCost, uid, unitCost, valuation } from './company';
-import { suggestedPrice } from './market';
+import { priceGuide } from './pricing';
 import { CYL } from './engineering';
 import { cpi, kf } from './util';
 import { player } from './world';
@@ -87,9 +87,8 @@ export function addLine(g: GameState, factoryId: string, modelId: string, units:
   const ex = f.lines.find((l) => l.modelId === modelId);
   if (ex) { const oldU = ex.share * f.capacity; ex.share = (oldU + units) / f.capacity; ex.ramp = (ex.ramp * oldU + 0.3 * units) / (oldU + units); }
   else f.lines.push({ modelId, share: units / f.capacity, ramp: 0.3, target: -1 });
-  if (!m.price) { // sensible opening price: the segment-positioned price, but never below cost plus a margin at this line's volume
-    const cost = unitCost(g, m, f, units);
-    m.price = Math.round(Math.max(suggestedPrice(m, c, g.year), (cost * 1.2) / 0.88) / 10) * 10;
+  if (!m.price) { // opening price: the recommended retail price at this line's volume (the player can change it at any time)
+    m.price = Math.max(10, Math.round(priceGuide(g, c, m, units).recommended / 10) * 10);
   }
   return null;
 }

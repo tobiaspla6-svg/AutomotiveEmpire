@@ -74,6 +74,8 @@ export interface Tech { engine: number; chassis: number; aero: number; electroni
 
 export interface CurvePoint { rpm: number; nm: number; kw: number }
 export interface EngineStats {
+  /** Battery pack share of cost2020 (electric cars); absent for combustion engines and in older saves. */
+  batteryCost2020?: number;
   isEV: boolean;
   powerKw: number; powerRpm: number; torqueNm: number; torqueRpm: number;
   curve: CurvePoint[];

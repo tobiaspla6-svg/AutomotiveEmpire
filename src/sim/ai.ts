@@ -8,7 +8,8 @@ import { COUNTRY, REGION_IDS } from '../data/world';
 import { BODY, CYL, computeVehicle, defaultVehicle, suggestFinalDrive } from './engineering';
 import { emptyLedger, industryTech, makeModel, news, refreshStats, uid, unitCost, wage, zeroRegions, INTEREST_BASE, factoryValue } from './company';
 import { emptyPending, openBooks } from './accounts';
-import { suggestedPrice, type MarketResult } from './market';
+import { modelWeights, suggestedPrice, type MarketResult } from './market';
+import { aiTargetPrice } from './pricing';
 import { clamp, cpi, kf, lerp } from './util';
 import { rnd, type Rng } from './rng';
 
@@ -29,7 +30,8 @@ export function specFromRow(row: ModelRow, def: MakerDef): VehicleSpec {
   const utility = row.body === 'pickup' || row.body === 'suv';
   // limited-series flagships (a tiny share of the maker's volume) get the most exotic construction of their day
   const halo = seg === 'supercar' && row.w <= 0.2;
-  s.quality = clamp({ budget: 0.35, family: 0.45, premium: 0.65, luxury: 0.85, sports: 0.55, supercar: 0.8, suv: 0.5, pickup: 0.45 }[seg] + (exotic ? 0.05 : 0) + (kf(def.reliability, y) - 60) / 250, 0.15, 1);
+  // build quality: class, hand-built exotics, and a little for makers known for careful assembly
+  s.quality = clamp({ budget: 0.35, family: 0.45, premium: 0.6, luxury: 0.72, sports: 0.55, supercar: 0.8, suv: 0.48, pickup: 0.45 }[seg] + (exotic ? 0.05 : 0) + (kf(def.reliability, y) - 60) / 400, 0.15, 1);
   if (row.layout === 'EV') { e.motorKw = row.kw ?? 150; e.batteryKwh = row.kwh ?? 60; s.gearbox = 'auto'; }
   else {
     e.displacement = row.cc;
@@ -157,8 +159,8 @@ export function modelFromRow(g: GameState, c: Company, def: MakerDef, row: Model
   m.status = 'production'; m.launchYear = designYear; m.launchMonth = 1;
   m.cumulativeUnits = 20000 * row.w;
   const cost = unitCost(g, m, { country: c.country, automation: 0.4 }, 500 * row.w);
-  m.price = Math.max(cost * 1.22, suggestedPrice(m, c, g.year));
   m.lastUnitCost = cost;
+  m.price = Math.max(cost * 1.22, suggestedPrice(m, c, g.year)); // provisional; repriced by priceLineup() once the range is complete
   return m;
 }
 
@@ -168,6 +170,18 @@ export function presenceAt(def: MakerDef, year: number): Record<RegionId, number
   const sum = REGION_IDS.reduce((a, r) => a + out[r], 0) || 1;
   for (const r of REGION_IDS) out[r] /= sum;
   return out;
+}
+
+/** Set the list price of every car in an AI maker's range from its strategy (see pricing.ts). */
+export function priceLineup(g: GameState, c: Company, only?: VehicleModel) {
+  const w = modelWeights(c);
+  const reach = REGION_IDS.reduce((a, r) => a + c.reach[r], 0);
+  for (const m of c.models) {
+    if (m.status !== 'production' || (only && m !== only)) continue;
+    const supply = Math.max(12, reach * (w.get(m.id) ?? 0));
+    if (!m.salesHistory.length) m.lastUnitCost = unitCost(g, m, c.factories[0] ?? { country: c.country, automation: 0.4 }, Math.max(25, supply / 12));
+    m.price = aiTargetPrice(g, c, m, supply);
+  }
 }
 
 /** Give each active model production lines, filling the factories with the most free capacity first. */
@@ -223,6 +237,7 @@ export function companyFromMaker(g: GameState, def: MakerDef, isPlayer: boolean)
   }));
   for (const f of c.factories) f.bookValue = factoryValue(f, year); // [E] plants carried at estimated depreciated value
   allocateLines(c, volume / 12);
+  priceLineup(g, c);
   // [E] finances from the estimated "health" curve
   const wS = c.models.reduce((a, m) => a + m.volumeWeight, 0) || 1;
   const revenue = c.models.reduce((a, m) => a + (volume * m.volumeWeight) / wS * m.price * 0.88, 0);
@@ -282,6 +297,7 @@ export function runAiYear(g: GameState, c: Company, rng: Rng) {
     if (row.from === g.year && !c.models.some((m) => m.name === row.name && m.status === 'production')) {
       const m = modelFromRow(g, c, def, row); m.cumulativeUnits = 0;
       c.models.push(m);
+      priceLineup(g, c, m);
       if (row.w >= 2 || row.seg === 'supercar') news(g, 'market', `${c.name} launches the ${row.name}`, `New ${row.seg} model enters the market.`);
     }
   }

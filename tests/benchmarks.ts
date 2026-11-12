@@ -141,3 +141,25 @@ export const KNOWN_OUTLIERS: Record<string, string> = {
   'McLaren F1': 'bespoke lightweight construction and low-drag body',
   'Alpine A110': 'compact all-aluminium structure',
 };
+
+// ------------------------------------------------------------------------------------------ prices
+// Approximate base list prices (USD of the year given) of the variant each catalogue row represents.
+// SOURCES: manufacturer list prices and contemporary press, from memory, rounded. US prices where the
+// car was sold there, otherwise the home-market price converted at the exchange rate of the time.
+// The game has one world price per model, so these are orientation values: the suite asks for the
+// right order of magnitude and the right ranking, not for the exact figure.
+export interface PriceBenchmark { maker: string; row: string; year: number; usd: number; halo?: boolean }
+const pr = (maker: string, row: string, year: number, usd: number, halo = false): PriceBenchmark => ({ maker, row, year, usd, halo });
+export const PRICE_BENCHMARKS: PriceBenchmark[] = [
+  pr('ferrari', '12Cilindri', 2025, 470000), pr('ferrari', '296 GTB', 2025, 340000), pr('ferrari', 'Purosangue', 2025, 430000),
+  pr('ferrari', 'Testarossa', 1986, 115000), pr('ferrari', '308 GTB', 1980, 45000),
+  pr('ferrari', 'F80', 2026, 3900000, true), pr('ferrari', 'F40', 1990, 400000, true),
+  pr('lamborghini', 'Aventador', 2015, 400000), pr('lamborghini', 'Urus', 2022, 230000), pr('lamborghini', 'Countach', 1980, 90000),
+  pr('porsche', '911 (992)', 2022, 110000), pr('porsche', 'Macan', 2022, 58000), pr('porsche', '911', 1975, 14000), pr('porsche', 'Carrera GT', 2005, 440000, true),
+  pr('mclaren', '720S', 2019, 300000), pr('mclaren', 'F1', 1995, 900000, true),
+  pr('toyota', 'Corolla (E210)', 2022, 22000), pr('toyota', 'Camry (XV70)', 2022, 27000), pr('toyota', 'Corolla (E80/E90)', 1988, 9000), pr('toyota', 'Lexus LFA', 2011, 375000, true),
+  pr('ford', 'F-150 (14th gen)', 2023, 45000), pr('ford', 'Mustang (S650)', 2025, 45000), pr('ford', 'Fiesta (Mk6/Mk7)', 2015, 15000), pr('ford', 'Mustang', 1966, 2700),
+  pr('bmw', '3 Series (G20)', 2022, 45000), pr('bmw', '7 Series (G70)', 2023, 100000),
+  pr('mercedes', 'S-Class (W223)', 2022, 115000), pr('vw', 'Golf (Mk7)', 2015, 22000), pr('vw', 'Beetle (Type 1)', 1965, 1600),
+  pr('tesla', 'Model 3', 2020, 45000), pr('tesla', 'Model S', 2020, 85000), pr('honda', 'Civic (10th gen)', 2018, 21000), pr('gm', 'Chevrolet Corvette (C8)', 2022, 65000),
+];

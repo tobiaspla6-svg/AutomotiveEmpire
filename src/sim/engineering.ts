@@ -59,8 +59,8 @@ const VALVE_RPM = { ohv: 5600, sohc: 6800, dohc2: 7600, dohc4: 8800 } as const;
 /** Friction mean effective pressure [bar] as a function of mean piston speed [m/s]. */
 function fmepBar(sp: number, k: number) { return (0.55 + 0.045 * sp + 0.0042 * sp * sp) * k; }
 
-export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, race = false): EngineStats {
-  if (e.layout === 'EV') return computeMotor(e, techYear, quality);
+export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, race = false, year = techYear): EngineStats {
+  if (e.layout === 'EV') return computeMotor(e, techYear, quality, year);
   const warnings: string[] = [];
   const cyl = CYL[e.layout];
   const litres = e.displacement / 1000;
@@ -153,7 +153,8 @@ export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, ra
   if (e.aluBlock) cost *= 1.1;
   if (cyl >= 10) cost *= 1.6;
   cost *= 0.65 + 0.9 * Math.pow(quality, 1.5) + 2 * Math.pow(quality, 4);
-  if (e.hybridKw > 0) cost += 1500 + e.hybridKw * kf([[1997, 90], [2010, 55], [2025, 30]], techYear);
+  // hybrid system: motor-generator, inverter and a small battery
+  if (e.hybridKw > 0) cost += 700 + e.hybridKw * kf([[1997, 75], [2010, 42], [2025, 22]], techYear);
 
   return {
     isEV: false, powerKw: pk.kw, powerRpm: pk.rpm, torqueNm: tk.nm, torqueRpm: tk.rpm, curve, mass, cost2020: cost, reliability,
@@ -162,7 +163,7 @@ export function computeEngine(e: EngineSpec, techYear: number, quality = 0.5, ra
   };
 }
 
-function computeMotor(e: EngineSpec, techYear: number, quality: number): EngineStats {
+function computeMotor(e: EngineSpec, techYear: number, quality: number, year: number): EngineStats {
   const evT = clamp((techYear - 2005) / 20, 0, 1);
   // Constant torque up to the base speed, constant power above it. With the fixed 9:1 reduction a base speed of
   // 4300 rpm is ≈ 60 km/h, as in production EVs (e.g. 160 kW / 350 Nm, 150 kW / 310 Nm).
@@ -175,13 +176,14 @@ function computeMotor(e: EngineSpec, techYear: number, quality: number): EngineS
     curve.push({ rpm, nm, kw: (nm * rpm) / 9549 });
   }
   const kgPerKwh = kf([[1990, 30], [2000, 22], [2008, 9.5], [2015, 7.3], [2020, 6.2], [2025, 5.4], [2035, 4.2]], techYear);
-  const usdPerKwh = kf([[1990, 3000], [2000, 2200], [2008, 1100], [2012, 650], [2015, 380], [2020, 150], [2025, 115], [2035, 75]], techYear);
+  const usdPerKwh = kf([[1990, 3000], [2000, 2200], [2008, 1100], [2012, 650], [2015, 380], [2020, 150], [2025, 115], [2035, 75]], Math.max(techYear, year - 1)); // cells are bought at today's price, whatever the age of the pack design
   const mass = e.motorKw * lerp(0.8, 0.3, evT) + 30 + e.batteryKwh * kgPerKwh;
-  const cost = (1500 + e.motorKw * 18 + e.batteryKwh * usdPerKwh) * (0.9 + 0.3 * quality);
+  const batteryCost = e.batteryKwh * usdPerKwh * (0.9 + 0.3 * quality);
+  const cost = (1500 + e.motorKw * 18) * (0.9 + 0.3 * quality) + batteryCost;
   const warnings: string[] = [];
   if (e.batteryKwh / e.motorKw < 0.12) warnings.push('Battery is small for this motor — peak power cannot be sustained.');
   return {
-    isEV: true, powerKw: e.motorKw, powerRpm: baseRpm, torqueNm: tq, torqueRpm: 0, curve, mass, cost2020: cost,
+    isEV: true, batteryCost2020: batteryCost, powerKw: e.motorKw, powerRpm: baseRpm, torqueNm: tq, torqueRpm: 0, curve, mass, cost2020: cost,
     reliability: clamp(80 + 10 * quality + 6 * evT, 5, 99), bore: 0, stroke: 0, pistonSpeed: 0, pistonSpeedLimit: 0, knockMargin: 0,
     etaI: 0.9, bmepPeak: 0, specificKwL: 0, fmepK: 0, valveLimitRpm: maxRpm, warnings,
   };
@@ -233,7 +235,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const warnings: string[] = [];
   const b = BODY[s.body];
   const d = dims(s);
-  const eng = computeEngine(s.engine, tech.engine, s.quality);
+  const eng = computeEngine(s.engine, tech.engine, s.quality, false, year);
   warnings.push(...eng.warnings);
   const isEV = eng.isEV;
   const cyl = CYL[s.engine.layout];
@@ -393,23 +395,29 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   if (isEV && s.engine.batteryKwh < 15) warnings.push('Very small battery: range will not satisfy most buyers.');
 
   // ---- cost (2020 USD → nominal)
-  const cq = 0.75 + 0.5 * s.quality + 2.5 * Math.pow(s.quality, 4); // craftsmanship, bespoke parts and low-volume supply get expensive fast
-  const carbonKg = kf([[1980, 300], [1995, 170], [2010, 125], [2025, 95]], tech.chassis);
-  const cChassis = mChassis * { ladder: 2.0, steel: 2.4, spaceframe: 6, aluminium: 9, carbon: carbonKg }[s.chassis] * cq;
+  // Craftsmanship and bespoke parts: gentle through the volume-car range, steep at the hand-built top
+  // (≈ 0.9 for a budget car, 1.1 at mid quality, 1.5 for a volume luxury car, 2.3–3.5 for an exotic).
+  const cq = 0.75 + 0.5 * s.quality + 2.2 * Math.pow(s.quality, 5);
+  // carbon structures: $ per kg of finished tub, falling as lay-up is automated; already a hand-built price, so build quality adds less
+  const carbonKg = kf([[1980, 300], [1995, 170], [2010, 100], [2025, 65]], tech.chassis);
+  const cChassis = mChassis * { ladder: 2.0, steel: 2.4, spaceframe: 6, aluminium: 9, carbon: carbonKg }[s.chassis] * (s.chassis === 'carbon' ? Math.sqrt(cq) : cq);
   const cPanels = (mPanels * { steel: 3, aluminium: 9, fibreglass: 10, carbon: carbonKg * 0.85 }[s.panels] + 600 * s.size) * cq;
   const cDrive = (isEV ? 900 : { manual: 500 + 90 * nGears, auto: 1100 + 150 * nGears, dct: 2400 + 100 * nGears }[s.gearbox]) + (s.drive === 'AWD' ? 1200 : 0) + (transaxle ? 900 : 0);
   const suspCost = { solid: 200, macpherson: 350, wishbone: 650, multilink: 800 };
   const cRunning = (suspCost[s.suspFront] + suspCost[s.suspRear]) * (1 + 0.5 * s.sport) + { drum: 150, disc: 300, vented: 520, ceramic: 6500 }[s.brakes]
     + 4 * (50 + s.tireWidth * 0.4) * { economy: 1, touring: 1.2, sport: 1.7, semislick: 2.6 }[s.tireCompound] + 4 * (40 + (s.wheelDia - 13) * 22);
-  const cInterior = { basic: 600, standard: 1500, premium: 3600, luxury: 9500 }[s.interior] * s.size * (0.6 + s.seats / 12.5) * cq;
+  const cInterior = { basic: 600, standard: 1500, premium: 3600, luxury: 7500 }[s.interior] * s.size * (0.6 + s.seats / 12.5) * cq;
   const cSafety = [0, 250, 700, 1300][Math.round(s.safety)] ?? 0;
   const cElec = kf([[1950, 60], [1980, 300], [2000, 800], [2020, 1400]], tech.electronics) * { basic: 0.7, standard: 1, premium: 1.5, luxury: 2.3 }[s.interior];
   const cAero = s.wing * 600 + s.splitter * 250 + (s.flatFloor ? 350 : 0) + s.aeroOpt * 200;
-  // ×1.5: supplier margins, warranty provision, inbound logistics and scrap that a pure bill of materials leaves out
-  const parts2020 = 1.5 * (cChassis + cPanels + eng.cost2020 + cDrive * cq + cRunning * cq + cInterior + cSafety + cElec + cAero);
+  // ×1.5: supplier margins, warranty provision, inbound logistics and scrap that a pure bill of materials leaves out.
+  // A traction battery is bought (or built) close to cost: ×1.15 on that part.
+  const battery = eng.batteryCost2020 ?? 0;
+  const cPower = 1.5 * (eng.cost2020 - battery) + 1.15 * battery;
+  const parts2020 = cPower + 1.5 * (cChassis + cPanels + cDrive * cq + cRunning * cq + cInterior + cSafety + cElec + cAero);
   const nominal = cpi(year) * (ctx.materialIndex ?? 1);
   const costBreakdown: Record<string, number> = {
-    Chassis: 1.5 * cChassis * nominal, 'Body & paint': 1.5 * cPanels * nominal, Powertrain: 1.5 * eng.cost2020 * nominal, Driveline: 1.5 * cDrive * cq * nominal,
+    Chassis: 1.5 * cChassis * nominal, 'Body & paint': 1.5 * cPanels * nominal, Powertrain: cPower * nominal, Driveline: 1.5 * cDrive * cq * nominal,
     'Running gear': 1.5 * cRunning * cq * nominal, Interior: 1.5 * cInterior * nominal, 'Safety & electronics': 1.5 * (cSafety + cElec) * nominal, Aero: 1.5 * cAero * nominal,
   };
   const labourHours = 18 + mass / 100 + { basic: 4, standard: 8, premium: 16, luxury: 40 }[s.interior]
