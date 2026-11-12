@@ -67,6 +67,7 @@ export function dispose(c: Company, proceeds: number, book: number) {
 export function clearStock(c: Company, m: VehicleModel, proceeds: number) {
   c.books.pending.writeOff += m.inventoryValue;
   m.inventory = 0; m.inventoryValue = 0;
+  for (const t of m.trims ?? []) { t.inventory = 0; t.inventoryValue = 0; }
   receive(c, proceeds);
 }
 

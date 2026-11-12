@@ -48,7 +48,8 @@ export function demandCurve(g: GameState, c: Company, m: VehicleModel, monthlySu
   let weight = weights.get(m.id) ?? 0;
   if (c.isPlayer) {
     let others = 0;
-    for (const f of c.factories) for (const l of f.lines) if (l.modelId !== m.id && c.models.some((x) => x.id === l.modelId && x.status === 'production')) others += f.capacity * l.share;
+    const baseId = m.id.split('#')[0]; // a trim shares its model's lines
+    for (const f of c.factories) for (const l of f.lines) if (l.modelId !== baseId && c.models.some((x) => x.id === l.modelId && x.status === 'production')) others += f.capacity * l.share;
     weight = monthlySupply / Math.max(monthlySupply + others, 1e-9);
   } else if (!weight) weight = 1 / (weights.size + 1);
   const probe = { ...m, price: value } as VehicleModel;

@@ -1,11 +1,13 @@
 // Player actions. Each function validates, mutates the GameState and returns an error message
 // (string) when the action is not possible, or null on success.
-import type { Company, DevLevels, Discipline, EngineFamily, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, VehicleModel, VehicleSpec } from './types';
+import type { Company, DevLevels, Discipline, EngineFamily, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, Trim, TrimLevel, VehicleModel, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
-import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
+import { creditLimit, refreshStats, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
 import { priceGuide } from './pricing';
 import { CYL, defaultVehicle } from './engineering';
+import { aggregateTrims, faceliftCost, FACELIFT_AFTER, makeTrim, refreshTrim, trimView } from './trims';
+import { annualSupply } from './market';
 import {
   adoptFamilies, defaultChoice, engineFits, enginesOf, findVariant, makeFamily, makePlatform, makeVariant, planDevelopment, platformFits, platformsOf, standaloneCost, variantShare, SHARE,
   type EngineChoice, type PlatformChoice,
@@ -81,11 +83,94 @@ export function startDevelopment(g: GameState, name: string, spec: VehicleSpec, 
     Object.assign(pl, bundled, { devCostTotal: plan.platform.cost });
     c.platforms.push(pl); m.platformId = pl.id;
   } else m.platformId = plan.platform.platform!.id;
+  // a new generation inherits its predecessor's trim line-up (not its stock or sales)
+  if (base?.trims?.length) {
+    m.trims = base.trims.map((t) => ({
+      ...JSON.parse(JSON.stringify(t)), id: `t${g.nextId++}`, inventory: 0, inventoryValue: 0, built: 0, lastDemand: 0, lastUnitCost: 0, salesHistory: [], revenue: 0, cogs: 0,
+      lastSales: { NA: 0, EU: 0, JP: 0, CN: 0, LATAM: 0, ROW: 0 }, engineVariantId: base.engineFamilyId === m.engineFamilyId ? t.engineVariantId : m.engineVariantId,
+    }));
+    for (const t of m.trims) refreshTrim(g, c, m, t);
+  }
   c.models.push(m);
   const reused = [plan.engine.kind !== 'new' ? `the ${plan.engine.family!.name} engine family` : '', plan.platform.kind === 'existing' ? `the ${plan.platform.platform!.name}` : ''].filter(Boolean);
   news(g, 'company', `Programme approved: ${m.name}`, `Budget $${(cost / 1e6).toFixed(1)}M over about ${months} months${base ? ` (successor to the ${base.name})` : ''}${reused.length ? `, re-using ${reused.join(' and ')}` : ''}.${plan.waitsFor.length ? ` It cannot be signed off before ${plan.waitsFor.join(' and ')} is ready.` : ''}`);
   return null;
 }
+// ---- trims and facelifts
+/**
+ * Add a trim to a model. The first trim added to a model sold as one version also creates a "Standard" trim that
+ * keeps the model's current specification, price and stock, so nothing on sale changes.
+ */
+export function addTrim(g: GameState, modelId: string, level: TrimLevel, price?: number): string | null {
+  const c = player(g);
+  const m = c.models.find((x) => x.id === modelId);
+  if (!m) return 'Unknown model.';
+  if (m.status === 'retired' || m.status === 'design') return 'Trims can be added to cars in development or on sale.';
+  m.trims ??= [];
+  if (m.trims.length >= 7) return 'A model can have at most seven trims.';
+  if (!m.trims.length) {
+    const std = makeTrim(g, c, m, 'mid', m.price, { name: 'Standard', engineVariantId: m.engineVariantId, interior: m.spec.interior, wheelDia: m.spec.wheelDia, tireCompound: m.spec.tireCompound, equipment: m.spec.equipment ?? 0, sport: m.spec.sport, tireWidth: m.spec.tireWidth, mix: 1 });
+    std.inventory = m.inventory; std.inventoryValue = m.inventoryValue; std.lastSales = { ...m.lastSales }; std.lastDemand = m.lastDemand; std.lastUnitCost = m.lastUnitCost;
+    m.trims.push(std);
+  }
+  const t = makeTrim(g, c, m, level, 0);
+  if (m.trims.some((x) => x.name === t.name)) t.name = `${t.name} ${m.trims.length + 1}`;
+  t.price = price && finite(price) && price > 0 ? Math.round(price) : Math.round(priceGuide(g, c, trimView(m, t), Math.max(5, (annualSupply(c, m) / 12) * t.mix)).recommended / 10) * 10;
+  m.trims.push(t);
+  aggregateTrims(m);
+  return null;
+}
+export interface TrimPatch { name?: string; price?: number; mix?: number; cap?: number | null; engineVariantId?: string; gearbox?: Trim['gearbox']; interior?: Trim['interior']; wheelDia?: number; tireCompound?: Trim['tireCompound']; equipment?: number }
+export function updateTrim(g: GameState, modelId: string, trimId: string, patch: TrimPatch): string | null {
+  const c = player(g);
+  const m = c.models.find((x) => x.id === modelId); const t = m?.trims?.find((x) => x.id === trimId);
+  if (!m || !t) return 'Unknown trim.';
+  if (patch.price !== undefined && (!finite(patch.price) || patch.price < 1)) return 'Enter a price above zero.';
+  if (patch.mix !== undefined && (!finite(patch.mix) || patch.mix < 0)) return 'The production share cannot be negative.';
+  if (patch.equipment !== undefined && !finite(patch.equipment)) return 'Invalid equipment level.';
+  if (patch.cap !== undefined && patch.cap !== null && (!finite(patch.cap) || patch.cap < t.built)) return `A limited edition cannot be capped below the ${Math.ceil(t.built)} cars already built.`;
+  if (patch.engineVariantId) {
+    const f = enginesOf(c).find((x) => x.id === m.engineFamilyId);
+    const v = f?.variants.find((x) => x.id === patch.engineVariantId);
+    if (!v) return 'That engine is not a variant of this car\'s engine family.';
+    if (v.status !== 'ready') return 'That variant is still being calibrated.';
+  }
+  const { cap, ...rest } = patch;
+  Object.assign(t, rest);
+  if (cap !== undefined) t.cap = cap === null ? undefined : Math.round(cap);
+  if (patch.price !== undefined) t.price = Math.round(patch.price);
+  refreshTrim(g, c, m, t);
+  aggregateTrims(m);
+  return null;
+}
+export function removeTrim(g: GameState, modelId: string, trimId: string): string | null {
+  const c = player(g);
+  const m = c.models.find((x) => x.id === modelId); const t = m?.trims?.find((x) => x.id === trimId);
+  if (!m || !t) return 'Unknown trim.';
+  if (t.inventory > 0.5) return 'Sell its stock first: set its production share to zero until the dealers have cleared it.';
+  m.trims = m.trims!.filter((x) => x !== t);
+  if (m.trims.length === 1 && m.trims[0].inventory <= 0.5) { // back to a single version
+    const last = m.trims[0];
+    m.spec = last.spec; m.price = last.price; m.trims = [];
+    refreshStats(g, m, c);
+  }
+  aggregateTrims(m);
+  return null;
+}
+/** A mid-life facelift: about a quarter of the car's own engineering budget over eight months; the car keeps selling. */
+export function startFacelift(g: GameState, modelId: string): string | null {
+  const c = player(g);
+  const m = c.models.find((x) => x.id === modelId);
+  if (!m || m.status !== 'production') return 'Only a car on sale can be facelifted.';
+  if (m.facelift) return 'A facelift is already under way.';
+  if (g.year - m.launchYear < FACELIFT_AFTER) return `A facelift makes sense after ${FACELIFT_AFTER} years on sale (this car: ${g.year - m.launchYear}).`;
+  const { cost, months } = faceliftCost(m);
+  if ((cost / months) * 3 > c.cash + Math.max(0, creditLimit(c, g.year) - c.debt)) return `Not enough funds: the first three months cost $${((cost / months) * 3 / 1e6).toFixed(1)}M.`;
+  m.facelift = { monthsLeft: months, months, cost, paid: 0 };
+  news(g, 'company', `Facelift approved: ${m.name}`, `$${(cost / 1e6).toFixed(1)}M over ${months} months.`);
+  return null;
+}
+
 export function cancelDevelopment(g: GameState, modelId: string) {
   const c = player(g);
   const m = c.models.find((x) => x.id === modelId && x.status === 'development');
@@ -183,6 +268,12 @@ export function setPrice(g: GameState, modelId: string, price: number): string |
   const m = player(g).models.find((x) => x.id === modelId);
   if (!m) return 'Unknown model.';
   if (!finite(price) || price < 1) return 'Enter a price above zero.';
+  if (m.trims?.length) { // a model sold in trims: every trim moves by the same proportion
+    const k = price / (m.price || price);
+    for (const t of m.trims) t.price = Math.max(1, Math.round(t.price * k));
+    aggregateTrims(m);
+    return null;
+  }
   m.price = Math.round(price);
   return null;
 }
@@ -225,7 +316,7 @@ export function retireModel(g: GameState, modelId: string) {
   for (const f of c.factories) f.lines = f.lines.filter((l) => l.modelId !== modelId);
   let stock = '';
   if (m.inventory > 0) { // remaining stock goes to fleet buyers at a discount instead of sitting unsold forever
-    const units = m.inventory, proceeds = units * m.price * 0.88 * FLEET_CLEARANCE;
+    const units = m.inventory, proceeds = (m.trims?.length ? m.trims.reduce((a, t) => a + t.inventory * t.price, 0) : units * m.price) * 0.88 * FLEET_CLEARANCE;
     clearStock(c, m, proceeds);
     stock = ` The remaining ${Math.round(units).toLocaleString()} cars in stock were sold to fleet buyers for $${(proceeds / 1e6).toFixed(1)}M.`;
   }

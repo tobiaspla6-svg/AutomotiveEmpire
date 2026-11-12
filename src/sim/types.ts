@@ -68,6 +68,8 @@ export interface VehicleSpec {
   safety: number; // 0..3
   quality: number; // 0..1
   color: string;
+  /** optional equipment level 0..1 (trim content); absent = 0 */
+  equipment?: number;
 }
 
 export interface Tech { engine: number; chassis: number; aero: number; electronics: number; manufacturing: number }
@@ -174,7 +176,31 @@ export interface Platform extends Programme {
   cumulativeUnits: number;
 }
 
+export type TrimLevel = 'entry' | 'mid' | 'premium' | 'sport' | 'luxury' | 'performance' | 'limited';
+/**
+ * A version of a model (Phase 3). It has its own engine variant, gearbox, cabin, wheels, tyres, equipment, price and
+ * production mix, its own stock and its own sales. The model's stock, sales and demand are the sums of its trims.
+ */
+export interface Trim {
+  id: string; name: string; level: TrimLevel;
+  engineVariantId?: string; gearbox?: Gearbox; gears?: number; interior: InteriorType; wheelDia: number; tireCompound: TireCompound; equipment: number;
+  sport?: number; tireWidth?: number;
+  price: number;
+  /** planned share of the model's production (0..1; trims are normalised) */
+  mix: number;
+  /** limited edition: total cars that will ever be built */
+  cap?: number;
+  spec: VehicleSpec; stats: VehicleStats;
+  inventory: number; inventoryValue: number; built: number;
+  lastSales: Record<RegionId, number>; lastDemand: number; lastUnitCost: number; salesHistory: number[];
+  revenue: number; cogs: number;
+}
+
 export interface VehicleModel {
+  /** trims (Phase 3); absent or empty = the model is sold as one version */
+  trims?: Trim[];
+  /** mid-life facelift in progress, and the number completed */
+  facelift?: { monthsLeft: number; months: number; cost: number; paid: number } | null; facelifts?: number;
   /** shared engineering (Phase 3); absent on AI cars and on cars from older saves that were not migrated */
   engineFamilyId?: string; engineVariantId?: string; platformId?: string;
   id: string;

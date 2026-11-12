@@ -1,12 +1,13 @@
 // Company-level simulation shared by the player and AI manufacturers:
 // model bookkeeping, unit costs, factories, research, finance and the player's monthly tick.
-import type { Company, Factory, GameState, MonthLedger, RegionId, SegmentId, Tech, TechArea, VehicleModel, VehicleSpec } from './types';
+import type { Company, Factory, GameState, MonthLedger, RegionId, SegmentId, Tech, TechArea, Trim, VehicleModel, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { computeVehicle } from './engineering';
 import { clamp, cpi, kf } from './util';
 import { modProduct, type MarketResult } from './market';
 import { closeMonth, depreciate, mergePending } from './accounts';
 import { enginesOf, familyOf, maturityOf, platformOf, platformsOf, sharedVolume, type SharedVolume } from './families';
+import { aggregateTrims, faceliftCost, hasTrims, productionMix, refreshTrims, trimKey, trimView, trimsOf } from './trims';
 
 export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
 export const TECH_AREAS: TechArea[] = ['engine', 'chassis', 'aero', 'electronics', 'manufacturing'];
@@ -35,6 +36,7 @@ export function makeModel(g: GameState, name: string, spec: VehicleSpec, segment
 export function refreshStats(g: GameState, m: VehicleModel, owner?: Company) {
   const c = owner ?? (m.engineFamilyId || m.platformId ? g.companies.find((x) => x.models.includes(m)) : undefined);
   m.stats = computeVehicle(m.spec, { year: g.year, tech: m.frozenTech, maturity: maturityOf(c, m, g.year) });
+  if (c && hasTrims(m)) refreshTrims(g, c, m);
 }
 
 /**
@@ -42,6 +44,22 @@ export function refreshStats(g: GameState, m: VehicleModel, owner?: Company) {
  * platform parts (structure, running gear, driveline) are bought at the volume of every car that shares them
  * (`shared`), the rest at this car's own volume.
  */
+/**
+ * A completed facelift: new styling details, more equipment and the company's current electronics and manufacturing
+ * know-how. Buyers see it as a new car again (its age in the market restarts).
+ */
+export function completeFacelift(g: GameState, c: Company, m: VehicleModel) {
+  m.facelift = null; m.facelifts = (m.facelifts ?? 0) + 1;
+  m.launchYear = g.year; m.launchMonth = g.month;
+  for (const k of ['electronics', 'aero', 'manufacturing', 'chassis'] as const) if (c.tech[k] > m.frozenTech[k]) m.frozenTech[k] += 0.5 * (c.tech[k] - m.frozenTech[k]);
+  m.spec.aeroOpt = Math.min(1, m.spec.aeroOpt + 0.05);
+  m.spec.equipment = Math.min(1, (m.spec.equipment ?? 0) + 0.1);
+  for (const t of trimsOf(m)) t.equipment = Math.min(1, t.equipment + 0.1);
+  refreshStats(g, m, c);
+  news(g, 'company', `The facelifted ${m.name} arrives`, 'Fresh styling, more equipment and updated electronics. Buyers treat it as a new car again.');
+}
+void faceliftCost;
+
 /** A vehicle can be signed off once every stand-alone architecture it uses is ready. */
 export function dependenciesReady(c: Company, m: VehicleModel): boolean {
   const f = familyOf(c, m), p = platformOf(c, m);
@@ -184,60 +202,95 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       const lastD = m.lastDemand > 0 ? m.lastDemand : totalCap * 0.6; // first month: build launch stock
       const desiredModel = Math.max(0, lastD * 1.03 + (0.6 * lastD - m.inventory) * 0.5);
       const target = l.target >= 0 ? l.target : desiredModel * ((f.capacity * l.share * l.ramp) / totalCap);
-      const n = Math.max(0, Math.min(cap, target));
+      let n = Math.max(0, Math.min(cap, target));
       l.ramp = Math.min(1, l.ramp + 0.2);
       if (n <= 0) continue;
-      const uc = unitCost(g, m, f, totalCap, sharedVolume(c, m, totalCap));
+      const shared = sharedVolume(c, m, totalCap);
+      if (hasTrims(m)) {
+        // the line builds the trims in their planned mix; a limited edition stops at its cap
+        const mix = productionMix(m);
+        let built = 0;
+        for (const t of trimsOf(m)) {
+          const share = mix.get(t.id) ?? 0;
+          if (share <= 0) continue;
+          const already = (produced.get(trimKey(m, t)) ?? 0);
+          const nt = Math.max(0, Math.min(n * share, t.cap !== undefined ? t.cap - t.built - already : Infinity));
+          if (nt <= 0) continue;
+          const uc = unitCost(g, trimView(m, t), f, totalCap, shared);
+          produced.set(trimKey(m, t), already + nt);
+          costSum.set(trimKey(m, t), (costSum.get(trimKey(m, t)) ?? 0) + nt * uc);
+          L.production += nt * uc;
+          built += nt;
+        }
+        n = built;
+        produced.set(m.id, (produced.get(m.id) ?? 0) + n);
+        continue;
+      }
+      const uc = unitCost(g, m, f, totalCap, shared);
       produced.set(m.id, (produced.get(m.id) ?? 0) + n);
       costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
       L.production += n * uc; // paid now, held in inventory until the car is sold
     }
   }
 
-  // ---- sales
+  // ---- sales (per trim when a model has trims; the model's figures are then the sums)
   for (const m of c.models) {
     const made = produced.get(m.id) ?? 0;
     if (made > 0) {
-      m.lastUnitCost = (costSum.get(m.id) ?? 0) / made;
-      m.inventory += made;
-      m.inventoryValue += costSum.get(m.id) ?? 0;
       m.cumulativeUnits += made;
       const fam = familyOf(c, m), plat = platformOf(c, m);
       if (fam) fam.cumulativeUnits += made;
       if (plat) plat.cumulativeUnits += made;
       if (m.status === 'ready') m.status = 'production';
     }
-    const dem = mk.demand.get(m.id);
-    let total = 0;
-    if (dem) for (const r of REGION_IDS) total += dem[r];
-    m.lastDemand = total;
-    let sold = 0;
-    const ratio = total > 0 ? Math.min(1, m.inventory / total) : 0;
-    for (const r of REGION_IDS) {
-      const n = dem ? dem[r] * ratio : 0;
-      m.lastSales[r] = n;
-      sold += n;
-      if (n > 0) {
-        const local = c.factories.some((f) => f.region === r && f.lines.some((l) => l.modelId === m.id));
-        L.logistics += n * (local ? 150 : 700) * cpi(g.year);
+    const local = (r: RegionId) => c.factories.some((f) => f.region === r && f.lines.some((l) => l.modelId === m.id));
+    let soldAll = 0, revAll = 0;
+    const units: { key: string; u: VehicleModel | Trim; trim?: Trim }[] = hasTrims(m) ? trimsOf(m).map((t) => ({ key: trimKey(m, t), u: t, trim: t })) : [{ key: m.id, u: m }];
+    for (const { key, u, trim } of units) {
+      const mU = produced.get(key) ?? 0;
+      if (mU > 0) {
+        u.lastUnitCost = (costSum.get(key) ?? 0) / mU;
+        u.inventory += mU;
+        u.inventoryValue += costSum.get(key) ?? 0;
+        if (trim) trim.built += mU;
       }
+      const dem = mk.demand.get(key);
+      let total = 0;
+      if (dem) for (const r of REGION_IDS) total += dem[r];
+      u.lastDemand = total;
+      let sold = 0;
+      const ratio = total > 0 ? Math.min(1, u.inventory / total) : 0;
+      for (const r of REGION_IDS) {
+        const n = dem ? dem[r] * ratio : 0;
+        u.lastSales[r] = n;
+        sold += n;
+        if (n > 0) L.logistics += n * (local(r) ? 150 : 700) * cpi(g.year);
+      }
+      if (sold > 0) {
+        // cost of sales at the average cost of the stock on hand
+        const cogs = u.inventory > 1e-9 ? u.inventoryValue * Math.min(1, sold / u.inventory) : 0;
+        L.cogs += cogs;
+        u.inventoryValue -= cogs;
+        u.inventory -= sold;
+        if (u.inventory < 1e-6) { u.inventory = 0; u.inventoryValue = 0; }
+        const rev = sold * u.price * 0.88; // 12 % dealer margin
+        L.revenue += rev; L.units += sold;
+        soldAll += sold; revAll += rev;
+        if (trim) { trim.revenue += rev; trim.cogs += cogs; }
+      }
+      if (trim && (m.status === 'production' || trim.salesHistory.length)) { trim.salesHistory.push(Math.round(sold)); if (trim.salesHistory.length > 120) trim.salesHistory.shift(); }
     }
-    if (sold > 0) {
-      if (!m.launchYear) {
-        m.launchYear = g.year; m.launchMonth = g.month;
-        news(g, 'company', `${c.name} ${m.name} goes on sale`, `First customer deliveries at ${Math.round(m.price).toLocaleString()} USD.`);
-      }
-      // cost of sales at the average cost of the stock on hand
-      const cogs = m.inventory > 1e-9 ? m.inventoryValue * Math.min(1, sold / m.inventory) : 0;
-      L.cogs += cogs;
-      m.inventoryValue -= cogs;
-      m.inventory -= sold;
-      if (m.inventory < 1e-6) { m.inventory = 0; m.inventoryValue = 0; }
-      const rev = sold * m.price * 0.88; // 12 % dealer margin
-      L.revenue += rev; L.units += sold; m.lifetimeRevenue += rev;
+    if (hasTrims(m)) {
+      aggregateTrims(m);
+      if (made > 0) m.lastUnitCost = trimsOf(m).reduce((a, t) => a + (produced.get(trimKey(m, t)) ?? 0) * t.lastUnitCost, 0) / made;
+    }
+    m.lifetimeRevenue += revAll;
+    if (soldAll > 0 && !m.launchYear) {
+      m.launchYear = g.year; m.launchMonth = g.month;
+      news(g, 'company', `${c.name} ${m.name} goes on sale`, `First customer deliveries at ${Math.round(m.price).toLocaleString()} USD.`);
     }
     L.logistics += m.inventory * (m.lastUnitCost || m.stats.partsCost) * 0.008; // stock financing & storage
-    if (m.status === 'production' || m.salesHistory.length) { m.salesHistory.push(Math.round(sold)); if (m.salesHistory.length > 120) m.salesHistory.shift(); }
+    if (m.status === 'production' || m.salesHistory.length) { m.salesHistory.push(Math.round(soldAll)); if (m.salesHistory.length > 120) m.salesHistory.shift(); }
   }
 
   // ---- development projects (vehicles, and stand-alone engine-family and platform programmes, share the engineering staff)
@@ -282,6 +335,15 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       if (dependenciesReady(c, m)) completeModel(g, c, m);
       else news(g, 'company', `${m.name} waits for its architecture`, 'The vehicle work is complete, but the engine family or platform it uses is still in development.');
     }
+  }
+
+  // ---- facelifts in progress (budget spent evenly; the car keeps selling meanwhile)
+  for (const m of c.models) {
+    const fl = m.facelift;
+    if (!fl) continue;
+    const spend = Math.min(fl.cost - fl.paid, fl.cost / fl.months);
+    fl.paid += spend; L.dev += spend; fl.monthsLeft--;
+    if (fl.monthsLeft <= 0) completeFacelift(g, c, m);
   }
 
   // ---- research
