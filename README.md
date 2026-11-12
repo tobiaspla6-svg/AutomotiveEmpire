@@ -34,7 +34,7 @@ npm run preview    # serve dist/ on http://localhost:4173
 ## Tests
 
 ```bash
-npm test           # the full automated suite (about 75 seconds)
+npm test           # the full automated suite (about 2 minutes)
 npm run ci         # what CI runs: type-check, tests, production build
 ```
 
@@ -44,6 +44,11 @@ persistence tests run the real IndexedDB save layer against `fake-indexeddb`.
 | File | What it proves |
 |---|---|
 | `engineering.test.ts` | Calibration against reference cars; design changes move results the right way; physical bounds (power at top speed, tyre-limited braking, Otto-cycle efficiency) on 150 random designs |
+| `calibration.test.ts` | 83 real cars (affordable cars, saloons, SUVs/pickups, sports cars, supercars, hypercars, EVs; 1950s–2020s) built from the catalogue against published power, mass, 0–100 km/h and top speed; error and bias per class; plausibility of all 595 catalogue cars; each mechanism (weight distribution, traction, launch control, tyres, gearing, drag, mass, EV drive) in isolation |
+| `pricing.test.ts` | List prices of 33 real cars; limited-series premiums; market ranking; margin ordering Ferrari > Lamborghini > Porsche > Toyota > Ford cars; badge value; demand falls with price and collapses above a car's worth; forecast vs market agreement; scarcity rules; break-even and contribution identities |
+| `motorsport-finance.test.ts`, `motorsport-careers-*.test.ts` | 20–22-season careers in F1, hypercar, GT and touring from 1986–2005: large teams stay strong without hoarding cash, privateers survive (also redesigning every year); budget identities, break-even funding, sponsor ceiling, owner reserve and rescue rules, redesign cost by team size, prize money, pre-Phase-2 saves |
+| `consequences.test.ts` | Cheap reliable car pays back; over-engineered supercar is flagged non-viable; over-expansion on credit leads to a cash crisis; a shared-engine defect hits exactly the models that use it; recall vs cover-up; restructuring; recovery by cutting overheads; competitor identities, price-war following and crisis reactions; starting-year positions |
+| `forecast.test.ts` | Decision impact estimates are read-only, reproducible and equal to what happens when the decision is taken |
 | `development.test.ts` | A vehicle programme costs exactly its approved budget, all of it in the P&L, whatever the staffing; concurrent, new-generation, cancelled and old-save programmes |
 | `accounting.test.ts` | Every month: Δequity = profit and Δcash = operating + investing + financing; inventory roll-forward; unsold cars stay in stock; stock clearance, plant sales, acquisitions; v1 → v2 save migration |
 | `manufacturing.test.ts` | Line ramp-up and capacity ceiling; sales bounded by demand and stock; unit cost vs volume, automation and wages; construction and expansion timing |
@@ -55,9 +60,11 @@ persistence tests run the real IndexedDB save layer against `fake-indexeddb`.
 | `robustness.test.ts` | Invalid prices and non-finite amounts are rejected; run-out stock keeps selling; the race briefing is read-only |
 | `longrun.test.ts` | 35 years of CEO play, 25 years of Founder play and 20–25 racing seasons with yearly invariant checks |
 
-Development scripts (not part of the suite): `npm run sim:test` prints the engineering and
-lap-time calibration table; `npx tsx scripts/playtest.ts` and `npx tsx scripts/longrun.ts` play
-the modes in the terminal and print summaries.
+Development scripts (not part of the suite): `npx tsx scripts/benchmarks.ts [class]` prints the
+benchmark table (game vs real for every reference car, error by class);
+`npx tsx scripts/motorsport-finance.ts [--verbose]` plays 22-season careers and prints cash, debt
+and positions; `npm run sim:test` prints the lap-time calibration table; `npx tsx scripts/playtest.ts`
+and `npx tsx scripts/longrun.ts` play the modes in the terminal and print summaries.
 
 ## Continuous integration and GitHub Pages
 
@@ -150,8 +157,51 @@ scripts/               calibration and soak scripts for development
 - **Cost** – bill of materials, labour hours, programme budget and duration, line tooling.
 - **Ratings** – eight 0–100 scores relative to the standards of the current year.
 
-These are documented approximations, not CFD or FEA; typical agreement with reference cars is
-within ±10–20 % (see `tests/engineering.test.ts`).
+These are documented approximations, not CFD or FEA. Against 83 reference cars the mean absolute
+error of 0–100 km/h is 5–10 % per class (13 % for SUVs and pickups), of power 5–9 %, of mass 5–8 %
+and of top speed 3–5 % (`npx tsx scripts/benchmarks.ts`, `tests/calibration.test.ts`). The
+acceleration model includes static weight distribution by layout (with an optional rear
+transaxle), weight transfer, tyre compound and width with load sensitivity, the share of grip that
+can be used at launch (open differential → traction control → launch control, by electronics
+level), torque-converter multiplication, close-ratio sport gearboxes, change-up at the best point,
+shift times, flywheel inertia, drivetrain losses, speed-dependent rolling resistance, cooling and
+tyre drag, and for EVs a constant-torque/constant-power motor with a wheel-matched reduction and a
+rotor speed limit.
+
+### Prices and manufacturer strategies (`src/sim/market.ts`, `src/sim/pricing.ts`, `src/data/strategy.ts`)
+
+- **Value price**: what buyers of a segment consider a fair price for a particular car from a
+  particular brand — the segment reference price × the car's quality for that segment × the brand's
+  pricing power × its reliability reputation × a scarcity premium (only for prestige segments and
+  desirable badges, growing as supply shrinks).
+- **Demand** responds to the asked price ÷ value price with the segment's elasticity and falls away
+  steeply above value, so no segment rewards endless price rises.
+- **Design studio**: unit cost at a planned volume, development and tooling per car over the
+  model's planned life, break-even price, value to buyers, recommended retail price (most
+  contribution at the planned volume, never below the company's minimum margin), contribution
+  margin and expected demand — all labelled as estimates. The model card compares the current
+  price with the recommended one.
+- **Strategies**: every manufacturer has a profile (price position by segment, minimum margin, how
+  readily it follows a price cut, research and marketing intensity, research focus, renewal
+  cadence, what it does after a loss-making year). Ferrari prices above value, restrains volume and
+  never discounts; Porsche earns ~20 % margins; Toyota prices just below value on the lowest cost;
+  Ford prices cars sharply and trucks richly; Hyundai undercuts and follows every price cut.
+- **Competitors react**: quarterly price following when rivals undercut and sales fall; January
+  model-year repricing (gradual, never downward for makers that hold prices); earlier renewals when
+  a newer player car takes share; cost-cutting or price cuts after a loss-making year.
+
+### Consequences
+
+- **Engine families**: a company's models with the same layout, aspiration and similar displacement
+  share an engine. Defects surface where the hazard is highest (cars built × weak engine
+  reliability × new design) and affect every model in the family: an open recall costs money and a
+  little trust; an exposed cover-up hits all those models' demand and the brand's reputation.
+- **Restructuring**: half a year of savings up front, then lower overheads and plant fixed costs for
+  three years.
+- **Impact estimates** (`src/sim/forecast.ts`): plants, expansions, automation, dealers, loans and
+  hiring show what they cost now, their monthly effect, before → after (debt, credit headroom,
+  monthly profit) and the main risks. The estimate plays the decision forward on a copy of the game
+  against not taking it — one possible future, not a guarantee.
 
 ### Company accounting (`src/sim/accounts.ts`)
 
@@ -185,6 +235,15 @@ within ±10–20 % (see `tests/engineering.test.ts`).
 - Race: fixed 0.5 s steps from a seeded RNG, with fuel, tyres, weather, traffic, overtaking,
   pit strategy, failures, accidents and a virtual safety car. Same seed and inputs → same race.
   The 3D view only reads the simulation state.
+- **Team finances** (`seasonBudget` in `racing/season.ts`): people, facilities upkeep, car build and
+  parts, travel, drivers and development, scaled by team size (privateer … front-runner), staff and
+  facilities. Owners fund a reference team of that size to break even at its target position;
+  sponsorship converges each season towards a ceiling set by results and team size; every entrant
+  gets a base prize plus a steeply rising share by position. Owners reduce funding while a team
+  sits on more than about a third of a season's cost in cash, and cover part of a deficit while
+  their confidence lasts. A redesign costs a small team less than a works team. The motorsport
+  screen shows the season's budget, expected balance and the development budget the team can
+  afford.
 
 ### Saves
 
@@ -192,7 +251,10 @@ Games autosave to IndexedDB after every time advance, after each race and when r
 menu, and can be saved to named slots, exported to a file or copied as text. The save format is versioned (`SAVE_VERSION` in
 `src/sim/migrate.ts`); every load path validates the data and upgrades older saves. Version 1
 saves (before the accounting rework) load with their stock valued at its last unit cost and their
-plants at estimated value. Saves from a newer version are refused with a message.
+plants at estimated value. Saves from a newer version are refused with a message. Phase 2 added only
+optional fields (team size and agreed owner funding of a racing team, a rear-transaxle flag, AI
+crisis and player restructuring counters, acceleration figures); version-2 saves without them load
+with documented defaults, so the format stays at version 2.
 
 ## Data coverage and labels
 
@@ -222,22 +284,48 @@ plants at estimated value. Saves from a newer version are refused with a message
 - Live and instant race simulation (deterministic).
 - Save / load in IndexedDB, autosave, file and clipboard export/import, migration of v1 saves.
 
+### Benchmark sources and model assumptions
+
+- **Performance references** (`tests/benchmarks.ts`): manufacturer-published power, DIN/EU kerb
+  weight, 0–100 km/h and top speed, and contemporary road tests, written from memory and rounded.
+  Published 0–100 times of the same car vary by ±0.3 s between sources; pre-1972 American power is
+  converted from SAE gross to an approximate net value; supercar "dry" weights are converted to an
+  approximate kerb weight. Electronically limited top speeds are only required to be reached.
+- **Price references** (`tests/benchmarks.ts`): approximate base list prices in USD of the year
+  (US prices where the car was sold there, otherwise converted at the exchange rate of the time).
+  The game has one world price per model, so the suite asks for the right order of magnitude and
+  ranking, not the exact figure.
+- **Catalogue cars** carry only real coarse facts (years, layout, displacement, aspiration, driven
+  wheels, engine position). Everything else — boost, compression, rev limit, gearbox, tyres,
+  construction, quality — is estimated by era- and class-typical rules in `specFromRow` (`ai.ts`),
+  with a few historical exceptions (pushrod V8s, Jaguar's twin-cam six, Bosch mechanical injection,
+  Honda VTEC, rear transaxles).
+- **Strategy profiles, team-finance shares, sponsor and prize curves** are estimated game data,
+  shaped on public descriptions of how these businesses work, not published figures.
+
 ### Known limitations
 
-- **Economy balance** (not bookkeeping errors; the books reconcile):
-  - Long-running motorsport teams on large budgets accumulate very large cash balances, because
-    funding scales with the category's budget level.
-  - A small team that redesigns its car every season can go insolvent.
-  - Exotic and limited-series cars are priced by segment rules (for example, an F80 is listed
-    far below its real price).
-  - Some acceleration figures for high-power rear-drive cars are slow against reality.
+- **One specification per catalogue row.** Detuned or special variants of a shared engine get the
+  row's single tune (a Ferrari Roma comes out at 566 kW against a real 456 kW; the F8 Tributo with
+  the same engine is within 8 %). Limited-series flagships are priced well above series cars but
+  still below their real multi-million prices (F80 ≈ $1.6M vs $3.9M; F40 ≈ $220k vs $400k), because
+  the market model cannot express collector demand.
+- **Benchmark outliers**: the McLaren F1 (bespoke lightweight) and Alpine A110 (compact
+  all-aluminium) are built heavier than the real cars and are tested against a wider band.
+- **Motorsport**: privately funded front-runners in GT and touring fade after about ten seasons
+  against six or more works teams, because the driver market is thin; the prudent AI test principal
+  does not negotiate drivers aggressively. Passive play (never adjusting the development budget)
+  can still go bankrupt — by design.
+- **Market**: one world price per model; demand forecasts hold competitors at today's prices;
+  competitor price moves are quarterly and rule-based, not game-theoretic.
 - **Data simplifications**: corporate ownership is simplified (subsidiaries are stand-alone);
   regulations are condensed (no sub-classes or equivalence formulas); the race calendar uses at
-  most 11–12 original circuits, so some months have two races; one world price per model;
-  currencies are not modelled.
+  most 11–12 original circuits, so some months have two races; currencies are not modelled.
 - **Simulation simplifications**: AI companies build to order (no inventory) and use a compact
   financial model; hybrid deployment in racing is a lap-average power contribution; a programme
-  with very few engineers still progresses at a quarter of full speed.
+  with very few engineers still progresses at a quarter of full speed. Impact estimates replay
+  random events identically in both copies of the world, so they show a decision's effect, not the
+  range of possible outcomes.
 - The interface is English only and designed for desktop.
 
 ### Not implemented yet
@@ -245,7 +333,7 @@ plants at estimated value. Saves from a newer version are refused with a message
 - Rapier rigid-body physics; cloud saves and accounts (Supabase).
 - Driving the cars yourself; physical collisions between cars.
 - Full safety car, multi-class endurance fields, stint limits, playable qualifying sessions.
-- Detailed supply chain, trim levels, shared engine families and platforms beyond new-generation
-  carry-over.
+- Detailed supply chain, trim levels and shared platforms beyond new-generation carry-over and
+  engine families (which exist for defects only).
 - Emissions and safety regulation as hard market-entry rules.
 - Share price, dividends and equity financing.
