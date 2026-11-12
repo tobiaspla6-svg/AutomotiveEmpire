@@ -12,6 +12,7 @@ import { annualRevenue, engineerCost, news, TECH_AREAS, AREA_NAME } from './comp
 import { REGION_IDS, REGION_NAME } from '../data/world';
 import { cpi } from './util';
 import { engineKey, familyOf, platformKey, platformOf } from './families';
+import { inspectionHazard } from './supply';
 
 type Mod = Omit<Modifier, 'id' | 'label' | 'monthsLeft'>;
 export interface HistEvent { id: string; year: number; month: number; title: string; body: string; mods: (Mod & { months: number })[]; special?: string; weight?: number }
@@ -260,10 +261,11 @@ function groups(g: GameState, c: Company, kind: DefectGroup['kind']) {
     x.reliability = Math.min(x.reliability, kind === 'engine' ? m.stats.engine.reliability : m.stats.scores.reliability);
     out.set(key, x);
   }
+  const insp = inspectionHazard(c); // thorough quality inspection catches faults before cars reach customers
   for (const x of out.values()) {
     const young = x.models.some((m) => m.designYear >= g.year - 2) ? 1.5 : 1; // early production of a new design
     // structural and suspension faults are rarer than engine faults
-    x.hazard = x.units * Math.pow((100 - x.reliability) / 50, 2) * young * (kind === 'platform' ? 0.5 : 1);
+    x.hazard = x.units * Math.pow((100 - x.reliability) / 50, 2) * young * (kind === 'platform' ? 0.5 : 1) * insp;
   }
   return out;
 }

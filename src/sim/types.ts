@@ -229,6 +229,32 @@ export interface VehicleModel {
   recallRisk: number;
 }
 
+// ----------------------------------------------------------------------- supply chain & manufacturing (Phase 3)
+export type ComponentCategory = 'metals' | 'electronics' | 'semiconductors' | 'batteries' | 'tires' | 'transmissions' | 'seats' | 'glass' | 'interior';
+/** A supply contract for one component category. */
+export interface Contract {
+  supplierId: string;
+  /** optional second source taking `secondShare` of the committed volume */
+  secondId?: string; secondShare?: number;
+  /** car sets a month committed (take-or-pay below 90 %) */
+  commitment: number;
+  /** price index agreed (market average = 1) */
+  priceIndex: number;
+  until: number; // last year of the contract
+}
+export interface SupplyState {
+  contracts: Partial<Record<ComponentCategory, Contract>>;
+  /** in-house component plants: monthly capacity in car sets */
+  inHouse: Partial<Record<ComponentCategory, { capacity: number; capex: number }>>;
+  /** supplier id → months of disrupted deliveries left */
+  disrupted: Record<string, number>;
+  /** component safety stock held, in months of production (0..2), and how much of it is currently on hand */
+  safetyStock: number; buffer: number;
+  /** last month: share of planned output lost to shortages, extra cost of spot buying, take-or-pay penalties */
+  lastLoss: number; lastSpot: number; lastPenalty: number;
+}
+export type StageId = 'body' | 'paint' | 'powertrain' | 'assembly' | 'inspection';
+
 export interface FactoryLine { modelId: string; share: number; ramp: number; target: number }
 export interface Factory {
   id: string; name: string; country: string; region: RegionId;
@@ -240,6 +266,12 @@ export interface Factory {
   historical: boolean;
   disruption: number; // months of disrupted output remaining
   bookValue: number; // net book value (cost of plant, expansions, automation and tooling less depreciation)
+  /** Phase 3: capacity of each production stage (cars a month); absent = every stage equals `capacity` */
+  stages?: Record<StageId, number>;
+  /** a stage expansion under construction */
+  stageWork?: { stage: StageId; add: number; monthsLeft: number } | null;
+  /** quality-inspection thoroughness 0..1 (absent = 0.5); output of the last month */
+  inspection?: number; lastOutput?: number;
 }
 
 export interface MonthLedger {
@@ -312,6 +344,8 @@ export interface Company {
   restructuring?: number;
   /** Shared engineering (Phase 3). Player companies always have both arrays from save version 3 on. */
   engines?: EngineFamily[]; platforms?: Platform[];
+  /** supply chain (Phase 3); absent = buys everything at average market terms */
+  supply?: SupplyState;
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
   books: Books;

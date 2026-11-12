@@ -1,6 +1,6 @@
 // Player actions. Each function validates, mutates the GameState and returns an error message
 // (string) when the action is not possible, or null on success.
-import type { Company, DevLevels, Discipline, EngineFamily, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, Trim, TrimLevel, VehicleModel, VehicleSpec } from './types';
+import type { Company, ComponentCategory, DevLevels, Discipline, EngineFamily, Factory, GameState, StageId, RaceCarSpec, RegionId, SegmentId, TechArea, Trim, TrimLevel, VehicleModel, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { creditLimit, refreshStats, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
@@ -8,6 +8,8 @@ import { priceGuide } from './pricing';
 import { CYL, defaultVehicle } from './engineering';
 import { aggregateTrims, faceliftCost, FACELIFT_AFTER, makeTrim, refreshTrim, trimView } from './trims';
 import { annualSupply } from './market';
+import { emptySupply, inHouseCost, quote, STAGE_WEIGHT, supplierCapacity } from './supply';
+import { CATEGORY_NAME, IN_HOUSE, SUPPLIER_BY_ID } from '../data/suppliers';
 import {
   adoptFamilies, defaultChoice, engineFits, enginesOf, findVariant, makeFamily, makePlatform, makeVariant, planDevelopment, platformFits, platformsOf, standaloneCost, variantShare, SHARE,
   type EngineChoice, type PlatformChoice,
@@ -397,6 +399,90 @@ export function startRestructuring(g: GameState): string | null {
   news(g, 'company', `${c.name} announces a restructuring programme`, `Severance and consultants cost about $${((saving * RESTRUCTURE.upfrontYears) / 1e6).toFixed(1)}M now; overheads should fall by about $${(saving / 1e6).toFixed(1)}M a year for three years (estimate).`);
   return null;
 }
+// ---- supply chain
+/**
+ * Sign (or replace) the supply contract for a component category: `commitment` car sets a month for `years` years,
+ * optionally with a second source taking `secondShare` of the volume.
+ */
+export function signContract(g: GameState, cat: ComponentCategory, supplierId: string, commitment: number, years: number, secondId?: string, secondShare = 0.3): string | null {
+  const c = player(g);
+  const d = SUPPLIER_BY_ID[supplierId];
+  if (!d || d.category !== cat || d.from > g.year || (d.to !== undefined && d.to < g.year)) return 'That supplier does not offer this component now.';
+  if (!finite(commitment, years) || commitment < 1 || years < 1) return 'Choose a monthly volume and a term.';
+  if (commitment > supplierCapacity(d, g.year) + 0.5) return `${d.name} can commit at most ${Math.floor(supplierCapacity(d, g.year)).toLocaleString()} sets a month.`;
+  let price = quote(c, d, commitment * (secondId ? 1 - secondShare : 1), years, g.year);
+  if (secondId) {
+    const b = SUPPLIER_BY_ID[secondId];
+    if (!b || b.category !== cat || b.id === d.id || b.from > g.year) return 'Choose a different second source for the same component.';
+    if (!finite(secondShare) || secondShare <= 0 || secondShare >= 1) return 'The second source takes between 0 and 100 % of the volume.';
+    // dual sourcing splits the volume, so each supplier gives a smaller volume discount
+    price = price * (1 - secondShare) + quote(c, b, commitment * secondShare, years, g.year) * secondShare;
+  }
+  c.supply ??= emptySupply();
+  c.supply.contracts[cat] = { supplierId, secondId, secondShare: secondId ? secondShare : undefined, commitment: Math.round(commitment), priceIndex: price, until: g.year + Math.round(years) - 1 };
+  news(g, 'company', `New ${CATEGORY_NAME[cat].toLowerCase()} contract`, `${d.name}${secondId ? ` and ${SUPPLIER_BY_ID[secondId].name}` : ''}: ${Math.round(commitment).toLocaleString()} sets a month until ${g.year + Math.round(years) - 1} at ${(price * 100).toFixed(1)}% of the market price.`);
+  return null;
+}
+/** End a contract early: a break fee of three months of the committed volume's supplier margin. */
+export function endContract(g: GameState, cat: ComponentCategory): string | null {
+  const c = player(g);
+  const k = c.supply?.contracts[cat];
+  if (!k) return 'No contract for this component.';
+  const value = c.models.filter((m) => m.status === 'production').reduce((a, m) => a + m.stats.partsCost, 0) / Math.max(1, c.models.filter((m) => m.status === 'production').length);
+  const fee = k.commitment * 3 * value * 0.02;
+  const err = pay(c, g, fee, 'oneOff'); if (err) return err;
+  delete c.supply!.contracts[cat];
+  news(g, 'company', `${CATEGORY_NAME[cat]} contract ended`, `Break fee $${(fee / 1e6).toFixed(1)}M. Parts are bought at market terms from now on.`);
+  return null;
+}
+/** Build an in-house component plant (vertical integration). */
+export function buildInHouse(g: GameState, cat: ComponentCategory, capacity: number): string | null {
+  const c = player(g);
+  if (!(cat in IN_HOUSE)) return 'This component is not made in-house in this game.';
+  if (!finite(capacity) || capacity < 50) return 'Choose a capacity of at least 50 sets a month.';
+  if (cat === 'batteries' && !hasTech(c.tech, 'ev')) return 'Battery cell production needs electric-vehicle technology.';
+  if (!c.factories.length) return 'You need a car plant first.';
+  const cost = inHouseCost(cat, capacity, g.year);
+  const err = pay(c, g, cost, 'capex'); if (err) return err;
+  c.books.otherAssets += cost; // capitalised; depreciates with the other non-plant assets
+  c.supply ??= emptySupply();
+  const prev = c.supply.inHouse[cat];
+  c.supply.inHouse[cat] = { capacity: (prev?.capacity ?? 0) + Math.round(capacity), capex: (prev?.capex ?? 0) + cost };
+  news(g, 'company', `In-house ${CATEGORY_NAME[cat].toLowerCase()}`, `$${(cost / 1e6).toFixed(1)}M for ${Math.round(capacity).toLocaleString()} sets a month: no supplier margin on that volume, but running costs of about $${((cost * 0.012) / 1e6).toFixed(2)}M a month.`);
+  return null;
+}
+/** Months of components to hold as safety stock (0–2). */
+export function setSafetyStock(g: GameState, months: number): string | null {
+  if (!finite(months) || months < 0 || months > 2) return 'Choose between 0 and 2 months.';
+  const c = player(g);
+  c.supply ??= emptySupply();
+  c.supply.safetyStock = months;
+  c.supply.buffer = Math.min(c.supply.buffer, months);
+  return null;
+}
+/** Expand one production stage of a plant (relieve a bottleneck) — six months of work. */
+export function expandStage(g: GameState, factoryId: string, stage: StageId, add: number): string | null {
+  const c = player(g);
+  const f = c.factories.find((x) => x.id === factoryId);
+  if (!f) return 'Unknown factory.';
+  if (f.stageWork) return 'A stage expansion is already under way at this plant.';
+  if (!finite(add) || add <= 0) return 'Choose the extra capacity.';
+  const cost = stageCost(f, stage, add, g.year);
+  const err = pay(c, g, cost, 'capex'); if (err) return err;
+  f.bookValue += cost;
+  f.stageWork = { stage, add: Math.round(add), monthsLeft: 6 };
+  return null;
+}
+export const stageCost = (f: Factory, stage: StageId, add: number, year: number) => factoryBuildCost(add, f.automation, year) * STAGE_WEIGHT[stage] * 1.15;
+/** How thoroughly a plant inspects its cars (0–1): more labour per car, fewer defects reaching customers. */
+export function setInspection(g: GameState, factoryId: string, level: number): string | null {
+  const f = player(g).factories.find((x) => x.id === factoryId);
+  if (!f) return 'Unknown factory.';
+  if (!finite(level) || level < 0 || level > 1) return 'Choose a level between 0 and 1.';
+  f.inspection = level;
+  return null;
+}
+
 export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35);
 export function investDealers(g: GameState, region: RegionId, amount: number): string | null {
   const c = player(g);
