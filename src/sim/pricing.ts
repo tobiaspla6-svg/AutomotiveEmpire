@@ -15,6 +15,9 @@ import { MAKER } from '../data/manufacturers';
 import { REGION_IDS, SEG } from '../data/world';
 import { positionIn, strategyOf, type Strategy } from '../data/strategy';
 import { unitCost } from './company';
+import { sharedVolume } from './families';
+import { contractIndex } from './supply';
+import { regionalFactor, regionalValue } from './regional';
 import { annualSupply, appeal, computeMarket, fuelPrice, modelWeights, priceResponse, segVolume, tariff, valuePrice, type MarketResult } from './market';
 
 /** Share of the list price the manufacturer keeps after the dealer's margin. */
@@ -47,7 +50,8 @@ export function demandCurve(g: GameState, c: Company, m: VehicleModel, monthlySu
   let weight = weights.get(m.id) ?? 0;
   if (c.isPlayer) {
     let others = 0;
-    for (const f of c.factories) for (const l of f.lines) if (l.modelId !== m.id && c.models.some((x) => x.id === l.modelId && x.status === 'production')) others += f.capacity * l.share;
+    const baseId = m.id.split('#')[0]; // a trim shares its model's lines
+    for (const f of c.factories) for (const l of f.lines) if (l.modelId !== baseId && c.models.some((x) => x.id === l.modelId && x.status === 'production')) others += f.capacity * l.share;
     weight = monthlySupply / Math.max(monthlySupply + others, 1e-9);
   } else if (!weight) weight = 1 / (weights.size + 1);
   const probe = { ...m, price: value } as VehicleModel;
@@ -61,7 +65,8 @@ export function demandCurve(g: GameState, c: Company, m: VehicleModel, monthlySu
     for (const e of cell.entries) { sumDq += e.D * e.q; if (e.model.id === m.id) own += e.D * e.q; if (!e.company.isPlayer) { aiDq += e.D * e.q; aiD += e.D; } }
     const qBar = aiD > 0 ? aiDq / aiD : 1;
     const dOther = (g.otherShare[key] ?? 0.3) * segVolume(r, m.segment, g.year);
-    const t = tariff(g, c, m, r);
+    // price seen by buyers here per dollar of world price: regional price, tariff, and what the car is worth here
+    const t = (regionalFactor(g, m, r) * (1 + tariff(g, c, m, r))) / regionalValue(g, r) - 1;
     // appeal at the value price with the price term divided out again: everything but the price
     const base = appeal(g, c, probe, r, fuel, value) / priceResponse(m.segment, 1 + t);
     rows.push({ vol: cell.volume, D, base, rest: sumDq - own + dOther * qBar, t });
@@ -113,7 +118,7 @@ export const contributionAt = (price: number, unit: number) => price * DEALER_NE
  */
 export function priceGuide(g: GameState, c: Company, m: VehicleModel, monthlyVolume: number, o: { mk?: MarketResult; devCost?: number } = {}): PriceGuide {
   const volume = Math.max(1, monthlyVolume);
-  const unit = unitCost(g, m, homeFactory(c, m), volume);
+  const unit = unitCost(g, m, homeFactory(c, m), volume, sharedVolume(c, m, volume), contractIndex(c, m));
   const lifeUnits = MODEL_LIFE[m.segment] * 12 * volume;
   const devPerCar = (o.devCost ?? (m.devCostTotal || m.stats.devCost)) / lifeUnits;
   const toolingPerCar = (m.stats.toolingPerUnitCapacity * volume) / lifeUnits;
@@ -150,7 +155,7 @@ export function aiTargetPrice(g: GameState, c: Company, m: VehicleModel, supply 
   const strat = companyStrategy(c);
   const value = valuePrice(m, c, g.year, supply) * positionIn(strat, m.segment);
   // flagships built in handfuls are costed as a small series, not car by car: they are image products
-  const cost = unitCost(g, m, homeFactory(c, m), Math.max(25, supply / 12));
+  const cost = unitCost(g, m, homeFactory(c, m), Math.max(25, supply / 12), sharedVolume(c, m, Math.max(25, supply / 12)));
   return Math.max(value, (cost * (1 + strat.minMargin)) / DEALER_NET);
 }
 

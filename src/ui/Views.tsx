@@ -20,6 +20,7 @@ import { BarList, Kpi, LineChart, Meter, Modal, Money, PageHead, PALETTE, Select
 import { MAKER } from '../data/manufacturers';
 import { companyStrategy } from '../sim/pricing';
 import { ImpactPreview } from './Impact';
+import { FactoryStages, SupplyPanel } from './Supply';
 import { RESTRUCTURE, restructuringSaving } from '../sim/company';
 import { startRestructuring } from '../sim/actions';
 
@@ -116,6 +117,7 @@ export function FactoriesView() {
                 <div className="grid g2"><div><b className="small">Expand +50%</b><ImpactPreview deps={[f.id, f.capacity, 'x']} horizon={18} run={(gg) => expandFactory(gg, f.id, Math.round(f.capacity * 0.5))} /></div>
                   {f.automation < mAuto - 0.01 && <div><b className="small">Automate +15%</b><ImpactPreview deps={[f.id, f.automation, 'a']} horizon={12} run={(gg) => upgradeAutomation(gg, f.id, Math.min(mAuto, f.automation + 0.15))} /></div>}</div>
               </details>}
+            <FactoryStages f={f} />
             <div className="grid g4">
               <Kpi label="Capacity" value={`${fmtNum(f.capacity)} / mo`} detail={f.expansion ? `+${fmtNum(f.expansion.add)} in ${f.expansion.monthsLeft} months` : undefined} />
               <Kpi label="Allocated" value={`${Math.round(used * 100)}%`} detail={<Meter value={used * 100} />} />
@@ -143,6 +145,7 @@ export function FactoriesView() {
           <div className="row end"><button className="btn" onClick={() => setLineFor(null)}>Cancel</button><button className="btn primary" disabled={free < 1} onClick={() => { if (act((gg) => addLine(gg, fac.id, selModel.id, Math.min(lineUnits, free)), 'Production line tooled.')) setLineFor(null); }}>Tool the line</button></div>
         </Modal>
       )}
+      {p.factories.length > 0 && <SupplyPanel />}
       {build && (
         <Modal onClose={() => setBuild(false)}>
           <h2>Build a factory</h2>

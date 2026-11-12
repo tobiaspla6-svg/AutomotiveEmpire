@@ -12,6 +12,8 @@ import { computeMarket, modelWeights, segVolume } from './market';
 import { gauss, hashStr, makeRng } from './rng';
 import { clamp, cpi, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
+import { adoptFamilies } from './families';
+import { updateFx } from './regional';
 import { breakEvenGrant, sponsorTarget, budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
 import { emptyPending, openBooks } from './accounts';
 
@@ -72,6 +74,7 @@ export function newCeoGame(o: CeoSetup): GameState {
   }
   news(g, 'company', `You are the new CEO of ${def.name}`, era.text, 'historical');
   if (def.ownershipNote) news(g, 'company', 'A note on ownership', def.ownershipNote);
+  adoptFamilies(g, c);
   openBooks(player(g));
   return g;
 }
@@ -228,6 +231,7 @@ export function advanceMonth(g: GameState) {
   for (const m of g.macro.modifiers) m.monthsLeft--;
   g.macro.modifiers = g.macro.modifiers.filter((m) => m.monthsLeft > 0);
   g.macro.cycle = clamp(0.93 * g.macro.cycle + gauss(g.rng) * 0.011, -0.08, 0.08);
+  updateFx(g); // exchange rates (deterministic: no random numbers consumed)
   g.month++;
   if (g.month > 12) { g.month = 1; g.year++; newYear(g); }
   g.macro.interestBase = kf(INTEREST_BASE, g.year + (g.month - 1) / 12);

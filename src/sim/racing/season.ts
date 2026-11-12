@@ -12,6 +12,7 @@ import { news, uid } from '../company';
 import { getRegs, DISC_NAME, type Regs } from './regs';
 import { computeRaceCar, defaultRaceCar, checkLegal, raceEngineSpec } from './racecar';
 import { lapSim } from './lapsim';
+import { ACADEMY_COST, developDriver, marketWindow, raceDriver, scoutDrivers } from './drivers';
 import { makeWeather, RaceSim, type RaceConfig, type RaceEntry, type Weather } from './race';
 import { TRACK, trackGeom } from './tracks';
 
@@ -57,6 +58,8 @@ export function makeDriver(g: GameState, rng: Rng, level: number, regs: Regs, ye
     pace: clamp(Math.round(base), 40, 99), consistency: a(), racecraft: a(), wet: a(), tyre: a(), salary: 0, contractEnd: year + rndInt(rng, 0, 2), teamId: null, wins: 0, titles: 0,
   };
   d.salary = driverSalary(d, regs, year);
+  // young drivers may still improve: potential from a hash of the id, so the random sequence is unchanged
+  if (d.age < 25) d.potential = clamp(d.pace + (hashStr(d.id) % 13) * ((25 - d.age) / 6), 40, 99);
   return d;
 }
 export const driverSalary = (d: Driver, regs: Regs, year: number) => budgetRef(regs, year) * 0.012 * Math.exp((overall(d) - 70) / 9);
@@ -189,7 +192,7 @@ export const RESERVE_ALLOWED = 0.35;
 
 export interface SeasonBudget {
   B: number; scale: number;
-  personnel: number; facilities: number; carBuild: number; travel: number; drivers: number; development: number;
+  personnel: number; facilities: number; carBuild: number; travel: number; drivers: number; academy: number; backing: number; development: number;
   /** running costs of a season (all of the above, after cost modifiers) */
   cost: number;
   sponsors: number; owner: number;
@@ -213,14 +216,16 @@ export function seasonBudget(g: GameState, c: Company, div: MotorsportDivision, 
   const carBuild = B * 0.2 * (0.4 + 0.6 * s) * k;
   const travel = B * 0.1 * (0.5 + 0.5 * s) * (Math.max(4, ch.rounds.length) / 10) * k;
   const drivers = team.drivers.reduce((a, id) => a + (ch.drivers.find((d) => d.id === id)?.salary ?? 0), 0) * k;
+  const academy = B * ACADEMY_COST[div.academy?.level ?? 0] * k;
+  const backing = team.drivers.reduce((a, id) => a + (ch.drivers.find((d) => d.id === id)?.backing ?? 0), 0);
   const development = (over.devBudget ?? div.devBudget) * 12 * k;
-  const cost = personnel + facilities + carBuild + travel + drivers + development;
-  const sponsors = div.sponsors.reduce((a, x) => a + x.annual, 0);
+  const cost = personnel + facilities + carBuild + travel + drivers + academy + development;
+  const sponsors = div.sponsors.reduce((a, x) => a + x.annual, 0) + backing; // pay drivers' sponsorship counts as sponsor income
   const st = ch.results.length ? standings(ch) : null;
   const n = ch.teams.length;
   const prizePos = st ? st.teams.findIndex((t) => t.id === div.teamId) + 1 : Math.min(n, div.objective?.target ?? Math.ceil(n / 2));
   const prize = prizeMoney(B, prizePos, n);
-  return { B, scale: s, personnel, facilities, carBuild, travel, drivers, development, cost, sponsors, owner: div.ownerGrant, prize, prizePos, balance: sponsors + div.ownerGrant + prize - cost };
+  return { B, scale: s, personnel, facilities, carBuild, travel, drivers, academy, backing, development, cost, sponsors, owner: div.ownerGrant, prize, prizePos, balance: sponsors + div.ownerGrant + prize - cost };
 }
 
 /**
@@ -355,7 +360,7 @@ export function buildRaceConfig(g: GameState, c: Company, div: MotorsportDivisio
     const autoWing = bestWing({ ...team, car: spec }, regs, tq.techYear, tq.quality, round.trackId, ch.year);
     for (let i = 0; i < regs.carsPerTeam; i++) {
       const ids = team.drivers.slice(i * regs.driversPerCar, (i + 1) * regs.driversPerCar);
-      const drivers = ids.map((id) => ch.drivers.find((d) => d.id === id)!).filter(Boolean);
+      const drivers = ids.map((id) => ch.drivers.find((d) => d.id === id)!).filter(Boolean).map((d) => raceDriver(d, ch.discipline)); // drivers from other categories still adapting
       if (!drivers.length) continue;
       const wing = team.isPlayer && choices ? choices.wing[i] ?? autoWing : clamp(autoWing + (rnd(rng) - 0.5) * 0.2, 0, 1);
       const perf = computeRaceCar(spec, team.dev, regs, tq.techYear, wing, tq.quality);
@@ -466,18 +471,18 @@ export function startSeason(g: GameState, c: Company, div: MotorsportDivision, r
   const changed = oldRegs.className !== regs.className;
   if (changed) news(g, 'motorsport', `New regulations: ${regs.className}`, regs.note, 'historical');
   // drivers: ageing, development, retirements, contracts
-  for (const d of old.drivers) {
-    d.age++;
-    const delta = d.age < 25 ? rndRange(rng, 0, 2.5) : d.age > 33 ? -rndRange(rng, 0, 2.5) : rndRange(rng, -0.8, 0.8);
-    d.pace = clamp(Math.round(d.pace + delta), 40, 99); d.consistency = clamp(Math.round(d.consistency + (d.age < 30 ? 0.8 : -0.3)), 40, 99);
-    d.salary = driverSalary(d, regs, year);
-  }
   const player = playerTeam(div);
+  const era = budgetRef(regs, year) / budgetRef(oldRegs, old.year);
+  for (const d of old.drivers) {
+    developDriver(d, rng);
+    // a salary agreed in a contract with your team holds (moving with the category's budget level); others are repriced
+    d.salary = d.teamId === player.id && d.contracted !== undefined && d.contractEnd >= year ? (d.contracted *= era) : driverSalary(d, regs, year);
+  }
   for (const d of [...old.drivers]) {
     const retiring = d.age >= 41 || (d.age >= 37 && chance(rng, 0.3));
     const expired = d.contractEnd < year;
     if (d.teamId === player.id) {
-      if (retiring || expired) { news(g, 'motorsport', retiring ? `${d.name} retires` : `${d.name}'s contract has ended`, retiring ? 'A seat is open for next season.' : 'The driver is now a free agent. Re-sign or replace before the first race.'); d.teamId = null; }
+      if (retiring || expired) { news(g, 'motorsport', retiring ? `${d.name} retires` : `${d.name}'s contract has ended`, retiring ? 'A seat is open for next season.' : 'The driver is now a free agent. Re-sign or replace before the first race.'); d.teamId = null; d.contracted = undefined; d.backing = undefined; }
     } else if (d.teamId && (retiring || (expired && chance(rng, 0.35)))) d.teamId = null;
     else if (d.teamId && expired) d.contractEnd = year + rndInt(rng, 0, 2);
     if (retiring) old.drivers.splice(old.drivers.indexOf(d), 1);
@@ -498,6 +503,7 @@ export function startSeason(g: GameState, c: Company, div: MotorsportDivision, r
   }
   div.championship = ch;
   fillGrid(g, ch, rng, c.dataId);
+  for (const t of marketWindow(g, ch, div, rng, year, (r) => makeDriver(g, rng, r, regs, year), regs, (d) => driverSalary(d, regs, year))) news(g, 'motorsport', 'Driver market', t);
   div.seasonIncome = 0; div.seasonCost = 0;
   // the whole paddock's money moves with the era: funding, sponsorship and spending plans scale with the category's budget level
   const ratio = budgetRef(regs, year) / budgetRef(oldRegs, old.year);
@@ -534,7 +540,9 @@ export function motorsportMonth(g: GameState, c: Company): { cost: number; incom
   const regs = teamRegs(team, ch.year);
   const B = budgetRef(regs, g.year);
   const cost = seasonBudget(g, c, div).cost / 12;
-  const income = (div.sponsors.reduce((a, s) => a + s.annual, 0) + div.ownerGrant) / 12;
+  const backing = team.drivers.reduce((a, id) => a + (ch.drivers.find((d) => d.id === id)?.backing ?? 0), 0);
+  const income = (div.sponsors.reduce((a, s) => a + s.annual, 0) + backing + div.ownerGrant) / 12;
+  if (g.month === 7) for (const t of scoutDrivers(ch, g.rng, (r) => makeDriver(g, g.rng, r, regs, g.year), (d) => driverSalary(d, regs, g.year))) news(g, 'motorsport', 'Driver market', t);
   div.seasonCost += cost; div.seasonIncome += income;
   // development: diminishing returns on spend, scaled by staff and the relevant facility
   const pts = Math.pow(div.devBudget / ((B * 0.3) / 12), 0.6) * (0.5 + div.staff.technical / 100) * 0.05;

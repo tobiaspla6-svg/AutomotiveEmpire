@@ -68,6 +68,8 @@ export interface VehicleSpec {
   safety: number; // 0..3
   quality: number; // 0..1
   color: string;
+  /** optional equipment level 0..1 (trim content); absent = 0 */
+  equipment?: number;
 }
 
 export interface Tech { engine: number; chassis: number; aero: number; electronics: number; manufacturing: number }
@@ -113,7 +115,100 @@ export interface VehicleStats {
   warnings: string[];
 }
 
+// ------------------------------------------------------------------- shared engineering (Phase 3)
+
+/** Programme status shared by vehicles, engine families and platforms. */
+export type ProgrammeStatus = 'development' | 'ready';
+export interface Programme {
+  status: ProgrammeStatus;
+  devMonthsLeft: number; devMonthsTotal: number; devCostPaid: number; devCostTotal: number;
+  /** id of the vehicle programme that pays for this one (bundled development); absent for a stand-alone programme */
+  ownerModelId?: string;
+}
+
+/**
+ * One engine variant of a family: the parameters that change without new hardware architecture.
+ * Displacement varies with bore and stroke inside the family's envelope.
+ */
+export interface EngineVariant {
+  id: string; name: string;
+  tune: 'economy' | 'standard' | 'performance';
+  displacement: number; aspiration: Aspiration; boost: number; compression: number; redline: number; cam: number; vvt: boolean; hybridKw: number;
+  motorKw: number; batteryKwh: number; // EV variants
+  /** a variant still being calibrated cannot go into production */
+  status: ProgrammeStatus; readyIn: number; devCost: number;
+  /** set while the variant is developed as part of a vehicle programme */
+  ownerModelId?: string;
+}
+/** A reusable engine architecture: block, cylinder layout, head and fuel system. */
+export interface EngineFamily extends Programme {
+  id: string; name: string;
+  layout: EngineLayout; boreStroke: number; valvetrain: Valvetrain; fuelSystem: FuelSystem; aluBlock: boolean;
+  /** displacement the block was designed around; variants may range from 80 % to 125 % of it */
+  baseDisplacement: number;
+  /** EV: motor power the drive unit was designed around (variants 50–200 %) */
+  baseMotorKw: number;
+  techYear: number; introYear: number;
+  variants: EngineVariant[];
+  /** reliability events, newest last: recalls fix the fault, a quiet fix does not */
+  history: { y: number; kind: 'recall' | 'quiet' | 'exposed'; units: number }[];
+  /** total engines built */
+  cumulativeUnits: number;
+}
+export type EngineBay = 'compact' | 'medium' | 'large';
+/** Body-style group a platform can carry. */
+export type PlatformClass = 'car' | 'sports' | 'truck';
+/** A reusable vehicle architecture: structure, crash structure, suspension pick-up points, engine and drivetrain mounting. */
+export interface Platform extends Programme {
+  id: string; name: string;
+  cls: PlatformClass;
+  chassis: ChassisType;
+  enginePos: 'front' | 'mid' | 'rear';
+  transaxle: boolean;
+  drives: ('FWD' | 'RWD' | 'AWD')[];
+  bay: EngineBay;
+  /** size factor (wheelbase and track scale with it) the platform was designed around, and the range it stretches to */
+  baseSize: number; sizeMin: number; sizeMax: number;
+  suspFront: SuspType; suspRear: SuspType;
+  safety: number;
+  techYear: number; introYear: number;
+  history: { y: number; kind: 'recall' | 'quiet' | 'exposed'; units: number }[];
+  cumulativeUnits: number;
+}
+
+export type TrimLevel = 'entry' | 'mid' | 'premium' | 'sport' | 'luxury' | 'performance' | 'limited';
+/**
+ * A version of a model (Phase 3). It has its own engine variant, gearbox, cabin, wheels, tyres, equipment, price and
+ * production mix, its own stock and its own sales. The model's stock, sales and demand are the sums of its trims.
+ */
+export interface Trim {
+  id: string; name: string; level: TrimLevel;
+  engineVariantId?: string; gearbox?: Gearbox; gears?: number; interior: InteriorType; wheelDia: number; tireCompound: TireCompound; equipment: number;
+  sport?: number; tireWidth?: number;
+  price: number;
+  /** planned share of the model's production (0..1; trims are normalised) */
+  mix: number;
+  /** limited edition: total cars that will ever be built */
+  cap?: number;
+  spec: VehicleSpec; stats: VehicleStats;
+  inventory: number; inventoryValue: number; built: number;
+  lastSales: Record<RegionId, number>; lastDemand: number; lastUnitCost: number; salesHistory: number[];
+  revenue: number; cogs: number;
+  /** order book (limited editions): waiting list, allocation policy, personalisation take-up 0..1 */
+  orders?: number; allocation?: 'loyal' | 'open'; personal?: number;
+}
+
 export interface VehicleModel {
+  /** trims (Phase 3); absent or empty = the model is sold as one version */
+  trims?: Trim[];
+  /** mid-life facelift in progress, and the number completed */
+  facelift?: { monthsLeft: number; months: number; cost: number; paid: number } | null; facelifts?: number;
+  /** exclusivity (Phase 3): cars a year the company is willing to build, and the order book that forms above it */
+  annualCap?: number; orders?: number; allocation?: 'loyal' | 'open'; personal?: number;
+  /** regional prices (Phase 3): multiple of the world price, fixed in local currency at exchange index `fx` */
+  regional?: Partial<Record<RegionId, { ratio: number; fx: number }>>;
+  /** shared engineering (Phase 3); absent on AI cars and on cars from older saves that were not migrated */
+  engineFamilyId?: string; engineVariantId?: string; platformId?: string;
   id: string;
   name: string;
   spec: VehicleSpec;
@@ -140,6 +235,32 @@ export interface VehicleModel {
   recallRisk: number;
 }
 
+// ----------------------------------------------------------------------- supply chain & manufacturing (Phase 3)
+export type ComponentCategory = 'metals' | 'electronics' | 'semiconductors' | 'batteries' | 'tires' | 'transmissions' | 'seats' | 'glass' | 'interior';
+/** A supply contract for one component category. */
+export interface Contract {
+  supplierId: string;
+  /** optional second source taking `secondShare` of the committed volume */
+  secondId?: string; secondShare?: number;
+  /** car sets a month committed (take-or-pay below 90 %) */
+  commitment: number;
+  /** price index agreed (market average = 1) */
+  priceIndex: number;
+  until: number; // last year of the contract
+}
+export interface SupplyState {
+  contracts: Partial<Record<ComponentCategory, Contract>>;
+  /** in-house component plants: monthly capacity in car sets */
+  inHouse: Partial<Record<ComponentCategory, { capacity: number; capex: number }>>;
+  /** supplier id → months of disrupted deliveries left */
+  disrupted: Record<string, number>;
+  /** component safety stock held, in months of production (0..2), and how much of it is currently on hand */
+  safetyStock: number; buffer: number;
+  /** last month: share of planned output lost to shortages, extra cost of spot buying, take-or-pay penalties */
+  lastLoss: number; lastSpot: number; lastPenalty: number;
+}
+export type StageId = 'body' | 'paint' | 'powertrain' | 'assembly' | 'inspection';
+
 export interface FactoryLine { modelId: string; share: number; ramp: number; target: number }
 export interface Factory {
   id: string; name: string; country: string; region: RegionId;
@@ -151,6 +272,12 @@ export interface Factory {
   historical: boolean;
   disruption: number; // months of disrupted output remaining
   bookValue: number; // net book value (cost of plant, expansions, automation and tooling less depreciation)
+  /** Phase 3: capacity of each production stage (cars a month); absent = every stage equals `capacity` */
+  stages?: Record<StageId, number>;
+  /** a stage expansion under construction */
+  stageWork?: { stage: StageId; add: number; monthsLeft: number } | null;
+  /** quality-inspection thoroughness 0..1 (absent = 0.5); output of the last month */
+  inspection?: number; lastOutput?: number;
 }
 
 export interface MonthLedger {
@@ -221,6 +348,10 @@ export interface Company {
   aiCostCut?: number; aiPriceCut?: number;
   /** Player: months left of a restructuring programme (lower overheads and plant fixed costs). Absent = none. */
   restructuring?: number;
+  /** Shared engineering (Phase 3). Player companies always have both arrays from save version 3 on. */
+  engines?: EngineFamily[]; platforms?: Platform[];
+  /** supply chain (Phase 3); absent = buys everything at average market terms */
+  supply?: SupplyState;
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
   books: Books;
@@ -255,6 +386,9 @@ export interface Driver {
   pace: number; consistency: number; racecraft: number; wet: number; tyre: number;
   salary: number; contractEnd: number; teamId: string | null;
   wins: number; titles: number;
+  /** Phase 3 driver market (absent in older saves): potential pace, category specialty, seasons still to adapt to this
+   *  category, sponsorship brought per year (pay driver), salary agreed in a contract, member of an academy */
+  potential?: number; specialty?: 'single' | 'proto' | 'gt' | 'touring'; adapt?: number; backing?: number; contracted?: number; academy?: boolean;
 }
 
 export interface RaceCarSpec {
@@ -312,6 +446,8 @@ export interface MotorsportDivision {
   seasonIncome: number; seasonCost: number;
   carDesignedYear: number;
   objective: Objective | null;
+  /** junior driver academy (Phase 3): level 0–3 and its juniors (not on the grid until promoted) */
+  academy?: { level: number; juniors: Driver[] };
 }
 
 export interface GameState {
@@ -323,7 +459,9 @@ export interface GameState {
   rng: { s: number };
   playerId: string;
   companies: Company[];
-  macro: { fuelPrice: number; materialCost: number; interestBase: number; modifiers: Modifier[]; cycle: number };
+  macro: { fuelPrice: number; materialCost: number; interestBase: number; modifiers: Modifier[]; cycle: number;
+    /** Phase 3: exchange-rate index per region (local units per dollar, 1.0 = start); absent = 1 */
+    fx?: Partial<Record<RegionId, number>> };
   otherShare: Record<string, number>; // `${region}:${segment}` -> D_other (units/yr at start-year scale, as share of segment volume)
   news: NewsItem[];
   decision: Decision | null;

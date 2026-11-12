@@ -228,7 +228,11 @@ export const NORM = {
 };
 const sat = (ratio: number, pow = 1) => 100 * (1 - Math.pow(0.5, Math.pow(Math.max(ratio, 0), pow)));
 
-export interface VehicleCtx { year: number; tech: Tech; materialIndex?: number }
+export interface VehicleCtx {
+  year: number; tech: Tech; materialIndex?: number;
+  /** reliability points gained by a shared engine family / platform in service (see families.ts maturity) */
+  maturity?: { engine: number; platform: number };
+}
 
 export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const { tech, year } = ctx;
@@ -236,6 +240,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const b = BODY[s.body];
   const d = dims(s);
   const eng = computeEngine(s.engine, tech.engine, s.quality, false, year);
+  if (ctx.maturity?.engine) eng.reliability = clamp(eng.reliability + ctx.maturity.engine, 5, 99);
   warnings.push(...eng.warnings);
   const isEV = eng.isEV;
   const cyl = CYL[s.engine.layout];
@@ -260,7 +265,9 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   // suspension, subframes, steering, brakes, wheels and tyres
   const mRunning = 140 * s.size * s.size + { drum: 0, disc: 6, vented: 14, ceramic: -6 }[s.brakes] + 4 * (4 + s.tireWidth / 30) + 4 * (s.wheelDia * 0.55);
   // glazing, wiring and electrics, and for combustion cars fuel, exhaust and cooling system
-  const mMisc = 28 * s.size + lerp(20, 85, elecT) + (isEV ? 12 : 42 * s.size + 38) + s.wing * 12 + s.splitter * 6;
+  // optional equipment (trim content: comfort and convenience features, driver aids, sound insulation)
+  const equip = clamp(s.equipment ?? 0, 0, 1);
+  const mMisc = 28 * s.size + lerp(20, 85, elecT) + (isEV ? 12 : 42 * s.size + 38) + s.wing * 12 + s.splitter * 6 + 45 * equip * s.size;
   const mass = mChassis + mPanels + mInterior + mSafety + mDrive + mRunning + mMisc + eng.mass;
   const massBreakdown = { Chassis: mChassis, 'Body panels': mPanels, Powertrain: eng.mass, Driveline: mDrive, 'Wheels, brakes, suspension': mRunning, Interior: mInterior, Safety: mSafety, 'Fluids & electrics': mMisc };
 
@@ -409,16 +416,17 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const cInterior = { basic: 600, standard: 1500, premium: 3600, luxury: 7500 }[s.interior] * s.size * (0.6 + s.seats / 12.5) * cq;
   const cSafety = [0, 250, 700, 1300][Math.round(s.safety)] ?? 0;
   const cElec = kf([[1950, 60], [1980, 300], [2000, 800], [2020, 1400]], tech.electronics) * { basic: 0.7, standard: 1, premium: 1.5, luxury: 2.3 }[s.interior];
+  const cEquip = equip * kf([[1950, 250], [1980, 900], [2000, 1600], [2020, 2600]], tech.electronics) * s.size;
   const cAero = s.wing * 600 + s.splitter * 250 + (s.flatFloor ? 350 : 0) + s.aeroOpt * 200;
   // ×1.5: supplier margins, warranty provision, inbound logistics and scrap that a pure bill of materials leaves out.
   // A traction battery is bought (or built) close to cost: ×1.15 on that part.
   const battery = eng.batteryCost2020 ?? 0;
   const cPower = 1.5 * (eng.cost2020 - battery) + 1.15 * battery;
-  const parts2020 = cPower + 1.5 * (cChassis + cPanels + cDrive * cq + cRunning * cq + cInterior + cSafety + cElec + cAero);
+  const parts2020 = cPower + 1.5 * (cChassis + cPanels + cDrive * cq + cRunning * cq + cInterior + cSafety + cElec + cEquip + cAero);
   const nominal = cpi(year) * (ctx.materialIndex ?? 1);
   const costBreakdown: Record<string, number> = {
     Chassis: 1.5 * cChassis * nominal, 'Body & paint': 1.5 * cPanels * nominal, Powertrain: cPower * nominal, Driveline: 1.5 * cDrive * cq * nominal,
-    'Running gear': 1.5 * cRunning * cq * nominal, Interior: 1.5 * cInterior * nominal, 'Safety & electronics': 1.5 * (cSafety + cElec) * nominal, Aero: 1.5 * cAero * nominal,
+    'Running gear': 1.5 * cRunning * cq * nominal, Interior: 1.5 * cInterior * nominal, 'Safety & electronics': 1.5 * (cSafety + cElec + cEquip) * nominal, Aero: 1.5 * cAero * nominal,
   };
   const labourHours = 18 + mass / 100 + { basic: 4, standard: 8, premium: 16, luxury: 40 }[s.interior]
     + { ladder: 0, steel: 0, spaceframe: 40, aluminium: 10, carbon: 120 }[s.chassis] + (cyl >= 12 ? 10 : 0) + Math.pow(s.quality, 3) * 320
@@ -438,18 +446,18 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const performance = 0.45 * sAccel + 0.2 * sTop + 0.25 * sLat + 0.1 * sBrake;
   const fuelEquiv = isEV ? eco.combined / 8.9 * 0.42 : eco.combined; // 1 L petrol ≈ 8.9 kWh; EV score reflects running cost
   const economy = sat(kf(NORM.fuel, year) / fuelEquiv, 1.5);
-  let comfort = { basic: 25, standard: 45, premium: 68, luxury: 88 }[s.interior] + (1 - s.sport) * 12 - 6
+  let comfort = { basic: 25, standard: 45, premium: 68, luxury: 88 }[s.interior] + (1 - s.sport) * 12 - 6 + 9 * equip
     + ({ solid: -6, macpherson: 0, wishbone: 3, multilink: 5 }[s.suspFront] + { solid: -6, macpherson: 0, wishbone: 3, multilink: 5 }[s.suspRear]) / 2
     + (s.gearbox !== 'manual' || isEV ? 4 : 0) + (d.wheelbase - 2.6) * 10 + (isEV ? 7 : cyl >= 12 ? 9 : cyl >= 8 ? 6 : cyl >= 6 ? 4 : cyl <= 3 ? -4 : 0)
     + s.quality * 8 - Math.max(0, s.wheelDia - 17) * 1.2 - (s.tireCompound === 'semislick' ? 6 : 0)
     - (s.body === 'roadster' ? 6 : s.body === 'supercar' ? 8 : s.body === 'pickup' ? 6 : 0) - s.engine.cam * 6;
   let practicality = (s.seats <= 2 ? 15 : s.seats <= 4 ? 38 : s.seats === 5 ? 52 : 66) + b.cargo * 34 + (s.size - 1) * 30 + (s.drive === 'AWD' && (s.body === 'suv' || s.body === 'pickup') ? 6 : 0)
     - (s.enginePos !== 'front' && !isEV ? 8 : 0) + (isEV && rangeKm < 250 ? -(250 - rangeKm) / 6 : 0);
-  let safety = 50 + (s.safety - kf(NORM.safety, year)) * 22 + (mass - 1200) / 100 * 1.5 + { drum: -4, disc: 2, vented: 5, ceramic: 7 }[s.brakes]
+  let safety = 50 + 3 * equip + (s.safety - kf(NORM.safety, year)) * 22 + (mass - 1200) / 100 * 1.5 + { drum: -4, disc: 2, vented: 5, ceramic: 7 }[s.brakes]
     + (tech.electronics - year) * 1.5 + (s.drive === 'AWD' ? 3 : 0) + s.quality * 6 + (s.chassis === 'ladder' ? -5 : s.chassis === 'carbon' ? 5 : 0);
-  let reliability = 0.55 * eng.reliability + 0.45 * (62 + s.quality * 30 + (tech.manufacturing - year) * 1.2 - (s.drive === 'AWD' ? 3 : 0)
+  let reliability = 0.55 * eng.reliability + 0.45 * (62 + s.quality * 30 + (ctx.maturity?.platform ?? 0) + (tech.manufacturing - year) * 1.2 - (s.drive === 'AWD' ? 3 : 0)
     - (s.interior === 'luxury' ? 4 : 0) - (s.gearbox === 'dct' ? 3 : 0) - (s.chassis === 'carbon' ? 2 : 0));
-  let prestige = { basic: 5, standard: 20, premium: 45, luxury: 70 }[s.interior] + (cyl >= 12 ? 18 : cyl >= 10 ? 14 : cyl >= 8 ? 10 : cyl >= 6 ? 5 : 0)
+  let prestige = 6 * equip + { basic: 5, standard: 20, premium: 45, luxury: 70 }[s.interior] + (cyl >= 12 ? 18 : cyl >= 10 ? 14 : cyl >= 8 ? 10 : cyl >= 6 ? 5 : 0)
     + (s.chassis === 'carbon' ? 10 : s.chassis === 'aluminium' ? 4 : 0) + performance * 0.25 + s.quality * 12 + (s.body === 'supercar' ? 8 : s.body === 'coupe' || s.body === 'roadster' ? 3 : 0)
     + (isEV ? 4 : 0);
   const lowEnd = isEV ? 1 : torqueAt(eng, 2000) / eng.torqueNm;

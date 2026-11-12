@@ -17,6 +17,9 @@
 import type { Company, GameState, RegionId, SegmentId, VehicleModel } from './types';
 import { EV_ACCEPTANCE, FUEL_BASE, REGION_IDS, REGION_VOLUME, SEG, SEGMENTS, SEGMENT_IDS, TARIFF, segPrice } from '../data/world';
 import { clamp, cpi, kf } from './util';
+import { dealerMix, hasTrims, trimKey, trimView, trimsOf } from './trims';
+import { regionalPrice, regionalValue, regionalFactor } from './regional';
+export { regionalFactor };
 
 const shareCache = new Map<string, number>();
 /** Annual unit volume of a segment in a region. */
@@ -109,7 +112,7 @@ const brandIndex = (prestige: number, top: number) => 0.7 + (0.6 * prestige) / 1
 /** Steepness of the extra penalty for asking more than the value price. */
 export const OVERPRICE_K = 2;
 /** Largest scarcity premium. */
-export const MAX_SCARCITY = 8;
+export const MAX_SCARCITY = 12;
 
 /** Segment-weighted utility of a car, 0…1. */
 export function utilityOf(m: Pick<VehicleModel, 'stats'>, seg: SegmentId): number {
@@ -132,16 +135,24 @@ export const scarcityRef = (seg: SegmentId, year: number) => worldSegVolume(seg,
 /** Cars a year the company can put on the market: line capacity for the player, distribution weight for the others. */
 export function annualSupply(c: Company, m: VehicleModel, weight?: number): number {
   if (c.isPlayer) {
+    // a trim (id "model#trim") gets its share of the model's lines
+    const [baseId, trim] = m.id.split('#');
     let cap = 0;
-    for (const f of c.factories) for (const l of f.lines) if (l.modelId === m.id) cap += f.capacity * l.share;
-    return Math.max(cap * 12, m.inventory, 12);
+    for (const f of c.factories) for (const l of f.lines) if (l.modelId === baseId) cap += f.capacity * l.share;
+    return Math.max(cap * 12 * (trim ? m.volumeWeight : 1), m.inventory, 12);
   }
   const w = weight ?? modelWeights(c).get(m.id) ?? 0;
   return Math.max(REGION_IDS.reduce((a, r) => a + c.reach[r], 0) * w, 12);
 }
 /** Scarcity premium: only for prestige segments, only for makers whose badge is desirable, growing as supply shrinks. */
+/**
+ * How strongly rarity is priced, by era: the premium collectors pay for limited series from the great marques has
+ * grown steadily (a limited Ferrari flagship fetched about 3x the series car around 2002, 4.4x in 2013 and over 8x in
+ * 2025). Applied to the segment's scarcity exponent.
+ */
+export const RARITY_ERA: [number, number][] = [[1950, 0.85], [1985, 0.9], [2000, 1.0], [2013, 1.15], [2025, 1.55]];
 export function scarcityPremium(seg: SegmentId, year: number, prestige: number, supply: number): number {
-  const k = VALUE[seg].scarcity;
+  const k = VALUE[seg].scarcity * kf(RARITY_ERA, year);
   if (k <= 0 || !(supply > 0)) return 1;
   const raw = clamp(Math.pow(scarcityRef(seg, year) / supply, k), 1, MAX_SCARCITY);
   return 1 + (raw - 1) * clamp((prestige - 50) / 40, 0, 1);
@@ -169,8 +180,9 @@ export function appeal(g: GameState, c: Company, m: VehicleModel, region: Region
   const s = m.stats.scores;
   const u = utilityOf(m, m.segment) + (fuel - 1) * 0.25 * ((s.economy - 50) / 100);
   let q = Math.exp(4 * (u - 0.5)) * (def.bodyFit[m.spec.body] ?? 0.3);
-  const eff = m.price * (1 + tariff(g, c, m, region));
-  q *= priceResponse(m.segment, eff / (value ?? valuePrice(m, c, g.year, annualSupply(c, m))));
+  // the price buyers in this region see (regional price, tariff) against what the car is worth to them here
+  const eff = regionalPrice(g, m, region) * (1 + tariff(g, c, m, region));
+  q *= priceResponse(m.segment, eff / ((value ?? valuePrice(m, c, g.year, annualSupply(c, m))) * regionalValue(g, region)));
   const wP = def.weights.prestige ?? 0, wR = def.weights.reliability ?? 0;
   q *= Math.pow(0.55 + (0.9 * c.prestige) / 100, wP * 3 + 0.3);
   q *= Math.pow(0.7 + (0.6 * c.reliabilityRep) / 100, wR * 3 + 0.3);
@@ -205,6 +217,24 @@ export function computeMarket(g: GameState): MarketResult {
     for (const m of c.models) {
       const wm = w.get(m.id);
       if (!wm) continue;
+      if (hasTrims(m)) {
+        // every trim is a car of its own to buyers; the dealers split their attention by the trims' mix and stock
+        const dm = dealerMix(m);
+        const supply = annualSupply(c, m, wm);
+        for (const t of trimsOf(m)) {
+          const share = dm.get(t.id) ?? 0;
+          if (share <= 0) continue;
+          const view = trimView(m, t); view.volumeWeight = share;
+          const tSupply = Math.max(12, t.cap !== undefined ? Math.min(supply * share, t.cap) : supply * share);
+          const value = valuePrice(view, c, g.year, tSupply);
+          for (const r of REGION_IDS) {
+            const D = c.reach[r] * wm * share;
+            if (D <= 0) continue;
+            cells[`${r}:${m.segment}`].entries.push({ company: c, model: view, D, q: appeal(g, c, view, r, fuel, value), demand: 0 });
+          }
+        }
+        continue;
+      }
       const value = valuePrice(m, c, g.year, annualSupply(c, m, wm));
       for (const r of REGION_IDS) {
         const D = c.reach[r] * wm;
@@ -230,6 +260,14 @@ export function computeMarket(g: GameState): MarketResult {
       rec[r] += e.demand;
     }
     void sumD;
+  }
+  // a model with trims: its demand is the sum of its trims' demand
+  for (const c of g.companies) for (const m of c.models) {
+    if (!hasTrims(m)) continue;
+    const rec: Record<RegionId, number> = { NA: 0, EU: 0, JP: 0, CN: 0, LATAM: 0, ROW: 0 };
+    let any = false;
+    for (const t of trimsOf(m)) { const d = demand.get(trimKey(m, t)); if (!d) continue; any = true; for (const r of REGION_IDS) rec[r] += d[r]; }
+    if (any) demand.set(m.id, rec);
   }
   return { demand, cells };
 }

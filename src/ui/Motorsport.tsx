@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
-import type { Company, DevLevels, Discipline, EngineLayout, MotorsportDivision, RaceCarSpec } from '../sim/types';
+import type { Company, DevLevels, Discipline, EngineLayout, GameState, MotorsportDivision, RaceCarSpec } from '../sim/types';
 import { useGame, useStore } from '../store/game';
 import { CYL, LAYOUT_NAME } from '../sim/engineering';
 import { DISCIPLINES, DISC_NAME, disciplineAvailable, getRegs } from '../sim/racing/regs';
 import { budgetRef, divisionTech, overall, pendingRound, playerTeam, RESERVE_ALLOWED, seasonBudget, standings, teamRegs } from '../sim/racing/season';
+import { ACADEMY_COST, GROUP, GROUP_NAME, effectiveOverall, potentialOf, potentialOverall, specialtyOf } from '../sim/racing/drivers';
 import { computeRaceCar, tuneRedline } from '../sim/racing/racecar';
 import { lapSim } from '../sim/racing/lapsim';
 import { TRACK, trackGeom } from '../sim/racing/tracks';
 import {
-  closeMotorsport, establishMotorsport, facilityCost, recruitStaff, redesignCost, redesignKinds, redesignRaceCar, releaseDriver, setDevBudget, setDevFocus, signDriver, staffCost, swapDriverOrder, upgradeFacility,
+  closeMotorsport, driverTerms, establishMotorsport, facilityCost, promoteJunior, setAcademy, recruitStaff, redesignCost, redesignKinds, redesignRaceCar, releaseDriver, setDevBudget, setDevFocus, signDriver, staffCost, swapDriverOrder, upgradeFacility,
 } from '../sim/actions';
 import { fmtMoney, fmtTime, MONTHS } from '../sim/util';
-import { BarList, Kpi, LineChart, Meter, PageHead, Seg, Select, Slider, Src, StatLine } from './common';
+import { BarList, Kpi, LineChart, Meter, Modal, PageHead, Seg, Select, Slider, Src, StatLine } from './common';
+import { ImpactPreview } from './Impact';
 import { CarViewer } from '../three/CarViewer';
 import { RaceCar } from '../three/CarModel';
 import { TrackMap } from '../three/TrackMap';
@@ -223,19 +225,15 @@ function Team({ p, div }: { p: Company; div: MotorsportDivision }) {
     <>
       <div className="panel col">
         <div className="row between"><h3>Drivers</h3><span className="small muted">{mine.length} of {seats} seats filled · {regs.driversPerCar > 1 ? `${regs.driversPerCar} drivers share each car` : 'one driver per car'}</span></div>
-        <table><thead><tr><th>Car</th><th>Driver</th><th className="r">Age</th><th className="r">Pace</th><th className="r">Consist.</th><th className="r">Racecraft</th><th className="r">Wet</th><th className="r">Tyres</th><th className="r">Salary</th><th>Contract</th><th /></tr></thead><tbody>
-          {mine.map((d, i) => <tr key={d.id}><td>#{Math.floor(i / regs.driversPerCar) + 1}</td><td><b>{d.name}</b> <span className="muted tiny">{d.nat}{d.wins ? ` · ${d.wins} wins` : ''}</span></td><td className="r">{d.age}</td><td className="r">{d.pace}</td><td className="r">{d.consistency}</td><td className="r">{d.racecraft}</td><td className="r">{d.wet}</td><td className="r">{d.tyre}</td><td className="r">{fmtMoney(d.salary)}</td><td className={d.contractEnd <= ch.year ? 'warn' : ''}>to end of {d.contractEnd}</td>
-            <td className="r" style={{ whiteSpace: 'nowrap' }}>{i > 0 && <button className="btn sm ghost" title="Move up" onClick={() => act((gg) => swapDriverOrder(gg, i, i - 1))}>↑</button>} <button className="btn sm" onClick={() => act((gg) => signDriver(gg, d.id, d.contractEnd - ch.year + 2), 'Contract extended by one year.')}>+1 year</button> <button className="btn sm danger" onClick={() => ask(`Release ${d.name}? Compensation: ${fmtMoney(d.salary * 0.3 * Math.max(1, d.contractEnd - ch.year + 1))}`, () => { act((gg) => releaseDriver(gg, d.id)); })}>Release</button></td></tr>)}
-          {mine.length === 0 && <tr><td colSpan={11} className="muted">No drivers. Sign free agents below; empty seats are filled with a reserve before each race.</td></tr>}
+        <table><thead><tr><th>Car</th><th>Driver</th><th className="r">Age</th><th className="r">Pace</th><th className="r">Consist.</th><th className="r">Racecraft</th><th className="r">Wet</th><th className="r">Tyres</th><th className="r">Salary</th><th>Contract</th><th>Category</th><th /></tr></thead><tbody>
+          {mine.map((d, i) => <tr key={d.id}><td>#{Math.floor(i / regs.driversPerCar) + 1}</td><td><b>{d.name}</b> <span className="muted tiny">{d.nat}{d.wins ? ` · ${d.wins} wins` : ''}</span></td><td className="r">{d.age}</td><td className="r">{d.pace}</td><td className="r">{d.consistency}</td><td className="r">{d.racecraft}</td><td className="r">{d.wet}</td><td className="r">{d.tyre}</td><td className="r">{fmtMoney(d.salary)}</td><td className={d.contractEnd <= ch.year ? 'warn' : ''}>to end of {d.contractEnd}{d.backing ? <div className="tiny good">brings {fmtMoney(d.backing)} / yr</div> : null}</td>
+            <td className="small">{specialtyOf(d, ch.discipline) === GROUP[ch.discipline] ? 'specialist' : <span className="warn">from {GROUP_NAME[specialtyOf(d, ch.discipline)]}{d.adapt ? ` · adapting (−${3 * d.adapt} pace)` : ''}</span>}{potentialOf(d) > d.pace + 1 ? <div className="tiny muted">potential rating ≈ {Math.round(potentialOverall(d))}</div> : null}</td>
+            <td className="r" style={{ whiteSpace: 'nowrap' }}>{i > 0 && <button className="btn sm ghost" title="Move up" onClick={() => act((gg) => swapDriverOrder(gg, i, i - 1))}>↑</button>} <button className="btn sm" title="Renegotiates at today's asking salary" onClick={() => act((gg) => signDriver(gg, d.id, d.contractEnd - ch.year + 2), 'Contract extended by one year.')}>+1 year</button> <button className="btn sm danger" onClick={() => ask(`Release ${d.name}? Compensation: ${fmtMoney(d.salary * 0.3 * Math.max(1, d.contractEnd - ch.year + 1))}`, () => { act((gg) => releaseDriver(gg, d.id)); })}>Release</button></td></tr>)}
+          {mine.length === 0 && <tr><td colSpan={12} className="muted">No drivers. Sign free agents below; empty seats are filled with a reserve before each race.</td></tr>}
         </tbody></table>
       </div>
+      <DriverMarket p={p} div={div} />
       <div className="grid g2">
-        <div className="panel col"><h3>Free agents <span className="muted small">(fictional drivers)</span></h3>
-          <div className="tablewrap" style={{ maxHeight: 360 }}><table><thead><tr><th>Driver</th><th className="r">Age</th><th className="r">Pace</th><th className="r">Cons.</th><th className="r">Craft</th><th className="r">Wet</th><th className="r">Salary</th><th /></tr></thead><tbody>
-            {free.map((d) => <tr key={d.id}><td>{d.name} <span className="muted tiny">{d.nat}</span></td><td className="r">{d.age}</td><td className="r">{d.pace}</td><td className="r">{d.consistency}</td><td className="r">{d.racecraft}</td><td className="r">{d.wet}</td><td className="r">{fmtMoney(d.salary)}</td>
-              <td className="r"><button className="btn sm" disabled={mine.length >= seats} title={mine.length >= seats ? 'Release a driver first' : '2-year contract'} onClick={() => act((gg) => signDriver(gg, d.id, 2), `${d.name} signed.`)}>Sign</button></td></tr>)}
-          </tbody></table></div>
-        </div>
         <div className="col">
           <div className="panel col"><h3>Facilities</h3>
             {FAC.map(([k, label, hint]) => <div key={k} className="row between"><div><b>{label}</b> <span className="muted small">· level {div.facilities[k]}/5</span><div className="tiny muted">{hint}</div></div><button className="btn sm" disabled={div.facilities[k] >= 5} onClick={() => act((gg) => upgradeFacility(gg, k), 'Facility upgraded.')}>{div.facilities[k] >= 5 ? 'Maximum' : `Upgrade (${fmtMoney(facilityCost(g, p, div.facilities[k]))})`}</button></div>)}
@@ -247,6 +245,75 @@ function Team({ p, div }: { p: Company; div: MotorsportDivision }) {
         </div>
       </div>
     </>
+  );
+}
+
+/** Free agents and rivals' drivers with their terms, negotiation, and the junior academy. */
+function DriverMarket({ p, div }: { p: Company; div: MotorsportDivision }) {
+  const { g } = useGame();
+  const act = useStore((s) => s.act);
+  const ch = div.championship, team = playerTeam(div), regs = teamRegs(team, ch.year);
+  const B = budgetRef(regs, g.year);
+  const seats = regs.carsPerTeam * regs.driversPerCar;
+  const [view, setView] = useState<'free' | 'contracted'>('free');
+  const [deal, setDeal] = useState<string | null>(null);
+  const list = ch.drivers.filter((d) => (view === 'free' ? !d.teamId : d.teamId && d.teamId !== team.id)).sort((a, b) => overall(b) - overall(a)).slice(0, 40);
+  const teamName = (id: string | null) => ch.teams.find((t) => t.id === id)?.name ?? '—';
+  const a = div.academy;
+  return (
+    <div className="grid g2">
+      <div className="panel col">
+        <div className="row between wrap"><h3>Driver market <span className="muted small">(fictional drivers)</span></h3>
+          <Seg value={view} options={[{ value: 'free', label: 'Free agents' }, { value: 'contracted', label: 'Other teams (buy-out)' }]} onChange={setView} /></div>
+        <p className="tiny muted">Asks depend on the driver, on how attractive your team is and on how many stronger teams want them. Drivers from other categories need up to two seasons to adapt and are cheaper meanwhile; they come onto the market in summer, and the AI teams sign the best free agents in January.</p>
+        <div className="tablewrap" style={{ maxHeight: 380 }}><table><thead><tr><th>Driver</th>{view === 'contracted' && <th>Team</th>}<th className="r">Age</th><th className="r">Rating</th><th className="r">Potential</th><th>Category</th><th className="r">Ask / yr</th><th className="r">{view === 'contracted' ? 'Transfer fee' : 'Brings'}</th><th className="r">Interest</th><th /></tr></thead><tbody>
+          {list.map((d) => { const t = driverTerms(g, d.id)!; return (
+            <tr key={d.id}><td>{d.name} <span className="muted tiny">{d.nat}</span></td>{view === 'contracted' && <td className="small">{teamName(d.teamId)}</td>}<td className="r">{d.age}</td>
+              <td className="r">{Math.round(overall(d))}{d.adapt ? <span className="tiny warn"> ({Math.round(effectiveOverall(d, ch.discipline))} now)</span> : null}</td><td className="r">{Math.round(potentialOverall(d))}</td>
+              <td className="small">{specialtyOf(d, ch.discipline) === GROUP[ch.discipline] ? '—' : GROUP_NAME[specialtyOf(d, ch.discipline)]}</td>
+              <td className="r">{fmtMoney(t.ask)}</td><td className="r">{view === 'contracted' ? fmtMoney(t.fee) : t.backing ? <span className="good">{fmtMoney(t.backing)}</span> : '—'}</td>
+              <td className="r">{t.rivals ? <span className="warn">{t.rivals} team{t.rivals > 1 ? 's' : ''}</span> : '—'}</td>
+              <td className="r"><button className="btn sm" onClick={() => setDeal(d.id)}>Negotiate</button></td></tr>); })}
+        </tbody></table></div>
+        {deal && <NegotiationModal driverId={deal} seats={seats} onClose={() => setDeal(null)} />}
+      </div>
+      <div className="panel col"><h3>Junior academy</h3>
+        <Select label="Level" value={a?.level ?? 0} onChange={(v) => act((gg) => setAcademy(gg, v))} options={[0, 1, 2, 3].map((l) => ({ value: l, label: l ? `Level ${l}: ${l} junior${l > 1 ? 's' : ''} a year · ${fmtMoney(B * ACADEMY_COST[l])} / yr${l > (a?.level ?? 0) ? ` · set-up ${fmtMoney(B * 0.03 * (l - (a?.level ?? 0)))}` : ''}` : 'None' }))} />
+        <p className="tiny muted">Juniors join at 15–17 and develop toward their potential, faster at a higher level. From 17 they can be promoted on a three-year rookie contract at a fraction of a free agent's salary; at 22 they leave for a seat elsewhere.</p>
+        {a && a.juniors.length > 0 ? <table><thead><tr><th>Junior</th><th className="r">Age</th><th className="r">Pace</th><th className="r">Potential pace</th><th /></tr></thead><tbody>
+          {a.juniors.map((j) => <tr key={j.id}><td>{j.name}</td><td className="r">{j.age}</td><td className="r">{j.pace}</td><td className="r">{Math.round(potentialOf(j))}</td>
+            <td className="r"><button className="btn sm" disabled={j.age < 17 || team.drivers.length >= seats} title={j.age < 17 ? 'Too young to race' : team.drivers.length >= seats ? 'Release a driver first' : ''} onClick={() => act((gg) => promoteJunior(gg, j.id), `${j.name} promoted.`)}>Promote</button></td></tr>)}
+        </tbody></table> : <p className="small muted">{a?.level ? 'The first juniors arrive in January.' : 'No academy.'}</p>}
+      </div>
+    </div>
+  );
+  void p;
+}
+
+function NegotiationModal({ driverId, seats, onClose }: { driverId: string; seats: number; onClose: () => void }) {
+  const { g, p } = useGame();
+  const act = useStore((s) => s.act);
+  const div = p.motorsport!; const ch = div.championship, team = playerTeam(div);
+  const d = ch.drivers.find((x) => x.id === driverId)!;
+  const t = driverTerms(g, driverId)!;
+  const [offer, setOffer] = useState(Math.round(t.ask));
+  const [years, setYears] = useState(2);
+  const full = team.drivers.length >= seats;
+  const [replace, setReplace] = useState(full ? team.drivers[team.drivers.length - 1] : '');
+  const run = (gg: GameState) => signDriver(gg, d.id, years, full ? replace : undefined, offer);
+  return (
+    <Modal onClose={onClose}>
+      <h2>Negotiate with {d.name}</h2>
+      <StatLine label="Rating (now / adapted)" value={`${Math.round(effectiveOverall(d, ch.discipline))} / ${Math.round(overall(d))} · potential ${Math.round(potentialOverall(d))} · age ${d.age}`} />
+      <StatLine label="Asking salary" value={<b>{fmtMoney(t.ask)} a year</b>} title={`Your team's attractiveness ${Math.round(t.attractiveness * 100)}%; ${t.rivals} stronger team(s) interested.`} />
+      {t.fee > 0 && <StatLine label="Transfer fee to the current team" value={fmtMoney(t.fee)} />}
+      {t.backing > 0 && <StatLine label="Sponsorship the driver brings" value={<span className="good">{fmtMoney(t.backing)} a year</span>} />}
+      <Slider label="Your offer" value={offer} min={Math.round(t.ask * 0.6)} max={Math.round(t.ask * 1.6)} step={Math.max(1000, Math.round(t.ask / 100))} onChange={setOffer} fmt={(v) => `${fmtMoney(v)} a year${v < t.ask - 1 ? ' — below the ask: refused' : ''}`} />
+      <Slider label="Contract" value={years} min={1} max={4} onChange={setYears} fmt={(v) => `${v} year${v > 1 ? 's' : ''} (salary fixed for the term)`} />
+      {full && <Select label="Replacing" value={replace} onChange={setReplace} options={team.drivers.map((id) => { const x = ch.drivers.find((y) => y.id === id)!; return { value: id, label: `${x.name} (release compensation ${fmtMoney(x.salary * 0.3 * Math.max(1, x.contractEnd - ch.year + 1))})` }; })} />}
+      <ImpactPreview deps={[d.id, offer, years, replace]} horizon={12} run={run} />
+      <div className="row end"><button className="btn" onClick={onClose}>Cancel</button><button className="btn primary" disabled={offer < t.ask - 1} onClick={() => { if (act(run, `${d.name} signed.`)) onClose(); }}>Sign</button></div>
+    </Modal>
   );
 }
 
