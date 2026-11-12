@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import type { GameState, TrimLevel, VehicleModel } from '../sim/types';
 import { useGame, useStore } from '../store/game';
-import { addTrim, removeTrim, startFacelift, updateTrim } from '../sim/actions';
+import { addTrim, removeTrim, setAnnualCap, setOrderPolicy, startFacelift, updateTrim } from '../sim/actions';
+import { hasOrderBook, priceLevels } from '../sim/orders';
 import { familyOf } from '../sim/families';
 import { FACELIFT_AFTER, TRIM_ORDER, TRIM_PRESETS, faceliftCost, productionMix, trimContribution, trimsOf } from '../sim/trims';
 import { REGION_IDS } from '../data/world';
 import { fmtMoney, fmtNum } from '../sim/util';
-import { Select, StatLine } from './common';
+import { Select, Slider, StatLine } from './common';
 import { ImpactPreview } from './Impact';
 
 function NumberCell({ value, onCommit, width = 90, step = 1, label }: { value: number; onCommit: (v: number) => void; width?: number; step?: number; label: string }) {
@@ -60,6 +61,7 @@ export function TrimsPanel({ m }: { m: VehicleModel }) {
           <span className="tiny muted">Production % is the share of this car's output each trim gets; a limited edition stops at its cap. Contribution = net sales − cost of the cars sold.</span>
         </div>
       </>}
+      {m.status === 'production' && <OrderBook m={m} />}
       {m.status === 'production' && <div className="col" style={{ gap: 3 }}>
         <h4>Facelift</h4>
         {m.facelift ? <p className="small">Under way: {m.facelift.monthsLeft} of {m.facelift.months} months left · {fmtMoney(m.facelift.paid)} of {fmtMoney(m.facelift.cost)} spent.</p> : <>
@@ -72,6 +74,37 @@ export function TrimsPanel({ m }: { m: VehicleModel }) {
           </> : <p className="tiny muted">A facelift makes sense after {FACELIFT_AFTER} years on sale.</p>}
         </>}
       </div>}
+    </div>
+  );
+}
+
+/** Exclusivity cap, allocation, personalisation and the three price levels of a model and its limited editions. */
+function OrderBook({ m }: { m: VehicleModel }) {
+  const { g, p } = useGame();
+  const act = useStore((s) => s.act);
+  const limited = trimsOf(m).filter((t) => hasOrderBook(m, t));
+  const show = hasOrderBook(m) || limited.length > 0 || m.segment === 'supercar' || m.segment === 'luxury' || p.prestige >= 70;
+  if (!show) return null;
+  const lv = priceLevels(g, p, m);
+  const yearly = Math.round(m.lastDemand * 12);
+  return (
+    <div className="col" style={{ gap: 4 }}>
+      <h4>Exclusivity and order book <span className="tiny muted">(estimates)</span></h4>
+      <p className="tiny muted">Build fewer cars than buyers want and the rest wait: a queue keeps prices firm and the badge desirable, but some buyers give up. Limited editions keep their own order book.</p>
+      <div className="row wrap" style={{ gap: 12 }}>
+        <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={m.annualCap !== undefined} onChange={(e) => act((gg) => setAnnualCap(gg, m.id, e.target.checked ? Math.max(1, Math.round(yearly * 0.8)) : null))} /> Cap yearly production</label>
+        {m.annualCap !== undefined && <label className="row small" style={{ gap: 6 }}>at <NumberCell label="Annual production cap" value={m.annualCap} onCommit={(v) => act((gg) => setAnnualCap(gg, m.id, v))} /> cars a year <span className="muted">(buyers want ≈ {fmtNum(yearly)})</span></label>}
+        <Select label="" value={m.allocation ?? 'open'} onChange={(v) => act((gg) => setOrderPolicy(gg, m.id, null, { allocation: v }))} options={[{ value: 'open', label: 'First come, first served' }, { value: 'loyal', label: 'Allocate to loyal customers' }]} />
+      </div>
+      <Slider label="Personalisation programme (take-up)" value={m.personal ?? 0} min={0} max={1} step={0.05} onChange={(v) => act((gg) => setOrderPolicy(gg, m.id, null, { personal: v }))} fmt={(v) => `${Math.round(v * 100)}% of buyers`} hint="Bespoke paint, trim and details: buyers of a desirable badge pay up to a quarter more; each personalised car costs 8 % of its price to make." />
+      <div className="grid g2" style={{ gap: 4 }}>
+        <StatLine label="List price" value={fmtMoney(lv.list)} /><StatLine label="Buyers' willingness to pay" value={fmtMoney(lv.willingness)} title="What buyers would pay given how many cars exist (value price with its scarcity premium)." />
+        <StatLine label="Collector value" value={fmtMoney(lv.collector)} title="Secondary market: willingness to pay plus a premium for the queue that cannot be served; limited runs appreciate once sold out." /><StatLine label="Waiting list" value={`${fmtNum(m.orders ?? 0)} buyers · ${lv.waitingMonths.toFixed(1)} months`} />
+      </div>
+      {limited.map((t) => { const x = priceLevels(g, p, m, t); return (
+        <div key={t.id} className="row between wrap small"><b>{t.name}</b><span>run {fmtNum(t.cap ?? 0)} · built {fmtNum(t.built)} · waiting {fmtNum(t.orders ?? 0)} · list {fmtMoney(x.list)} · willingness {fmtMoney(x.willingness)} · collector {fmtMoney(x.collector)}</span>
+          <Select label="" value={t.allocation ?? 'open'} onChange={(v) => act((gg) => setOrderPolicy(gg, m.id, t.id, { allocation: v }))} options={[{ value: 'open', label: 'First come' }, { value: 'loyal', label: 'Loyal customers' }]} /></div>); })}
+      {lv.willingness > lv.list * 1.15 && <p className="tiny good">Buyers would pay {Math.round((lv.willingness / lv.list - 1) * 100)}% more than the list price.</p>}
     </div>
   );
 }
