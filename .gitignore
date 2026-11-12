@@ -2,3 +2,9 @@ node_modules
 dist
 *.log
 .DS_Store
+
+# Blender working files (reference renders are committed explicitly)
+*.blend1
+assets-src/**/renders/preview-*
+assets-src/**/renders/detail-*
+__pycache__/
