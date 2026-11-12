@@ -110,7 +110,7 @@ const brandIndex = (prestige: number, top: number) => 0.7 + (0.6 * prestige) / 1
 /** Steepness of the extra penalty for asking more than the value price. */
 export const OVERPRICE_K = 2;
 /** Largest scarcity premium. */
-export const MAX_SCARCITY = 8;
+export const MAX_SCARCITY = 12;
 
 /** Segment-weighted utility of a car, 0…1. */
 export function utilityOf(m: Pick<VehicleModel, 'stats'>, seg: SegmentId): number {
@@ -143,8 +143,14 @@ export function annualSupply(c: Company, m: VehicleModel, weight?: number): numb
   return Math.max(REGION_IDS.reduce((a, r) => a + c.reach[r], 0) * w, 12);
 }
 /** Scarcity premium: only for prestige segments, only for makers whose badge is desirable, growing as supply shrinks. */
+/**
+ * How strongly rarity is priced, by era: the premium collectors pay for limited series from the great marques has
+ * grown steadily (a limited Ferrari flagship fetched about 3x the series car around 2002, 4.4x in 2013 and over 8x in
+ * 2025). Applied to the segment's scarcity exponent.
+ */
+export const RARITY_ERA: [number, number][] = [[1950, 0.85], [1985, 0.9], [2000, 1.0], [2013, 1.15], [2025, 1.55]];
 export function scarcityPremium(seg: SegmentId, year: number, prestige: number, supply: number): number {
-  const k = VALUE[seg].scarcity;
+  const k = VALUE[seg].scarcity * kf(RARITY_ERA, year);
   if (k <= 0 || !(supply > 0)) return 1;
   const raw = clamp(Math.pow(scarcityRef(seg, year) / supply, k), 1, MAX_SCARCITY);
   return 1 + (raw - 1) * clamp((prestige - 50) / 40, 0, 1);

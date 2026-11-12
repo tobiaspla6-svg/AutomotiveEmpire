@@ -7,7 +7,7 @@ import { positionIn, strategyOf } from '../src/data/strategy';
 import { SEGMENT_IDS } from '../src/data/world';
 import { defaultEngine, defaultVehicle } from '../src/sim/engineering';
 import { makeModel } from '../src/sim/company';
-import { annualSupply, computeMarket, priceResponse, scarcityPremium, valuePrice } from '../src/sim/market';
+import { annualSupply, computeMarket, MAX_SCARCITY, priceResponse, scarcityPremium, valuePrice } from '../src/sim/market';
 import { DEALER_NET, aiTargetPrice, demandCurve, priceGuide } from '../src/sim/pricing';
 import type { Company, GameState, SegmentId, VehicleModel, VehicleSpec } from '../src/sim/types';
 import { PRICE_BENCHMARKS } from './benchmarks';
@@ -153,7 +153,8 @@ describe('scarcity', () => {
     expect(scarcityPremium('supercar', 2025, 45, 100)).toBe(1); // nobody queues for a rare car from an unknown badge
     expect(scarcityPremium('budget', 2025, 97, 100)).toBe(1);
     expect(scarcityPremium('supercar', 2025, 97, 50)).toBeGreaterThan(scarcityPremium('supercar', 2025, 97, 400));
-    expect(scarcityPremium('supercar', 2025, 97, 1)).toBeLessThanOrEqual(8);
+    expect(scarcityPremium('supercar', 2025, 97, 1)).toBeLessThanOrEqual(MAX_SCARCITY); // bounded (cap raised from 8 to 12 in Phase 3)
+    expect(MAX_SCARCITY).toBeLessThanOrEqual(12);
   });
 });
 

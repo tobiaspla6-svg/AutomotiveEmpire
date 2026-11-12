@@ -10,6 +10,7 @@ import { enginesOf, familyOf, maturityOf, platformOf, platformsOf, sharedVolume,
 import { categoryShares, contractIndex, effectiveCapacity, inspectionHours, partsIndex, rollDisruptions, settleSupply, sourcingReliability, stagesOf, STAGE_NAME, STAGES, usesBatteries, type SupplyMonth } from './supply';
 import { CATEGORIES, CATEGORY_NAME } from '../data/suppliers';
 import { rnd } from './rng';
+import { cancelRate, hasOrderBook, personalCost, personalUplift } from './orders';
 import { aggregateTrims, faceliftCost, hasTrims, productionMix, refreshTrims, trimKey, trimView, trimsOf } from './trims';
 
 export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
@@ -217,7 +218,9 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       const cap = f.capacity * l.share * l.ramp * regionMult;
       const totalCap = lineCap.get(m.id) || 1;
       const lastD = m.lastDemand > 0 ? m.lastDemand : totalCap * 0.6; // first month: build launch stock
-      const desiredModel = Math.max(0, lastD * 1.03 + (0.6 * lastD - m.inventory) * 0.5);
+      // build for this month's buyers, keep some stock, and work a third of any waiting list down each month
+      const queue = (m.orders ?? 0) + trimsOf(m).reduce((q, t) => q + (t.orders ?? 0), 0);
+      const desiredModel = Math.max(0, lastD * 1.03 + (0.6 * lastD - m.inventory) * 0.5) + queue / 3;
       const target = l.target >= 0 ? l.target : desiredModel * ((f.capacity * l.share * l.ramp) / totalCap);
       const n = Math.max(0, Math.min(cap, target));
       l.ramp = Math.min(1, l.ramp + 0.2);
@@ -227,6 +230,12 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
     const want = plan.slice(first).reduce((a, x) => a + x.n, 0);
     const limit = effectiveCapacity(f) * regionMult;
     if (want > limit && want > 0) for (const x of plan.slice(first)) x.n *= limit / want;
+  }
+  // an exclusivity strategy caps a model's yearly production: never more than a twelfth of it in a month
+  for (const m of c.models) {
+    if (m.annualCap === undefined) continue;
+    const items = plan.filter((x) => x.m === m), want = items.reduce((a, x) => a + x.n, 0), cap = Math.max(0, m.annualCap / 12);
+    if (want > cap && want > 0) for (const x of items) x.n *= cap / want;
   }
   // component supply for the whole month (contracts, disruptions, safety stock, spot buying)
   let sm: SupplyMonth = { factor: 1, index: {}, penalty: 0, fixed: 0, short: [] };
@@ -262,7 +271,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
           const nt = Math.max(0, Math.min(n * share, t.cap !== undefined ? t.cap - t.built - already : Infinity));
           if (nt <= 0) continue;
           const tv = trimView(m, t);
-          const uc = unitCost(g, tv, f, totalCap, shared, partsIndex(categoryShares(tv.stats), sm.index, usesBatteries(tv.stats)));
+          const uc = unitCost(g, tv, f, totalCap, shared, partsIndex(categoryShares(tv.stats), sm.index, usesBatteries(tv.stats))) + personalCost(t.personal ?? 0) * t.price;
           produced.set(trimKey(m, t), already + nt);
           costSum.set(trimKey(m, t), (costSum.get(trimKey(m, t)) ?? 0) + nt * uc);
           L.production += nt * uc;
@@ -272,7 +281,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         produced.set(m.id, (produced.get(m.id) ?? 0) + n);
         continue;
       }
-      const uc = unitCost(g, m, f, totalCap, shared, partsIndex(categoryShares(m.stats), sm.index, usesBatteries(m.stats)));
+      const uc = unitCost(g, m, f, totalCap, shared, partsIndex(categoryShares(m.stats), sm.index, usesBatteries(m.stats))) + personalCost(m.personal ?? 0) * m.price;
       produced.set(m.id, (produced.get(m.id) ?? 0) + n);
       costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
       L.production += n * uc; // paid now, held in inventory until the car is sold
@@ -305,12 +314,24 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       if (dem) for (const r of REGION_IDS) total += dem[r];
       u.lastDemand = total;
       let sold = 0;
-      const ratio = total > 0 ? Math.min(1, u.inventory / total) : 0;
+      // an order book serves its waiting list as well as this month's buyers; what cannot be delivered waits
+      const ob = hasOrderBook(m, trim);
+      const book = ob ? (trim ? trim : m) : null;
+      const backlog = book?.orders ?? 0;
+      const want = total + backlog;
+      const deliver = Math.min(u.inventory, want);
       for (const r of REGION_IDS) {
-        const n = dem ? dem[r] * ratio : 0;
+        const n = ob ? (total > 0 && dem ? dem[r] / total : r === c.homeRegion ? 1 : 0) * deliver : dem ? dem[r] * (total > 0 ? Math.min(1, u.inventory / total) : 0) : 0;
         u.lastSales[r] = n;
         sold += n;
         if (n > 0) L.logistics += n * (local(r) ? 150 : 700) * cpi(g.year);
+      }
+      if (book) {
+        const cap = 36 * Math.max(1, sold, (trim ? trim.mix : 1) * (lineCap.get(m.id) ?? 0));
+        book.orders = Math.min(cap, Math.max(0, want - sold) * (1 - cancelRate(book.allocation)));
+        // a queue for the cars, and cars allocated to loyal customers, make the badge more desirable
+        if (book.orders > Math.max(1, sold)) c.prestige = Math.min(100, c.prestige + 0.02);
+        if (book.allocation === 'loyal' && sold > 0) c.prestige = Math.min(100, c.prestige + Math.min(0.03, sold * 0.0005));
       }
       if (sold > 0) {
         // cost of sales at the average cost of the stock on hand
@@ -319,7 +340,8 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         u.inventoryValue -= cogs;
         u.inventory -= sold;
         if (u.inventory < 1e-6) { u.inventory = 0; u.inventoryValue = 0; }
-        const rev = sold * u.price * 0.88; // 12 % dealer margin
+        const uplift = personalUplift((trim ? trim.personal : m.personal) ?? 0, c.prestige);
+        const rev = sold * u.price * (1 + uplift) * 0.88; // 12 % dealer margin; personalisation adds to the price paid
         L.revenue += rev; L.units += sold;
         soldAll += sold; revAll += rev;
         if (trim) { trim.revenue += rev; trim.cogs += cogs; }

@@ -194,6 +194,8 @@ export interface Trim {
   inventory: number; inventoryValue: number; built: number;
   lastSales: Record<RegionId, number>; lastDemand: number; lastUnitCost: number; salesHistory: number[];
   revenue: number; cogs: number;
+  /** order book (limited editions): waiting list, allocation policy, personalisation take-up 0..1 */
+  orders?: number; allocation?: 'loyal' | 'open'; personal?: number;
 }
 
 export interface VehicleModel {
@@ -201,6 +203,8 @@ export interface VehicleModel {
   trims?: Trim[];
   /** mid-life facelift in progress, and the number completed */
   facelift?: { monthsLeft: number; months: number; cost: number; paid: number } | null; facelifts?: number;
+  /** exclusivity (Phase 3): cars a year the company is willing to build, and the order book that forms above it */
+  annualCap?: number; orders?: number; allocation?: 'loyal' | 'open'; personal?: number;
   /** shared engineering (Phase 3); absent on AI cars and on cars from older saves that were not migrated */
   engineFamilyId?: string; engineVariantId?: string; platformId?: string;
   id: string;

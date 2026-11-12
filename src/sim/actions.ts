@@ -159,6 +159,27 @@ export function removeTrim(g: GameState, modelId: string, trimId: string): strin
   aggregateTrims(m);
   return null;
 }
+/** Exclusivity strategy: build at most `cap` cars of this model a year (null removes the cap). Demand above it waits in the order book. */
+export function setAnnualCap(g: GameState, modelId: string, cap: number | null): string | null {
+  const m = player(g).models.find((x) => x.id === modelId);
+  if (!m) return 'Unknown model.';
+  if (cap === null) { m.annualCap = undefined; return null; }
+  if (!finite(cap) || cap < 1) return 'Choose at least one car a year.';
+  m.annualCap = Math.round(cap);
+  return null;
+}
+/** Allocation policy and personalisation take-up for a model's or a trim's order book. */
+export function setOrderPolicy(g: GameState, modelId: string, trimId: string | null, o: { allocation?: 'loyal' | 'open'; personal?: number }): string | null {
+  const m = player(g).models.find((x) => x.id === modelId);
+  if (!m) return 'Unknown model.';
+  const t = trimId ? m.trims?.find((x) => x.id === trimId) : undefined;
+  if (trimId && !t) return 'Unknown trim.';
+  if (o.personal !== undefined && (!finite(o.personal) || o.personal < 0 || o.personal > 1)) return 'Personalisation take-up is between 0 and 100 %.';
+  const target = t ?? m;
+  if (o.allocation) target.allocation = o.allocation;
+  if (o.personal !== undefined) target.personal = o.personal;
+  return null;
+}
 /** A mid-life facelift: about a quarter of the car's own engineering budget over eight months; the car keeps selling. */
 export function startFacelift(g: GameState, modelId: string): string | null {
   const c = player(g);
