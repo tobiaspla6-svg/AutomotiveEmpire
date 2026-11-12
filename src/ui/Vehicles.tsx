@@ -11,6 +11,7 @@ import { DEALER_NET, TYPICAL_VOLUME, contributionAt, demandCurve, priceGuide } f
 import { BAY_NAME, CLASS_NAME, defaultChoice, enginesOf, familyEngine, familyOf, familyUsers, findVariant, planDevelopment, platformOf, platformsOf, platformUsers, type EngineChoice, type PlatformChoice } from '../sim/families';
 import { EngineeringPanel } from './Engineering';
 import { TrimsPanel } from './Trims';
+import { RegionalPricing } from './Regional';
 import { fmtMoney, fmtNum } from '../sim/util';
 import { BarList, LineChart, PageHead, ScoreBar, Seg, Select, Slider, StatLine, Tag } from './common';
 import { CarViewer } from '../three/CarViewer';
@@ -45,6 +46,7 @@ export function VehiclesView() {
         </div>
       )}
       {shown && <TrimsPanel m={shown} />}
+      {shown && <RegionalPricing m={shown} />}
       {models.length > 0 && (
         <div className="panel flush"><div className="tablewrap" style={{ maxHeight: 460 }}><table>
           <thead><tr><th>Model</th><th>Status</th><th>Segment</th><th className="r">Power</th><th className="r">0–100</th><th className="r">Unit cost</th><th className="r">Price</th><th className="r">Sold / mo</th><th className="r">Demand</th><th className="r">Stock</th><th /></tr></thead>
