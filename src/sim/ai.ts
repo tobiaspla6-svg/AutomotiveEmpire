@@ -11,6 +11,7 @@ import { emptyPending, openBooks } from './accounts';
 import { annualSupply, modelWeights, suggestedPrice, valuePrice, type MarketResult } from './market';
 import { aiTargetPrice, companyStrategy, DEALER_NET } from './pricing';
 import { strategyOf } from '../data/strategy';
+import { sharedVolume } from './families';
 import { clamp, cpi, kf, lerp } from './util';
 import { rnd, type Rng } from './rng';
 
@@ -184,7 +185,7 @@ export function priceLineup(g: GameState, c: Company, only?: VehicleModel, model
   for (const m of c.models) {
     if (m.status !== 'production' || (only && m !== only)) continue;
     const supply = Math.max(12, reach * (w.get(m.id) ?? 0));
-    if (!m.salesHistory.length) m.lastUnitCost = unitCost(g, m, c.factories[0] ?? { country: c.country, automation: 0.4 }, Math.max(25, supply / 12));
+    if (!m.salesHistory.length) m.lastUnitCost = unitCost(g, m, c.factories[0] ?? { country: c.country, automation: 0.4 }, Math.max(25, supply / 12), sharedVolume(c, m, Math.max(25, supply / 12)));
     const target = aiTargetPrice(g, c, m, supply);
     if (modelYear && m.price > 0) {
       // a new model year moves list prices gradually; makers that never discount do not lower them at all
@@ -278,7 +279,7 @@ export function runAiMonth(g: GameState, c: Company, mk: MarketResult) {
     for (const r of REGION_IDS) { const n = dem ? dem[r] : 0; m.lastSales[r] = n; sold += n; }
     m.lastDemand = sold;
     if (sold <= 0) continue;
-    const uc = unitCost(g, m, home, sold);
+    const uc = unitCost(g, m, home, sold, sharedVolume(c, m, sold));
     m.lastUnitCost = uc; m.cumulativeUnits += sold;
     L.revenue += sold * m.price * 0.88; L.cogs += sold * uc; L.units += sold;
     m.salesHistory.push(Math.round(sold)); if (m.salesHistory.length > 60) m.salesHistory.shift();

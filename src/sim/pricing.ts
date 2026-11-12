@@ -15,6 +15,7 @@ import { MAKER } from '../data/manufacturers';
 import { REGION_IDS, SEG } from '../data/world';
 import { positionIn, strategyOf, type Strategy } from '../data/strategy';
 import { unitCost } from './company';
+import { sharedVolume } from './families';
 import { annualSupply, appeal, computeMarket, fuelPrice, modelWeights, priceResponse, segVolume, tariff, valuePrice, type MarketResult } from './market';
 
 /** Share of the list price the manufacturer keeps after the dealer's margin. */
@@ -113,7 +114,7 @@ export const contributionAt = (price: number, unit: number) => price * DEALER_NE
  */
 export function priceGuide(g: GameState, c: Company, m: VehicleModel, monthlyVolume: number, o: { mk?: MarketResult; devCost?: number } = {}): PriceGuide {
   const volume = Math.max(1, monthlyVolume);
-  const unit = unitCost(g, m, homeFactory(c, m), volume);
+  const unit = unitCost(g, m, homeFactory(c, m), volume, sharedVolume(c, m, volume));
   const lifeUnits = MODEL_LIFE[m.segment] * 12 * volume;
   const devPerCar = (o.devCost ?? (m.devCostTotal || m.stats.devCost)) / lifeUnits;
   const toolingPerCar = (m.stats.toolingPerUnitCapacity * volume) / lifeUnits;
@@ -150,7 +151,7 @@ export function aiTargetPrice(g: GameState, c: Company, m: VehicleModel, supply 
   const strat = companyStrategy(c);
   const value = valuePrice(m, c, g.year, supply) * positionIn(strat, m.segment);
   // flagships built in handfuls are costed as a small series, not car by car: they are image products
-  const cost = unitCost(g, m, homeFactory(c, m), Math.max(25, supply / 12));
+  const cost = unitCost(g, m, homeFactory(c, m), Math.max(25, supply / 12), sharedVolume(c, m, Math.max(25, supply / 12)));
   return Math.max(value, (cost * (1 + strat.minMargin)) / DEALER_NET);
 }
 

@@ -12,6 +12,7 @@ import { computeMarket, modelWeights, segVolume } from './market';
 import { gauss, hashStr, makeRng } from './rng';
 import { clamp, cpi, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
+import { adoptFamilies } from './families';
 import { breakEvenGrant, sponsorTarget, budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
 import { emptyPending, openBooks } from './accounts';
 
@@ -72,6 +73,7 @@ export function newCeoGame(o: CeoSetup): GameState {
   }
   news(g, 'company', `You are the new CEO of ${def.name}`, era.text, 'historical');
   if (def.ownershipNote) news(g, 'company', 'A note on ownership', def.ownershipNote);
+  adoptFamilies(g, c);
   openBooks(player(g));
   return g;
 }

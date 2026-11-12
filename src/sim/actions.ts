@@ -1,11 +1,16 @@
 // Player actions. Each function validates, mutates the GameState and returns an error message
 // (string) when the action is not possible, or null on success.
-import type { Company, DevLevels, Discipline, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, VehicleSpec } from './types';
+import type { Company, DevLevels, Discipline, EngineFamily, GameState, RaceCarSpec, RegionId, SegmentId, TechArea, VehicleModel, VehicleSpec } from './types';
 import { COUNTRY, REGION_IDS } from '../data/world';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { creditLimit, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
 import { priceGuide } from './pricing';
-import { CYL } from './engineering';
+import { CYL, defaultVehicle } from './engineering';
+import {
+  adoptFamilies, defaultChoice, engineFits, enginesOf, findVariant, makeFamily, makePlatform, makeVariant, planDevelopment, platformFits, platformsOf, standaloneCost, variantShare, SHARE,
+  type EngineChoice, type PlatformChoice,
+} from './families';
+import { computeVehicle } from './engineering';
 import { cpi, kf } from './util';
 import { player } from './world';
 import { getRegs, disciplineAvailable } from './racing/regs';
@@ -27,32 +32,58 @@ export function validateSpec(s: VehicleSpec): string[] {
   return e;
 }
 
-export function startDevelopment(g: GameState, name: string, spec: VehicleSpec, segment: SegmentId, basedOn?: string): string | null {
+/** Which engine family and platform a new vehicle uses; anything left out is developed new with the car. */
+export interface DevChoice { engine?: EngineChoice; platform?: PlatformChoice }
+
+/**
+ * Approve a vehicle programme. It develops whatever it does not re-use: a new engine family, a new variant of an
+ * existing family, a new platform (see families.ts). A successor (`basedOn`) re-uses its predecessor's engine family
+ * and platform automatically when the new specification still fits them.
+ */
+export function startDevelopment(g: GameState, name: string, spec: VehicleSpec, segment: SegmentId, basedOn?: string, choice: DevChoice = {}): string | null {
   const c = player(g);
+  c.engines ??= []; c.platforms ??= [];
   if (!name.trim()) return 'Give the model a name.';
-  const miss = missingTechs(spec, c.tech);
-  if (miss.length) return `Technology not yet available: ${miss.map((id) => TECH_BY_ID[id].name).join(', ')}.`;
-  const inv = validateSpec(spec);
-  if (inv.length) return inv[0];
   if (c.engineers < 5) return 'You need at least 5 engineers to run a vehicle programme.';
-  const m = makeModel(g, name.trim(), JSON.parse(JSON.stringify(spec)), segment, c.tech, g.year);
   const base = basedOn ? c.models.find((x) => x.id === basedOn) : undefined;
-  let cost = m.stats.devCost, months = m.stats.devMonths;
-  if (base) {
-    // a new generation re-uses whatever is carried over from the previous car
-    const sameEngine = JSON.stringify({ ...base.spec.engine, redline: 0, cam: 0, boost: 0, compression: 0 }) === JSON.stringify({ ...spec.engine, redline: 0, cam: 0, boost: 0, compression: 0 });
-    const samePlatform = base.spec.body === spec.body && base.spec.chassis === spec.chassis && base.spec.enginePos === spec.enginePos && base.spec.drive === spec.drive && Math.abs(base.spec.size - spec.size) < 0.03;
-    const k = 1 - (sameEngine ? 0.3 : 0) - (samePlatform ? 0.35 : 0);
-    cost *= k; months = Math.max(8, Math.round(months * (0.45 + 0.55 * k)));
-    m.generation = base.generation + 1;
-  }
-  m.status = 'development'; m.devCostTotal = cost; m.devMonthsTotal = months; m.devMonthsLeft = months; m.devCostPaid = 0;
+  const auto = defaultChoice(c, spec, base);
+  const engine: EngineChoice = choice.engine ?? auto.engine;
+  const platform: PlatformChoice = choice.platform ?? auto.platform;
+  const plan = planDevelopment(g, c, spec, engine, platform);
+  if (!plan.ok) return plan.errors[0];
+  const miss = missingTechs(plan.spec, c.tech);
+  if (miss.length) return `Technology not yet available: ${miss.map((id) => TECH_BY_ID[id].name).join(', ')}.`;
+  const inv = validateSpec(plan.spec);
+  if (inv.length) return inv[0];
+  const cost = plan.total, months = plan.months;
   // the whole budget is charged month by month through the ledger (see runPlayerMonth); approval only
   // checks that the company can fund the first stretch of the programme
   const firstQuarter = (cost / months) * 3;
   if (firstQuarter > c.cash + Math.max(0, creditLimit(c, g.year) - c.debt)) return `Not enough funds: the first three months of this programme cost $${(firstQuarter / 1e6).toFixed(1)}M.`;
+  const m = makeModel(g, name.trim(), JSON.parse(JSON.stringify(plan.spec)), segment, c.tech, g.year);
+  m.status = 'development'; m.devCostTotal = cost; m.devMonthsTotal = months; m.devMonthsLeft = months; m.devCostPaid = 0;
+  if (base) m.generation = base.generation + 1;
+  // engine: a new family, a new variant of an existing one, or an existing variant
+  const bundled = { status: 'development' as const, ownerModelId: m.id, devMonthsLeft: months, devMonthsTotal: months, devCostPaid: 0 };
+  if (plan.engine.kind === 'new') {
+    const f = makeFamily(g, choice.engine?.kind === 'new' && choice.engine.name ? choice.engine.name : `${m.name} ${plan.spec.engine.layout === 'EV' ? 'drive unit' : plan.spec.engine.layout}`, plan.spec.engine, c.tech.engine, g.year);
+    Object.assign(f, bundled, { devCostTotal: plan.engine.cost });
+    f.variants[0].status = 'development'; f.variants[0].ownerModelId = m.id;
+    c.engines.push(f); m.engineFamilyId = f.id; m.engineVariantId = f.variants[0].id;
+  } else {
+    const f = plan.engine.family!;
+    let v = plan.engine.variant;
+    if (!v) { v = makeVariant(g, f, plan.spec.engine, plan.engine.cost, plan.engine.months); v.ownerModelId = m.id; f.variants.push(v); }
+    m.engineFamilyId = f.id; m.engineVariantId = v.id;
+  }
+  if (plan.platform.kind === 'new') {
+    const pl = makePlatform(g, choice.platform?.kind === 'new' && choice.platform.name ? choice.platform.name : `${m.name} platform`, plan.spec, c.tech.chassis, g.year);
+    Object.assign(pl, bundled, { devCostTotal: plan.platform.cost });
+    c.platforms.push(pl); m.platformId = pl.id;
+  } else m.platformId = plan.platform.platform!.id;
   c.models.push(m);
-  news(g, 'company', `Programme approved: ${m.name}`, `Budget $${(cost / 1e6).toFixed(1)}M over about ${months} months${base ? ` (successor to the ${base.name})` : ''}.`);
+  const reused = [plan.engine.kind !== 'new' ? `the ${plan.engine.family!.name} engine family` : '', plan.platform.kind === 'existing' ? `the ${plan.platform.platform!.name}` : ''].filter(Boolean);
+  news(g, 'company', `Programme approved: ${m.name}`, `Budget $${(cost / 1e6).toFixed(1)}M over about ${months} months${base ? ` (successor to the ${base.name})` : ''}${reused.length ? `, re-using ${reused.join(' and ')}` : ''}.${plan.waitsFor.length ? ` It cannot be signed off before ${plan.waitsFor.join(' and ')} is ready.` : ''}`);
   return null;
 }
 export function cancelDevelopment(g: GameState, modelId: string) {
@@ -60,8 +91,93 @@ export function cancelDevelopment(g: GameState, modelId: string) {
   const m = c.models.find((x) => x.id === modelId && x.status === 'development');
   if (!m) return;
   c.models = c.models.filter((x) => x !== m);
+  // Architecture developed with this car: if another car in development uses it, that programme takes it over
+  // together with its unpaid cost; otherwise it is dropped with the car.
+  const heir = (has: (x: VehicleModel) => boolean) => c.models.find((x) => x.status === 'development' && has(x));
+  for (const x of [...enginesOf(c), ...platformsOf(c)]) {
+    if (x.ownerModelId !== m.id) continue;
+    const h = heir((y) => y.engineFamilyId === x.id || y.platformId === x.id);
+    if (h) {
+      const left = Math.max(0, x.devCostTotal - x.devCostPaid);
+      h.devCostTotal += left; x.ownerModelId = h.id;
+      h.devMonthsLeft = Math.max(h.devMonthsLeft, x.devMonthsLeft); h.devMonthsTotal = Math.max(h.devMonthsTotal, h.devMonthsLeft);
+      x.devCostTotal = x.devCostPaid + left; // the heir pays the rest
+    }
+  }
+  for (const f of enginesOf(c)) for (const v of f.variants) if (v.ownerModelId === m.id) { const h = heir((y) => y.engineVariantId === v.id); if (h) v.ownerModelId = h.id; }
+  if (c.engines) { c.engines = c.engines.filter((f) => f.ownerModelId !== m.id); for (const f of c.engines) f.variants = f.variants.filter((v) => v.ownerModelId !== m.id); }
+  if (c.platforms) c.platforms = c.platforms.filter((p) => p.ownerModelId !== m.id);
   // money already spent stays in the books as development expense (sunk cost)
   news(g, 'company', `Programme cancelled: ${m.name}`, `$${(m.devCostPaid / 1e6).toFixed(1)}M of the $${(m.devCostTotal / 1e6).toFixed(1)}M budget had been spent and is written off.`);
+}
+
+// ---- stand-alone architecture programmes
+/** Develop an engine family on its own, from a reference engine; any vehicle can use it once it is ready. */
+export function startEngineFamily(g: GameState, name: string, engine: VehicleSpec['engine']): string | null {
+  const c = player(g);
+  c.engines ??= [];
+  if (!name.trim()) return 'Give the engine family a name.';
+  const ref = { ...defaultVehicle(g.year, 'sedan'), engine: JSON.parse(JSON.stringify(engine)) };
+  const miss = missingTechs(ref, c.tech).filter((id) => ['dohc4', 'di', 'mfi', 'efi', 'turbo', 'twinturbo', 'vvt', 'hybrid', 'ev'].includes(id));
+  if (miss.length) return `Technology not yet available: ${miss.map((id) => TECH_BY_ID[id].name).join(', ')}.`;
+  const inv = validateSpec(ref); if (inv.length) return inv[0];
+  if (c.engineers < 5) return 'You need at least 5 engineers to run an engineering programme.';
+  const { cost, months } = standaloneCost(g, ref, 'engine', c.tech);
+  if ((cost / months) * 3 > c.cash + Math.max(0, creditLimit(c, g.year) - c.debt)) return `Not enough funds: the first three months cost $${((cost / months) * 3 / 1e6).toFixed(1)}M.`;
+  const f = makeFamily(g, name.trim(), ref.engine, c.tech.engine, g.year);
+  Object.assign(f, { status: 'development', devCostTotal: cost, devMonthsTotal: months, devMonthsLeft: months, devCostPaid: 0 });
+  f.variants[0].status = 'ready';
+  c.engines.push(f);
+  news(g, 'company', `Engine programme approved: ${f.name}`, `$${(cost / 1e6).toFixed(1)}M over about ${months} months. Any vehicle can use the family once it is signed off.`);
+  return null;
+}
+/** Calibrate a new variant (displacement, aspiration, tune, hybrid) on an existing engine family. Paid up front. */
+export function addEngineVariant(g: GameState, familyId: string, engine: VehicleSpec['engine']): string | null {
+  const c = player(g);
+  const f = enginesOf(c).find((x) => x.id === familyId);
+  if (!f) return 'Unknown engine family.';
+  const e = { ...JSON.parse(JSON.stringify(engine)), layout: f.layout, valvetrain: f.valvetrain, fuelSystem: f.fuelSystem, aluBlock: f.aluBlock, boreStroke: f.boreStroke };
+  const why = engineFits(f, e); if (why.length) return why[0];
+  if (findVariant(f, e)) return 'This variant already exists.';
+  const ref = { ...defaultVehicle(g.year, 'sedan'), engine: e };
+  const miss = missingTechs(ref, c.tech).filter((id) => ['turbo', 'twinturbo', 'vvt', 'hybrid'].includes(id));
+  if (miss.length) return `Technology not yet available: ${miss.map((id) => TECH_BY_ID[id].name).join(', ')}.`;
+  const st = computeVehicle(ref, { year: g.year, tech: c.tech });
+  const k = variantShare(f, e);
+  const cost = st.devCost * SHARE.engine * k, months = Math.round(3 + 20 * k);
+  const err = pay(c, g, cost, 'dev'); if (err) return err;
+  const v = makeVariant(g, f, e, cost, months);
+  f.variants.push(v);
+  news(g, 'company', `New variant for ${f.name}: ${v.name}`, `$${(cost / 1e6).toFixed(1)}M of calibration and durability testing, ready in about ${months} months.`);
+  return null;
+}
+/** Develop a platform on its own, from a reference vehicle; compatible vehicles can share it once it is ready. */
+export function startPlatform(g: GameState, name: string, ref: VehicleSpec): string | null {
+  const c = player(g);
+  c.platforms ??= [];
+  if (!name.trim()) return 'Give the platform a name.';
+  const miss = missingTechs(ref, c.tech).filter((id) => ['aluminium', 'carbon', 'safety1', 'safety2', 'safety3', 'multilink', 'awd'].includes(id));
+  if (miss.length) return `Technology not yet available: ${miss.map((id) => TECH_BY_ID[id].name).join(', ')}.`;
+  if (c.engineers < 5) return 'You need at least 5 engineers to run an engineering programme.';
+  const { cost, months } = standaloneCost(g, ref, 'platform', c.tech);
+  if ((cost / months) * 3 > c.cash + Math.max(0, creditLimit(c, g.year) - c.debt)) return `Not enough funds: the first three months cost $${((cost / months) * 3 / 1e6).toFixed(1)}M.`;
+  const p = makePlatform(g, name.trim(), ref, c.tech.chassis, g.year);
+  Object.assign(p, { status: 'development', devCostTotal: cost, devMonthsTotal: months, devMonthsLeft: months, devCostPaid: 0 });
+  c.platforms.push(p);
+  news(g, 'company', `Platform programme approved: ${p.name}`, `$${(cost / 1e6).toFixed(1)}M over about ${months} months.`);
+  return null;
+}
+/** Stop a stand-alone engine-family or platform programme that no vehicle depends on. */
+export function cancelArchitecture(g: GameState, id: string): string | null {
+  const c = player(g);
+  const f = enginesOf(c).find((x) => x.id === id), p = platformsOf(c).find((x) => x.id === id);
+  const x = f ?? p;
+  if (!x) return 'Unknown programme.';
+  if (x.status !== 'development' || x.ownerModelId) return 'Only a stand-alone programme still in development can be cancelled.';
+  if (c.models.some((m) => m.engineFamilyId === id || m.platformId === id)) return 'Vehicles in development depend on it.';
+  if (f) c.engines = enginesOf(c).filter((y) => y !== f); else c.platforms = platformsOf(c).filter((y) => y !== p);
+  news(g, 'company', `Programme cancelled: ${x.name}`, `$${(x.devCostPaid / 1e6).toFixed(1)}M had been spent and is written off.`);
+  return null;
 }
 export function setPrice(g: GameState, modelId: string, price: number): string | null {
   const m = player(g).models.find((x) => x.id === modelId);
@@ -80,7 +196,7 @@ export function addLine(g: GameState, factoryId: string, modelId: string, units:
   const free = f.capacity * (1 - lineShareUsed(f));
   if (!finite(units) || units <= 0) return 'Choose a line capacity.';
   if (units > free + 0.5) return `Only ${Math.floor(free)} units / month of free capacity in this plant.`;
-  const tooling = toolingCost(m, units);
+  const tooling = toolingCost(m, units, { c, f });
   const err = pay(c, g, tooling, 'capex');
   if (err) return err;
   f.bookValue += tooling; // tooling is capitalised on the plant
@@ -235,6 +351,7 @@ export function acquire(g: GameState, companyId: string): string | null {
   const goodwill = price - t.cash + t.debt - plants;
   if (goodwill >= 0) p.books.otherAssets += goodwill; else p.books.pending.assetGain += -goodwill; // bargain purchase
   for (const m of t.models) { if (m.status !== 'production') continue; m.name = `${t.name} ${m.name}`; m.endYear = undefined; m.inventory = 0; m.inventoryValue = 0; p.models.push(m); }
+  adoptFamilies(g, p); // the acquired cars join (or found) shared engine families and platforms
   const volP = Math.max(1, REGION_IDS.reduce((a, r) => a + p.reach[r], 0)), volT = REGION_IDS.reduce((a, r) => a + t.reach[r], 0);
   for (const r of REGION_IDS) { p.reach[r] += t.reach[r] * 0.85; p.awareness[r] = Math.max(p.awareness[r], t.awareness[r] * 0.8); }
   const w = volT / (volP + volT);

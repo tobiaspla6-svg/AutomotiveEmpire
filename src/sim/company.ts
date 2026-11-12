@@ -6,6 +6,7 @@ import { computeVehicle } from './engineering';
 import { clamp, cpi, kf } from './util';
 import { modProduct, type MarketResult } from './market';
 import { closeMonth, depreciate, mergePending } from './accounts';
+import { enginesOf, familyOf, maturityOf, platformOf, platformsOf, sharedVolume, type SharedVolume } from './families';
 
 export const uid = (g: GameState, p: string) => `${p}${g.nextId++}`;
 export const TECH_AREAS: TechArea[] = ['engine', 'chassis', 'aero', 'electronics', 'manufacturing'];
@@ -31,23 +32,56 @@ export function makeModel(g: GameState, name: string, spec: VehicleSpec, segment
   };
 }
 /** Re-evaluate a model against the current year: costs inflate, and scores are relative to rising era norms. */
-export function refreshStats(g: GameState, m: VehicleModel) {
-  m.stats = computeVehicle(m.spec, { year: g.year, tech: m.frozenTech });
+export function refreshStats(g: GameState, m: VehicleModel, owner?: Company) {
+  const c = owner ?? (m.engineFamilyId || m.platformId ? g.companies.find((x) => x.models.includes(m)) : undefined);
+  m.stats = computeVehicle(m.spec, { year: g.year, tech: m.frozenTech, maturity: maturityOf(c, m, g.year) });
 }
 
-export function unitCost(g: GameState, m: VehicleModel, f: Factory | { country: string; automation: number }, monthlyVol: number): number {
+/**
+ * Cost to build one car at `monthlyVol` cars a month. Purchased parts get cheaper with volume; the engine and the
+ * platform parts (structure, running gear, driveline) are bought at the volume of every car that shares them
+ * (`shared`), the rest at this car's own volume.
+ */
+/** A vehicle can be signed off once every stand-alone architecture it uses is ready. */
+export function dependenciesReady(c: Company, m: VehicleModel): boolean {
+  const f = familyOf(c, m), p = platformOf(c, m);
+  if (f && f.status !== 'ready' && f.ownerModelId !== m.id) return false;
+  if (p && p.status !== 'ready' && p.ownerModelId !== m.id) return false;
+  const v = f?.variants.find((x) => x.id === m.engineVariantId);
+  if (v && v.status !== 'ready' && v.ownerModelId !== m.id) return false;
+  return true;
+}
+/** Engineering sign-off of a vehicle and of the architecture developed with it. */
+export function completeModel(g: GameState, c: Company, m: VehicleModel) {
+  m.status = 'ready'; m.devMonthsLeft = 0;
+  for (const x of [...enginesOf(c), ...platformsOf(c)]) {
+    if (x.ownerModelId !== m.id) continue;
+    x.status = 'ready'; x.devMonthsLeft = 0; x.devCostPaid = x.devCostTotal; x.introYear = g.year; delete x.ownerModelId;
+  }
+  for (const f of enginesOf(c)) for (const v of f.variants) if (v.ownerModelId === m.id) { v.status = 'ready'; v.readyIn = 0; delete v.ownerModelId; }
+  refreshStats(g, m, c);
+  news(g, 'company', `${m.name} is ready for production`, 'Engineering sign-off complete. Assign it to a factory line and set a price to start selling.', 'ready');
+}
+
+export function unitCost(g: GameState, m: VehicleModel, f: Factory | { country: string; automation: number }, monthlyVol: number, shared?: SharedVolume): number {
   const learning = Math.max(0.8, Math.pow(Math.max(m.cumulativeUnits, 500) / 500, -0.04));
+  const vf = (v: number) => 1 + 1.5 / (1 + v / 100);
+  const cb = m.stats.costBreakdown, total = m.stats.partsCost || 1;
+  const eShare = shared ? (cb.Powertrain ?? 0) / total : 0;
+  const pShare = shared ? ((cb.Chassis ?? 0) + (cb['Running gear'] ?? 0) + (cb.Driveline ?? 0)) / total : 0;
+  const volumeFactor = shared ? eShare * vf(shared.engine) + pShare * vf(shared.platform) + (1 - eShare - pShare) * vf(monthlyVol) : vf(monthlyVol);
   // Manufacturing know-how ahead of (or behind) the industry when the car was engineered: less scrap and rework,
   // fewer hours per car. Three years ahead ≈ 4 % off parts and 9 % off labour.
   const lead = clamp(m.frozenTech.manufacturing - (m.designYear - 1), -6, 8);
-  const parts = m.stats.partsCost * materialIndex(g) * (1 + 1.5 / (1 + monthlyVol / 100)) * learning * (1 - 0.012 * lead);
+  const parts = m.stats.partsCost * materialIndex(g) * volumeFactor * learning * (1 - 0.012 * lead);
   const labour = m.stats.labourHours * (1 - 0.65 * f.automation) * wage(f.country, g.year) * (1 - 0.03 * lead);
   return parts + labour;
 }
 /** Quick estimate used by the UI and by pricing before a factory is chosen. */
 export function estimateUnitCost(g: GameState, c: Company, m: VehicleModel, monthlyVol = 0): number {
   const f = c.factories[0] ?? { country: c.country, automation: 0.3 };
-  return unitCost(g, m, f, monthlyVol || Math.max(20, m.lastDemand));
+  const own = monthlyVol || Math.max(20, m.lastDemand);
+  return unitCost(g, m, f, own, sharedVolume(c, m, own));
 }
 
 /**
@@ -66,7 +100,21 @@ export const factoryBuildCost = (capacity: number, automation: number, year: num
 export const factoryFixedCost = (f: Factory, year: number) => Math.max(f.capacity, 40) * (6 * wage(f.country, year) + 180 * cpi(year) * (1 + 1.5 * f.automation));
 export const factoryValue = (f: Factory, year: number) => factoryBuildCost(f.capacity, f.automation, year) * 0.45;
 export const lineShareUsed = (f: Factory) => f.lines.reduce((a, l) => a + l.share, 0);
-export const toolingCost = (m: VehicleModel, units: number) => m.stats.toolingPerUnitCapacity * units;
+/**
+ * Line tooling for `units` a month. Engine machining (about a quarter of the tooling) and the platform's body-in-white
+ * jigs and fixtures (about 40 %) are largely in place when the plant already builds another car with the same engine
+ * family or platform.
+ */
+export function toolingCost(m: VehicleModel, units: number, at?: { c: Company; f: Factory }): number {
+  let k = 1;
+  if (at && (m.engineFamilyId || m.platformId)) {
+    const others = at.f.lines.map((l) => at.c.models.find((x) => x.id === l.modelId)).filter((x): x is VehicleModel => !!x && x.id !== m.id);
+    if (m.engineFamilyId && others.some((x) => x.engineFamilyId === m.engineFamilyId)) k -= TOOLING_SHARE.engine * 0.8;
+    if (m.platformId && others.some((x) => x.platformId === m.platformId)) k -= TOOLING_SHARE.platform * 0.75;
+  }
+  return m.stats.toolingPerUnitCapacity * units * k;
+}
+export const TOOLING_SHARE = { engine: 0.25, platform: 0.4 } as const;
 
 export function annualRevenue(c: Company): number { return c.ledger.slice(-12).reduce((a, l) => a + l.revenue, 0) * (12 / Math.max(1, Math.min(12, c.ledger.length))); }
 export function annualProfit(c: Company): number { return c.ledger.slice(-12).reduce((a, l) => a + l.profit, 0) * (12 / Math.max(1, Math.min(12, c.ledger.length))); }
@@ -91,7 +139,7 @@ export function interestRate(g: GameState, c: Company): number {
   return base + 0.02 * Math.min(lev, 2) + (g.difficulty === 'hard' ? 0.015 : g.difficulty === 'easy' ? -0.01 : 0);
 }
 export const researchRef = (year: number) => 1.5e6 * cpi(year) * kf([[1950, 0.15], [1980, 0.45], [2000, 0.8], [2020, 1]], year);
-export const devEngineersNeeded = (g: GameState, c: Company, m: VehicleModel) => Math.max(5, (m.devCostTotal * 0.3) / (Math.max(m.devMonthsTotal, 1) * engineerCost(c, g.year)));
+export const devEngineersNeeded = (g: GameState, c: Company, m: Pick<VehicleModel, 'devCostTotal' | 'devMonthsTotal'>) => Math.max(5, (m.devCostTotal * 0.3) / (Math.max(m.devMonthsTotal, 1) * engineerCost(c, g.year)));
 
 export function emptyLedger(g: GameState): MonthLedger {
   return {
@@ -139,7 +187,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       const n = Math.max(0, Math.min(cap, target));
       l.ramp = Math.min(1, l.ramp + 0.2);
       if (n <= 0) continue;
-      const uc = unitCost(g, m, f, totalCap);
+      const uc = unitCost(g, m, f, totalCap, sharedVolume(c, m, totalCap));
       produced.set(m.id, (produced.get(m.id) ?? 0) + n);
       costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
       L.production += n * uc; // paid now, held in inventory until the car is sold
@@ -154,6 +202,9 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       m.inventory += made;
       m.inventoryValue += costSum.get(m.id) ?? 0;
       m.cumulativeUnits += made;
+      const fam = familyOf(c, m), plat = platformOf(c, m);
+      if (fam) fam.cumulativeUnits += made;
+      if (plat) plat.cumulativeUnits += made;
       if (m.status === 'ready') m.status = 'production';
     }
     const dem = mk.demand.get(m.id);
@@ -189,11 +240,32 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
     if (m.status === 'production' || m.salesHistory.length) { m.salesHistory.push(Math.round(sold)); if (m.salesHistory.length > 120) m.salesHistory.shift(); }
   }
 
-  // ---- development projects (share the engineering staff)
+  // ---- development projects (vehicles, and stand-alone engine-family and platform programmes, share the engineering staff)
   const projects = c.models.filter((m) => m.status === 'development');
-  const need = projects.reduce((a, m) => a + devEngineersNeeded(g, c, m), 0);
+  const parts = [...enginesOf(c), ...platformsOf(c)].filter((x) => x.status === 'development' && !x.ownerModelId);
+  const need = projects.reduce((a, m) => a + (m.devMonthsLeft > 0 ? devEngineersNeeded(g, c, m) : 0), 0) + parts.reduce((a, x) => a + devEngineersNeeded(g, c, x), 0);
   const speed = need > 0 ? clamp(c.engineers / need, 0.25, 1.3) : 1;
+  for (const x of parts) {
+    const progress = Math.min(speed, x.devMonthsLeft);
+    const share = x.devMonthsLeft > 0 ? progress / x.devMonthsLeft : 1;
+    const spend = Math.max(0, x.devCostTotal - x.devCostPaid) * share;
+    x.devCostPaid += spend; L.dev += spend;
+    x.devMonthsLeft -= progress;
+    if (x.devMonthsLeft <= 1e-9) {
+      x.status = 'ready'; x.devMonthsLeft = 0; x.introYear = g.year;
+      news(g, 'company', `${x.name} is ready`, 'The architecture is signed off. Vehicles that use it can now complete their own development.', 'ready');
+    }
+  }
+  for (const f of enginesOf(c)) for (const v of f.variants) {
+    if (v.status !== 'development' || v.ownerModelId) continue;
+    v.readyIn = Math.max(0, v.readyIn - 1);
+    if (v.readyIn <= 0) { v.status = 'ready'; news(g, 'company', `${f.name}: ${v.name} variant ready`, 'Calibration and durability testing are complete.', 'ready'); }
+  }
   for (const m of projects) {
+    if (m.devMonthsLeft <= 1e-9) { // the car is done but waits for a stand-alone engine family, variant or platform
+      if (dependenciesReady(c, m)) completeModel(g, c, m);
+      continue;
+    }
     // The approved budget is spent in proportion to the work done: this month's share of the
     // remaining work pays the same share of the remaining budget. The final month therefore pays
     // exactly what is left and the programme always costs exactly devCostTotal, whatever the speed.
@@ -202,10 +274,13 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
     const spend = Math.max(0, m.devCostTotal - m.devCostPaid) * share;
     m.devCostPaid += spend; L.dev += spend;
     m.devMonthsLeft -= progress;
+    // bundled engine family, variant and platform follow the car's programme
+    const frac = m.devCostTotal > 0 ? m.devCostPaid / m.devCostTotal : 1;
+    for (const x of [...enginesOf(c), ...platformsOf(c)]) if (x.ownerModelId === m.id) { x.devCostPaid = x.devCostTotal * frac; x.devMonthsLeft = m.devMonthsLeft; }
     if (m.devMonthsLeft <= 1e-9) {
-      m.status = 'ready'; m.devMonthsLeft = 0;
-      refreshStats(g, m);
-      news(g, 'company', `${m.name} is ready for production`, 'Engineering sign-off complete. Assign it to a factory line and set a price to start selling.', 'ready');
+      m.devMonthsLeft = 0;
+      if (dependenciesReady(c, m)) completeModel(g, c, m);
+      else news(g, 'company', `${m.name} waits for its architecture`, 'The vehicle work is complete, but the engine family or platform it uses is still in development.');
     }
   }
 

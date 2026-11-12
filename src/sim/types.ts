@@ -113,7 +113,70 @@ export interface VehicleStats {
   warnings: string[];
 }
 
+// ------------------------------------------------------------------- shared engineering (Phase 3)
+
+/** Programme status shared by vehicles, engine families and platforms. */
+export type ProgrammeStatus = 'development' | 'ready';
+export interface Programme {
+  status: ProgrammeStatus;
+  devMonthsLeft: number; devMonthsTotal: number; devCostPaid: number; devCostTotal: number;
+  /** id of the vehicle programme that pays for this one (bundled development); absent for a stand-alone programme */
+  ownerModelId?: string;
+}
+
+/**
+ * One engine variant of a family: the parameters that change without new hardware architecture.
+ * Displacement varies with bore and stroke inside the family's envelope.
+ */
+export interface EngineVariant {
+  id: string; name: string;
+  tune: 'economy' | 'standard' | 'performance';
+  displacement: number; aspiration: Aspiration; boost: number; compression: number; redline: number; cam: number; vvt: boolean; hybridKw: number;
+  motorKw: number; batteryKwh: number; // EV variants
+  /** a variant still being calibrated cannot go into production */
+  status: ProgrammeStatus; readyIn: number; devCost: number;
+  /** set while the variant is developed as part of a vehicle programme */
+  ownerModelId?: string;
+}
+/** A reusable engine architecture: block, cylinder layout, head and fuel system. */
+export interface EngineFamily extends Programme {
+  id: string; name: string;
+  layout: EngineLayout; boreStroke: number; valvetrain: Valvetrain; fuelSystem: FuelSystem; aluBlock: boolean;
+  /** displacement the block was designed around; variants may range from 80 % to 125 % of it */
+  baseDisplacement: number;
+  /** EV: motor power the drive unit was designed around (variants 50–200 %) */
+  baseMotorKw: number;
+  techYear: number; introYear: number;
+  variants: EngineVariant[];
+  /** reliability events, newest last: recalls fix the fault, a quiet fix does not */
+  history: { y: number; kind: 'recall' | 'quiet' | 'exposed'; units: number }[];
+  /** total engines built */
+  cumulativeUnits: number;
+}
+export type EngineBay = 'compact' | 'medium' | 'large';
+/** Body-style group a platform can carry. */
+export type PlatformClass = 'car' | 'sports' | 'truck';
+/** A reusable vehicle architecture: structure, crash structure, suspension pick-up points, engine and drivetrain mounting. */
+export interface Platform extends Programme {
+  id: string; name: string;
+  cls: PlatformClass;
+  chassis: ChassisType;
+  enginePos: 'front' | 'mid' | 'rear';
+  transaxle: boolean;
+  drives: ('FWD' | 'RWD' | 'AWD')[];
+  bay: EngineBay;
+  /** size factor (wheelbase and track scale with it) the platform was designed around, and the range it stretches to */
+  baseSize: number; sizeMin: number; sizeMax: number;
+  suspFront: SuspType; suspRear: SuspType;
+  safety: number;
+  techYear: number; introYear: number;
+  history: { y: number; kind: 'recall' | 'quiet' | 'exposed'; units: number }[];
+  cumulativeUnits: number;
+}
+
 export interface VehicleModel {
+  /** shared engineering (Phase 3); absent on AI cars and on cars from older saves that were not migrated */
+  engineFamilyId?: string; engineVariantId?: string; platformId?: string;
   id: string;
   name: string;
   spec: VehicleSpec;
@@ -221,6 +284,8 @@ export interface Company {
   aiCostCut?: number; aiPriceCut?: number;
   /** Player: months left of a restructuring programme (lower overheads and plant fixed costs). Absent = none. */
   restructuring?: number;
+  /** Shared engineering (Phase 3). Player companies always have both arrays from save version 3 on. */
+  engines?: EngineFamily[]; platforms?: Platform[];
   aiFactor: number; // AI: drift of distribution strength relative to the historical baseline
   troubleMonths: number; // consecutive months beyond the credit limit
   books: Books;

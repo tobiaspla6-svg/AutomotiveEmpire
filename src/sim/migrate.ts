@@ -3,11 +3,15 @@
 //
 //   v1 → v2  accounting rework: inventory carried as an asset, fixed-asset book values, cash-flow
 //            and balance-sheet lines in the ledger, pending between-tick postings.
+//   v2 → v3  shared engineering: the player's cars are grouped into engine families and platforms
+//            (cars whose engines and structures are compatible share them). Nothing else changes;
+//            the optional Phase 2 fields keep their defaults.
 import type { Company, GameState, MonthLedger } from './types';
 import { emptyLedger, factoryValue } from './company';
 import { emptyPending, openBooks } from './accounts';
+import { adoptFamilies } from './families';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 function migrateCompanyV1(g: GameState, c: Company) {
   const legacy = c as Company & { books?: Company['books'] };
@@ -30,6 +34,7 @@ export function prepareLoadedGame(raw: unknown): GameState {
   const v = typeof g.version === 'number' ? g.version : 1;
   if (v > SAVE_VERSION) throw new Error(`This save comes from a newer version of the game (save format ${v}; this build reads up to ${SAVE_VERSION}).`);
   if (v < 2) for (const c of g.companies) migrateCompanyV1(g, c);
+  if (v < 3) for (const c of g.companies) if (c.isPlayer) adoptFamilies(g, c);
   g.version = SAVE_VERSION;
   return g;
 }

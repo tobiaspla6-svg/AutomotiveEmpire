@@ -228,7 +228,11 @@ export const NORM = {
 };
 const sat = (ratio: number, pow = 1) => 100 * (1 - Math.pow(0.5, Math.pow(Math.max(ratio, 0), pow)));
 
-export interface VehicleCtx { year: number; tech: Tech; materialIndex?: number }
+export interface VehicleCtx {
+  year: number; tech: Tech; materialIndex?: number;
+  /** reliability points gained by a shared engine family / platform in service (see families.ts maturity) */
+  maturity?: { engine: number; platform: number };
+}
 
 export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const { tech, year } = ctx;
@@ -236,6 +240,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
   const b = BODY[s.body];
   const d = dims(s);
   const eng = computeEngine(s.engine, tech.engine, s.quality, false, year);
+  if (ctx.maturity?.engine) eng.reliability = clamp(eng.reliability + ctx.maturity.engine, 5, 99);
   warnings.push(...eng.warnings);
   const isEV = eng.isEV;
   const cyl = CYL[s.engine.layout];
@@ -447,7 +452,7 @@ export function computeVehicle(s: VehicleSpec, ctx: VehicleCtx): VehicleStats {
     - (s.enginePos !== 'front' && !isEV ? 8 : 0) + (isEV && rangeKm < 250 ? -(250 - rangeKm) / 6 : 0);
   let safety = 50 + (s.safety - kf(NORM.safety, year)) * 22 + (mass - 1200) / 100 * 1.5 + { drum: -4, disc: 2, vented: 5, ceramic: 7 }[s.brakes]
     + (tech.electronics - year) * 1.5 + (s.drive === 'AWD' ? 3 : 0) + s.quality * 6 + (s.chassis === 'ladder' ? -5 : s.chassis === 'carbon' ? 5 : 0);
-  let reliability = 0.55 * eng.reliability + 0.45 * (62 + s.quality * 30 + (tech.manufacturing - year) * 1.2 - (s.drive === 'AWD' ? 3 : 0)
+  let reliability = 0.55 * eng.reliability + 0.45 * (62 + s.quality * 30 + (ctx.maturity?.platform ?? 0) + (tech.manufacturing - year) * 1.2 - (s.drive === 'AWD' ? 3 : 0)
     - (s.interior === 'luxury' ? 4 : 0) - (s.gearbox === 'dct' ? 3 : 0) - (s.chassis === 'carbon' ? 2 : 0));
   let prestige = { basic: 5, standard: 20, premium: 45, luxury: 70 }[s.interior] + (cyl >= 12 ? 18 : cyl >= 10 ? 14 : cyl >= 8 ? 10 : cyl >= 6 ? 5 : 0)
     + (s.chassis === 'carbon' ? 10 : s.chassis === 'aluminium' ? 4 : 0) + performance * 0.25 + s.quality * 12 + (s.body === 'supercar' ? 8 : s.body === 'coupe' || s.body === 'roadster' ? 3 : 0)
