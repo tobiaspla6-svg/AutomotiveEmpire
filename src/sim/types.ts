@@ -384,6 +384,9 @@ export interface Driver {
   pace: number; consistency: number; racecraft: number; wet: number; tyre: number;
   salary: number; contractEnd: number; teamId: string | null;
   wins: number; titles: number;
+  /** Phase 3 driver market (absent in older saves): potential pace, category specialty, seasons still to adapt to this
+   *  category, sponsorship brought per year (pay driver), salary agreed in a contract, member of an academy */
+  potential?: number; specialty?: 'single' | 'proto' | 'gt' | 'touring'; adapt?: number; backing?: number; contracted?: number; academy?: boolean;
 }
 
 export interface RaceCarSpec {
@@ -441,6 +444,8 @@ export interface MotorsportDivision {
   seasonIncome: number; seasonCost: number;
   carDesignedYear: number;
   objective: Objective | null;
+  /** junior driver academy (Phase 3): level 0–3 and its juniors (not on the grid until promoted) */
+  academy?: { level: number; juniors: Driver[] };
 }
 
 export interface GameState {

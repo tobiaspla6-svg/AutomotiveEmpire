@@ -18,7 +18,8 @@ import { computeVehicle } from './engineering';
 import { cpi, kf } from './util';
 import { player } from './world';
 import { getRegs, disciplineAvailable } from './racing/regs';
-import { budgetRef, createDivision, driverSalary, playerTeam, teamRegs, teamScale } from './racing/season';
+import { budgetRef, createDivision, driverSalary, overall, playerTeam, teamRegs, teamScale } from './racing/season';
+import { askingSalary, attractiveness, buyoutFee, raceDriver, rivalsFor } from './racing/drivers';
 import { checkLegal, raceEngineSpec } from './racing/racecar';
 import { borrow, clearStock, dispose, repay, spend, type SpendKind } from './accounts';
 
@@ -580,20 +581,79 @@ export function closeMotorsport(g: GameState) {
 }
 
 // ---- motorsport management
-export function signDriver(g: GameState, driverId: string, years: number, replaceId?: string): string | null {
+/** What signing this driver would take: asking salary, transfer fee, and whether stronger teams are interested. */
+export function driverTerms(g: GameState, driverId: string) {
+  const c = player(g); const div = c.motorsport!;
+  const ch = div.championship, team = playerTeam(div), regs = teamRegs(team, ch.year);
+  const d = ch.drivers.find((x) => x.id === driverId) ?? div.academy?.juniors.find((x) => x.id === driverId);
+  if (!d) return null;
+  const attr = attractiveness(ch, team, teamScale(div));
+  const rivals = rivalsFor(ch, d, team, attr);
+  // a driver still adapting from another category is paid for what they deliver this season
+  const ask = askingSalary(d, driverSalary(raceDriver(d, ch.discipline), regs, ch.year), attr, rivals);
+  const fee = d.teamId && d.teamId !== team.id ? buyoutFee(d, ch.year) : 0;
+  return { ask, fee, rivals, attractiveness: attr, backing: d.backing ?? 0 };
+}
+/**
+ * Sign a driver for `years`. `offer` is the yearly salary offered (default: exactly what the driver asks); an offer
+ * below the ask is refused. A driver under contract elsewhere is bought out for a transfer fee. Re-signing your own
+ * driver renegotiates at today's asking price.
+ */
+export function signDriver(g: GameState, driverId: string, years: number, replaceId?: string, offer?: number): string | null {
   const c = player(g); const div = c.motorsport; if (!div) return 'No racing programme.';
   const ch = div.championship, team = playerTeam(div), regs = teamRegs(team, ch.year);
   const d = ch.drivers.find((x) => x.id === driverId); if (!d) return 'Unknown driver.';
   if (!finite(years) || years < 1) return 'Choose a contract length.';
-  if (d.teamId === team.id) { d.contractEnd = ch.year + years; return null; }
-  if (d.teamId) return 'This driver is under contract elsewhere.';
+  if (offer !== undefined && (!finite(offer) || offer < 0)) return 'Enter a salary.';
+  const terms = driverTerms(g, driverId)!;
+  const salary = offer ?? terms.ask;
+  if (salary < terms.ask - 1) return `${d.name} wants at least $${(terms.ask / 1e6).toFixed(2)}M a year to drive for ${team.name}${terms.rivals ? ` (${terms.rivals} stronger team${terms.rivals > 1 ? 's are' : ' is'} interested)` : ''}.`;
+  if (d.teamId === team.id) { d.contractEnd = ch.year + Math.round(years) - 1; d.salary = salary; d.contracted = salary; return null; }
   const seats = regs.carsPerTeam * regs.driversPerCar;
   if (replaceId) { const err = releaseDriver(g, replaceId); if (err) return err; }
   if (team.drivers.length >= seats) return 'No free seat — release a driver first.';
-  const err = pay(c, g, d.salary * 0.1, 'motorsport'); // signing fee
+  const err = pay(c, g, salary * 0.1 + terms.fee, 'motorsport'); // signing fee and any transfer fee
   if (err) return err;
-  d.teamId = team.id; d.contractEnd = ch.year + years - 1; team.drivers.push(d.id);
-  news(g, 'motorsport', `${d.name} signs for ${team.name}`, `${years}-year contract at $${(d.salary / 1e6).toFixed(2)}M a year.`);
+  if (d.teamId) { // bought out: the other team signs the best free agent in the driver's place
+    const from = ch.teams.find((t) => t.id === d.teamId);
+    if (from) {
+      from.drivers = from.drivers.filter((id) => id !== d.id);
+      const repl = ch.drivers.filter((x) => !x.teamId && !x.academy).sort((a, b) => overall(b) - overall(a))[0];
+      if (repl) { repl.teamId = from.id; repl.contractEnd = ch.year + 1; from.drivers.push(repl.id); }
+    }
+  }
+  d.teamId = team.id; d.contractEnd = ch.year + Math.round(years) - 1; d.salary = salary; d.contracted = salary; team.drivers.push(d.id);
+  news(g, 'motorsport', `${d.name} signs for ${team.name}`, `${Math.round(years)}-year contract at $${(salary / 1e6).toFixed(2)}M a year${terms.fee ? `, after a $${(terms.fee / 1e6).toFixed(2)}M transfer fee` : ''}${d.backing ? `; brings $${(d.backing / 1e6).toFixed(2)}M a year of sponsorship` : ''}.`);
+  return null;
+}
+/** Set the junior academy level (0–3). Setting up a level costs a tenth of a season's budget; running it is in the season budget. */
+export function setAcademy(g: GameState, level: number): string | null {
+  const c = player(g); const div = c.motorsport; if (!div) return 'No racing programme.';
+  if (!finite(level) || level < 0 || level > 3) return 'Choose a level from 0 to 3.';
+  const now = div.academy?.level ?? 0;
+  level = Math.round(level);
+  if (level > now) {
+    const B = budgetRef(teamRegs(playerTeam(div), div.championship.year), g.year);
+    const err = pay(c, g, B * 0.03 * (level - now), 'capex'); if (err) return err;
+    c.books.otherAssets += B * 0.03 * (level - now);
+  }
+  div.academy ??= { level: 0, juniors: [] };
+  div.academy.level = level;
+  if (level === 0) div.academy.juniors = [];
+  return null;
+}
+/** Promote an academy junior (17 or older) to a race seat on a cheap three-year rookie contract. */
+export function promoteJunior(g: GameState, juniorId: string, replaceId?: string): string | null {
+  const c = player(g); const div = c.motorsport; if (!div?.academy) return 'No academy.';
+  const j = div.academy.juniors.find((x) => x.id === juniorId); if (!j) return 'Unknown junior.';
+  if (j.age < 17) return `${j.name} is too young to race (${j.age}).`;
+  const ch = div.championship, team = playerTeam(div), regs = teamRegs(team, ch.year);
+  if (replaceId) { const err = releaseDriver(g, replaceId); if (err) return err; }
+  if (team.drivers.length >= regs.carsPerTeam * regs.driversPerCar) return 'No free seat — release a driver first.';
+  div.academy.juniors = div.academy.juniors.filter((x) => x !== j);
+  j.academy = false; j.teamId = team.id; j.contractEnd = ch.year + 2; j.salary = driverSalary(j, regs, ch.year) * 0.4; j.contracted = j.salary;
+  ch.drivers.push(j); team.drivers.push(j.id);
+  news(g, 'motorsport', `${j.name} promoted from the academy`, `A three-year rookie contract at $${(j.salary / 1e6).toFixed(2)}M a year.`);
   return null;
 }
 export function releaseDriver(g: GameState, driverId: string): string | null {
