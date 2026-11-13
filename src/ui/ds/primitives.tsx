@@ -162,3 +162,13 @@ export function TrendChart({ series, labels, fmt, height = 230, summary }: { ser
     </div>
   );
 }
+
+/** One bar split into the parts of a budget. */
+export function StackBar({ parts, fmt }: { parts: { label: string; value: number; color: string }[]; fmt: (v: number) => string }) {
+  const sum = parts.reduce((a, x) => a + Math.max(0, x.value), 0) || 1;
+  return (
+    <div className="stackbar" role="img" aria-label={parts.map((x) => `${x.label}: ${fmt(x.value)}`).join(', ')}>
+      {parts.filter((x) => x.value > 0).map((x) => <i key={x.label} title={`${x.label}: ${fmt(x.value)}`} style={{ width: `${(x.value / sum) * 100}%`, background: x.color }} />)}
+    </div>
+  );
+}

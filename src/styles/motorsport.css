@@ -1,0 +1,29 @@
+/* ---------- motorsport headquarters */
+.ms { display: flex; flex-direction: column; gap: 16px; max-width: 1580px; margin: 0 auto; width: 100%; animation: fade-in 0.3s ease-out; }
+.ms-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; } .ms-head h2 { font-size: 34px; }
+.ms-hero { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 14px; align-items: stretch; }
+.ms-car { height: auto; min-height: 340px; border-radius: 16px; box-shadow: var(--shadow-2); } .ms-car .guard3d, .ms-car .cv { position: absolute; inset: 0; height: 100% !important; }
+.ms-car-edit { position: absolute; right: 14px; bottom: 14px; z-index: 2; }
+.ms-next { display: flex; flex-direction: column; gap: 8px; } .ms-next.live { border-color: var(--accent-dim); background: linear-gradient(180deg, rgba(201, 163, 92, 0.1), rgba(201, 163, 92, 0) 120px), var(--panel); }
+.ms-next h3 { font-family: var(--font-display); font-size: 24px; font-weight: 600; } .ms-track { border-radius: 10px; background: var(--bg2); border: 1px solid var(--line); padding: 6px; } .ms-next .btn.lg { margin-top: auto; justify-content: center; }
+.ms-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; } .ms-grid2.wide-left { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+@media (max-width: 1180px) { .ms-hero, .ms-grid2, .ms-grid2.wide-left { grid-template-columns: minmax(0, 1fr); } }
+.driver-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.driver-card { display: flex; flex-direction: column; gap: 9px; padding: 12px 13px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg2); min-width: 0; }
+.driver-card header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.dc-num { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--accent2); padding: 3px 7px; border-radius: 7px; border: 1px solid var(--accent-dim); }
+.dc-id { display: flex; flex-direction: column; min-width: 0; } .dc-id b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dc-ovr { font-size: 28px; font-weight: 600; line-height: 1; }
+.dc-bars { display: flex; flex-direction: column; gap: 4px; } .dc-bars > div { display: grid; grid-template-columns: 96px minmax(0, 1fr) 24px; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink2); } .dc-bars b { text-align: right; color: var(--ink); font-weight: 600; }
+.me-row { color: var(--accent2); font-weight: 650; }
+.legend-grid { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 18px; } .legend-grid li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink2); } .legend-grid b { color: var(--ink); font-weight: 600; }
+.dev-row { display: flex; flex-direction: column; gap: 3px; } .dev-row input[type=range] { margin-top: 1px; }
+.cal-strip { list-style: none; margin: 0; padding: 2px 0 6px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: thin; }
+.cal-strip li { flex: 1 0 132px; display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg2); min-width: 0; position: relative; }
+.cal-strip li b { font-size: 12.5px; line-height: 1.25; } .cs-month { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); font-weight: 600; }
+.cal-strip li.done { opacity: 0.72; } .cal-strip li.next { border-color: var(--accent-dim); background: linear-gradient(180deg, rgba(201, 163, 92, 0.12), rgba(201, 163, 92, 0)), var(--bg2); opacity: 1; }
+.cs-res { margin-top: 4px; font-family: var(--font-display); font-size: 17px; font-weight: 600; min-height: 20px; } .cal-strip li.next .cs-res { color: var(--accent2); font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; }
+.level-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; } .level-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #1d2027; } .level-list li:last-child { border-bottom: 0; }
+.level-list li > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; } .level-list .meter { flex: 1; max-width: 220px; }
+.pips { display: inline-flex; gap: 4px; margin-top: 2px; } .pips i { width: 22px; height: 5px; border-radius: 3px; background: #252932; } .pips i.on { background: var(--accent); }
+.ms-design .form-group.first { border-top: 0; padding-top: 0; }
+.ms .hbar { grid-template-columns: minmax(120px, 220px) minmax(0, 1fr) auto; }

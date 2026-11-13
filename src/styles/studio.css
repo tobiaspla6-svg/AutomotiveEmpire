@@ -63,5 +63,6 @@ input.studio-name:focus { outline: none; border-bottom: 1px solid var(--accent2)
 @media (max-width: 1380px) { .studio-grid { grid-template-columns: minmax(280px, 330px) minmax(0, 1fr); } .studio-right { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } .studio-right .spec-tiles { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); } .studio-sum { display: none; } }
 @media (max-width: 1100px) { .range-hero { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .studio-grid { grid-template-columns: minmax(0, 1fr); } .studio-right { display: flex; } .studio-bar { flex-wrap: wrap; } .studio-right .spec-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.viewer .overlay { max-width: calc(100% - 230px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage-wrap .viewer .overlay { max-width: calc(100% - 230px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vstatus.off { color: var(--ink3); }
+label.field > .lab > span:first-child { flex: none; } label.field .val { text-align: right; }

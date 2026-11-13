@@ -21,7 +21,7 @@ import { specDescriptor } from '../sim/render';
 import { FINISH_NAME } from '../three/assets/names';
 import { BarList, LineChart, ScoreBar, Select, Slider, StatLine } from './common';
 import { Icon, type IconName } from './ds/icons';
-import { Panel, Tabs } from './ds/primitives';
+import { Panel, StackBar, Tabs } from './ds/primitives';
 import { VehicleStage } from './VehicleStage';
 
 type Section = 'architecture' | 'body' | 'chassis' | 'engine' | 'driveline' | 'running' | 'aero' | 'cabin';
@@ -399,16 +399,6 @@ export function PriceLadder({ cost, breakEven, recommended, worth, mark, fmt, la
         {rows.map((r) => <div key={r.id} title={hints[r.id]}><dt><i className="swatch" style={{ background: r.color }} />{labels[r.id]}</dt><dd className={r.id === 'recommended' ? 'strong' : ''}>{fmt(r.v)}</dd></div>)}
         {mark && <div><dt><i className="swatch mark" />{mark.label}</dt><dd className="strong">{fmt(mark.v)}</dd></div>}
       </dl>
-    </div>
-  );
-}
-
-/** One bar split into the parts of a budget. */
-export function StackBar({ parts, fmt }: { parts: { label: string; value: number; color: string }[]; fmt: (v: number) => string }) {
-  const sum = parts.reduce((a, x) => a + Math.max(0, x.value), 0) || 1;
-  return (
-    <div className="stackbar" role="img" aria-label={parts.map((x) => `${x.label}: ${fmt(x.value)}`).join(', ')}>
-      {parts.filter((x) => x.value > 0).map((x) => <i key={x.label} title={`${x.label}: ${fmt(x.value)}`} style={{ width: `${(x.value / sum) * 100}%`, background: x.color }} />)}
     </div>
   );
 }
