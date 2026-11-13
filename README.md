@@ -55,6 +55,8 @@ persistence tests run the real IndexedDB save layer against `fake-indexeddb`.
 | `orders.test.ts` | Production caps build order books, cancellations by allocation policy, personalisation margin, list / willingness / collector prices, F80 and series sports-car price bands |
 | `drivers.test.ts` | Driver development and decline, category adaptation, asking salaries and refusals, buy-outs, AI transfer window, summer scouting, academy, privately funded teams can recruit competitive drivers |
 | `regional.test.ts` | Regional prices in local currency move with exchange rates, demand per region, revenue per region equals the books, FX does not consume random numbers, games without regional prices are unchanged |
+| `render-assets.test.ts` | Render descriptor and cosmetic fields (no effect on cost or engineering); every catalogued GLB exists and contains its declared components, wheel mounts and material slots; arch-preserving stretch, wheels on the drawn axles and inside the arches; clamping notes; engine/aero/trim → components and materials; procedural fallbacks for other bodies, mid engines and older eras; failed downloads retried; every car in a 2024 world gets a valid plan; cosmetic choices survive save/load; pre-Phase-4 saves render with trim defaults |
+| `render-instance.test.ts` | Building a car with Three.js (no WebGL): stretched geometry, wheel placement and mirroring, component visibility, per-car materials restyled in place without touching the shared template, disposal, tyre dimensions, transmissive glass only on High, paint flake per finish |
 | `phase3-integration.test.ts` | Every Phase 3 system together for a year with balanced books; save/load and file export continue identically; v2 → v3 save migration; render descriptor |
 | `development.test.ts` | A vehicle programme costs exactly its approved budget, all of it in the P&L, whatever the staffing; concurrent, new-generation, cancelled and old-save programmes |
 | `accounting.test.ts` | Every month: Δequity = profit and Δcash = operating + investing + financing; inventory roll-forward; unsold cars stay in stock; stock clearance, plant sales, acquisitions; v1 → v2 save migration |
@@ -147,11 +149,17 @@ src/
     regional.ts        regional prices, purchasing power, taxes, exchange rates
     render.ts          render descriptor for graphics pipelines
     racing/            circuits, regulations, race cars, lap simulation, race, championships, driver market
+    render.ts          render descriptor: the only data the 3D layer reads
   data/                manufacturers, technologies, world/market reference data, suppliers
   store/               zustand store and IndexedDB saves
-  three/               procedural car generator, studio viewer, race scene, 2D track map
+  three/               studio viewer, procedural car generator, race scene, 2D track map
+    assets/            asset catalogue, descriptor → visual adapter, GLB loader, car instances, tyre, materials
   ui/                  screens
 tests/                 automated test suite
+tools/blender/sedan/   Blender build of the reference sedan (python, headless)
+assets-src/            Blender source scenes and baked textures
+public/assets/         GLB vehicle assets; public/draco: Draco decoder (no CDN)
+docs/                  asset pipeline, licences, reference-image workflow, Phase 4 screenshots
 scripts/               calibration and soak scripts for development
 ```
 
@@ -336,6 +344,24 @@ engine layout and position, drive, aero parts, structure and panels, interior, c
 platform. The simulation does not depend on graphics, so a future GLB/Blender pipeline can read
 this descriptor instead of engineering internals.
 
+### 3D vehicles (`src/three`, [docs/asset-pipeline.md](docs/asset-pipeline.md))
+
+- The 3D layer reads only the **render descriptor**. An adapter decides whether a GLB asset fits (body, engine
+  position, era) and plans how to stretch it (wheel arches stay round), where the wheels go, how big rims and tyres
+  are, the ride height, which parts are shown (EV or combustion grille, one to four exhausts, lip spoiler, wing,
+  splitter, skirts) and the materials (paint finish, chrome / black / satin trim, rims, calipers, cabin). What it
+  cannot draw is clamped with a visible note or falls back to the procedural model with the reason.
+- The reference asset is an original four-door saloon built by a Blender script (`tools/blender/sedan`), exported as
+  Draco-compressed GLBs in three levels of detail (≈314k / 109k / 49k triangles, about 42 draws each) with three
+  alloy wheel designs; tyres are generated in the browser for each car's tyre size. Its hood, boot lid and roof are
+  analytic curvature-continuous surfaces checked with zebra stripes; shut lines are real grooves; lamps, grille,
+  wheels and interior are modelled in detail. Other body styles, older eras and race cars use the procedural models.
+- The studio viewer has front, rear, side, three-quarter and top cameras, zoom, turntable, full-screen inspection,
+  Low / Medium / High quality presets and an FPS test. Medium and High light the studio with a CC0 HDRI ("Studio
+  Small 09", Poly Haven); High adds transmissive glass and lenses, a key-light shadow map and a reflective floor.
+  Metallic and pearl paints have a subtle, distance-faded flake under the clear coat. Paint finish and wheel design are cosmetic fields of the
+  specification (Body tab); wheel size, ride height, aero parts and cabin are engineering choices the model follows.
+
 ### Saves
 
 Games autosave to IndexedDB after every time advance, after each race and when returning to the
@@ -348,7 +374,8 @@ crisis and player restructuring counters, acceleration figures); version-2 saves
 with documented defaults. Phase 3 moved to **format 3**: on loading a version-2 save the player's
 existing models are grouped into engine families and platforms (`adoptFamilies`), so shared
 engines keep sharing; trims, contracts, stages, order books, regional prices, driver potentials
-and the academy are optional fields that start empty.
+and the academy are optional fields that start empty. Phase 4 added only the optional cosmetic fields `finish` and
+`wheelStyle` (absent = the trim's default look), so the format stays at version 3.
 
 ## Data coverage and labels
 
@@ -429,6 +456,11 @@ and the academy are optional fields that start empty.
   with very few engineers still progresses at a quarter of full speed. Impact estimates replay
   random events identically in both copies of the world, so they show a decision's effect, not the
   range of possible outcomes.
+- **3D**: one GLB asset (modern saloon, 2005–2035, front engine); every other body, era and the race cars use the
+  procedural models. The reference sedan is a detailed, credible game asset but not photorealistic or configurator-grade
+  (remaining defects are listed in the visual review in [docs/asset-pipeline.md](docs/asset-pipeline.md));
+  performance was measured only with software rendering (no GPU available), so 60 FPS on desktop GPUs is a target
+  to confirm with the in-app FPS test (procedure in the same document).
 - The interface is English only and designed for desktop.
 
 ### Not implemented yet

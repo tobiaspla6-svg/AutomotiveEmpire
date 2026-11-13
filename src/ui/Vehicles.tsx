@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { BodyType, EngineLayout, SegmentId, VehicleModel, VehicleSpec } from '../sim/types';
+import type { BodyType, EngineLayout, PaintFinish, SegmentId, VehicleModel, VehicleSpec, WheelStyle } from '../sim/types';
 import { useGame, useStore } from '../store/game';
 import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle, suggestFinalDrive } from '../sim/engineering';
 import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
@@ -14,8 +14,10 @@ import { TrimsPanel } from './Trims';
 import { RegionalPricing } from './Regional';
 import { fmtMoney, fmtNum } from '../sim/util';
 import { BarList, LineChart, PageHead, ScoreBar, Seg, Select, Slider, StatLine, Tag } from './common';
-import { CarViewer } from '../three/CarViewer';
-import { RoadCar } from '../three/CarModel';
+import { VehicleStage } from './VehicleStage';
+import { trimsOf } from '../sim/trims';
+import { renderDescriptor, specDescriptor } from '../sim/render';
+import { FINISH_NAME } from '../three/assets/looks';
 import { REGION_IDS } from '../data/world';
 
 const STATUS: Record<VehicleModel['status'], string> = { design: 'Design', development: 'In development', ready: 'Ready — needs a production line', production: 'In production', retired: 'Retired' };
@@ -37,11 +39,7 @@ export function VehiclesView() {
       {models.length === 0 && <div className="panel"><h3>No vehicles yet</h3><p className="dim">Open the design studio to engineer your first car. You have {p.engineers} engineers; technology level is about {Math.round((p.tech.engine + p.tech.chassis) / 2)}.</p></div>}
       {shown && (
         <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
-          <div className="viewer" style={{ height: 340 }}>
-            <CarViewer><RoadCar spec={shown.spec} /></CarViewer>
-            <div className="overlay"><b>{shown.name}</b> · {BODY[shown.spec.body].name} · {SEG[shown.segment].name}</div>
-            <div className="hint">drag to rotate · scroll to zoom</div>
-          </div>
+          <ModelStage m={shown} />
           <ModelCard m={shown} />
         </div>
       )}
@@ -83,6 +81,24 @@ function PriceInput({ price, label, onCommit }: { price: number; label: string; 
     onChange={(e) => setText(e.target.value)} onBlur={commit} onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setText(null); }} />;
 }
 const nextName = (n: string) => { const m = n.match(/^(.*?)(?: Mk ?(\d+))?$/); return m ? `${m[1]} Mk${Number(m[2] ?? 1) + 1}` : n + ' II'; };
+
+/** The selected model in the studio viewer, with a choice of version when it has trims. */
+function ModelStage({ m }: { m: VehicleModel }) {
+  const { g, p } = useGame();
+  const [trimId, setTrimId] = useState<string>('');
+  const trims = trimsOf(m);
+  const trim = trims.find((t) => t.id === trimId);
+  const spec = trim?.spec ?? m.spec;
+  return (
+    <VehicleStage desc={renderDescriptor(p, m, trim)} spec={spec} year={g.year} height={360}
+      title={<><b>{m.name}</b>{trim ? ` ${trim.name}` : ''} · {BODY[spec.body].name} · {SEG[m.segment].name}</>}
+      extra={trims.length > 0 && <div className="row" style={{ gap: 6, marginTop: 4 }}><span className="tiny muted">Show version</span>
+        <select aria-label="Version shown in 3D" value={trimId} onChange={(e) => setTrimId(e.target.value)}>
+          <option value="">Model (base specification)</option>
+          {trims.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select></div>} />
+  );
+}
 
 function ModelCard({ m }: { m: VehicleModel }) {
   const { g, p } = useGame();
@@ -227,6 +243,11 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
             <Select label="Seats" value={spec.seats} options={[2, 4, 5, 7].map((n) => ({ value: n, label: `${n} seats`, disabled: n > BODY[spec.body].seats + 2 }))} onChange={(v) => up({ seats: v })} />
             <Slider label="Engineering quality & craftsmanship" value={spec.quality} min={0} max={1} step={0.01} onChange={(v) => up({ quality: v })} fmt={(v) => `${Math.round(v * 100)}%`} hint="Tighter tolerances, better materials and more testing: reliability and refinement up, cost up steeply." />
             <label className="field"><span className="lab"><span>Paint</span></span><div className="row wrap" style={{ gap: 6 }}>{['#b3261e', '#f2f2f0', '#15171b', '#8f969e', '#1f5fbf', '#0c4d2c', '#e8b04a', '#d95926', '#5b2a86'].map((c) => <button key={c} aria-label={`Paint ${c}`} onClick={() => up({ color: c })} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: spec.color === c ? '2px solid var(--accent)' : '1px solid var(--line2)', cursor: 'pointer' }} />)}<input type="color" value={spec.color} onChange={(ev2) => up({ color: ev2.target.value })} /></div></label>
+            <Select label="Paint finish" value={spec.finish ?? 'default'} onChange={(v) => up({ finish: v === 'default' ? undefined : v as PaintFinish })}
+              options={[{ value: 'default', label: 'Trim default' }, ...(Object.keys(FINISH_NAME) as PaintFinish[]).map((f) => ({ value: f, label: FINISH_NAME[f] }))]} />
+            <Select label="Wheel design" value={spec.wheelStyle ?? 'default'} onChange={(v) => up({ wheelStyle: v === 'default' ? undefined : v as WheelStyle })}
+              options={[{ value: 'default', label: 'Trim default' }, { value: 'multispoke', label: 'Multi-spoke (aero)' }, { value: 'turbine', label: 'Turbine' }, { value: 'fivespoke', label: 'Five-spoke sport' }]} />
+            <p className="tiny muted">Paint finish and wheel design are cosmetic: they change how the car looks in the 3D studio, not its cost or engineering. Wheel size, ride height and aero parts are engineering choices (Running gear, Chassis and Aero tabs) and the 3D model follows them.</p>
           </>}
           {tab === 'Chassis' && <>
             <Select label="Chassis construction" value={spec.chassis} onChange={(v) => up({ chassis: v })} options={[
@@ -299,11 +320,8 @@ function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; bas
         </div>
 
         <div className="col">
-          <div className="viewer">
-            <CarViewer><RoadCar spec={spec} /></CarViewer>
-            <div className="overlay">{BODY[spec.body].name} · {stats.length.toFixed(2)} m long · wheelbase {stats.wheelbase.toFixed(2)} m · {Math.round(stats.mass)} kg</div>
-            <div className="hint">drag to rotate · scroll to zoom</div>
-          </div>
+          <VehicleStage desc={specDescriptor(spec, undefined, chosenPlat ?? null)} spec={spec} year={g.year} height={430} autoRotate={false}
+            title={<>{BODY[spec.body].name} · {stats.length.toFixed(2)} m long · wheelbase {stats.wheelbase.toFixed(2)} m · {Math.round(stats.mass)} kg</>} />
           <div className="panel">
             <div className="grid g2">
               <div><h4>Torque (Nm)</h4><LineChart height={170} width={330} series={[{ name: 'Torque', color: '#3987e5', values: stats.engine.curve.map((c) => c.nm) }]} labels={rpmLabels} xTitle="rpm" fmt={(v) => `${Math.round(v)}`} /></div>

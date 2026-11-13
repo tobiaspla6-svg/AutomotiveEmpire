@@ -1,0 +1,94 @@
+{
+ "low": {
+  "readyMs": 4390,
+  "timing": {
+   "loadMs": 2058,
+   "buildMs": 28,
+   "lod": 2,
+   "triangles": 178026,
+   "meshes": 57
+  },
+  "downloads": {
+   "wheels.glb": 259596,
+   "draco_decoder.wasm": 192420,
+   "sedan.lod2.glb": 485344,
+   "tire_profile.json": 520
+  },
+  "gpuGeometryMB": 3,
+  "gpuTexturesMB": 22.7,
+  "glInfo": {
+   "geometries": 52,
+   "textures": 8,
+   "programs": 17
+  },
+  "jsHeapMB": 27,
+  "fps": 12.1,
+  "p95ms": 99,
+  "drawCalls": 65,
+  "trianglesPerFrame": 198093,
+  "viewport": "652x428@1",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "medium": {
+  "readyMs": 7514,
+  "timing": {
+   "loadMs": 3929,
+   "buildMs": 36,
+   "lod": 1,
+   "triangles": 247791,
+   "meshes": 58
+  },
+  "downloads": {
+   "wheels.glb": 259596,
+   "draco_decoder.wasm": 192420,
+   "studio_small_09_1k.hdr": 1187556,
+   "sedan.lod1.glb": 728188,
+   "tire_profile.json": 520
+  },
+  "gpuGeometryMB": 5,
+  "gpuTexturesMB": 24.1,
+  "glInfo": {
+   "geometries": 50,
+   "textures": 15,
+   "programs": 21
+  },
+  "jsHeapMB": 39,
+  "fps": 3.3,
+  "p95ms": 323,
+  "drawCalls": 67,
+  "trianglesPerFrame": 272150,
+  "viewport": "652x428@1",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ },
+ "high": {
+  "readyMs": 30051,
+  "timing": {
+   "loadMs": 8083,
+   "buildMs": 67,
+   "lod": 0,
+   "triangles": 464125,
+   "meshes": 58
+  },
+  "downloads": {
+   "studio_small_09_1k.hdr": 1187556,
+   "wheels.glb": 259596,
+   "draco_decoder.wasm": 192420,
+   "sedan.lod0.glb": 1061144,
+   "tire_profile.json": 520
+  },
+  "gpuGeometryMB": 11.2,
+  "gpuTexturesMB": 28.3,
+  "glInfo": {
+   "geometries": 51,
+   "textures": 23,
+   "programs": 35
+  },
+  "jsHeapMB": 51,
+  "fps": 0.8,
+  "p95ms": 1682,
+  "drawCalls": 246,
+  "trianglesPerFrame": 1850277,
+  "viewport": "652x428@1",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+ }
+}

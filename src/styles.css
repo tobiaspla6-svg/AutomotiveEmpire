@@ -104,6 +104,25 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; } tr.me td {
 .viewer { height: 400px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 35%, #2b2f36 0%, #131519 70%); position: relative; }
 .viewer .overlay { position: absolute; left: 12px; top: 10px; pointer-events: none; font-size: 12px; color: var(--ink2); text-shadow: 0 1px 2px #000; }
 .viewer .hint { position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: var(--ink3); pointer-events: none; }
+/* ---------- studio viewer (Phase 4) */
+.cv { position: relative; width: 100%; }
+.cv.full { background: #0e1013; }
+.viewer.studio { background: #0e1013; }
+.vtool { position: absolute; display: flex; gap: 4px; align-items: center; z-index: 2; }
+.vtool.views { left: 10px; bottom: 10px; flex-wrap: wrap; max-width: 62%; }
+.vtool.right { right: 10px; bottom: 10px; }
+.vbtn { background: rgba(20, 22, 26, 0.78); border: 1px solid #3a3e46; color: var(--ink2); padding: 4px 8px; border-radius: 7px; font-size: 11.5px; cursor: pointer; backdrop-filter: blur(6px); transition: background 0.12s, color 0.12s, border-color 0.12s; }
+.vbtn:hover:not(:disabled) { background: rgba(42, 45, 51, 0.92); color: var(--ink); border-color: #55596a; }
+.vbtn.on { color: var(--accent); border-color: #6b5426; }
+.vbtn:disabled { opacity: 0.6; cursor: progress; }
+.vsel { background: rgba(20, 22, 26, 0.78); border: 1px solid #3a3e46; border-radius: 7px; padding: 3px 6px; font-size: 11.5px; color: var(--ink2); }
+.vbench { position: absolute; right: 10px; bottom: 44px; font-size: 11px; color: var(--ink); background: rgba(14, 16, 19, 0.85); border: 1px solid #3a3e46; border-radius: 7px; padding: 4px 8px; z-index: 2; }
+.vstatus { position: absolute; right: 12px; top: 10px; font-size: 11px; color: var(--ink3); pointer-events: none; z-index: 2; }
+.vstatus.loading { color: var(--accent); } .vstatus.failed { color: var(--warn); }
+.stage-wrap { display: flex; flex-direction: column; gap: 6px; }
+.stage-notes { padding: 0 2px; color: var(--ink2); }
+.cv.full .vtool.views { max-width: none; }
+@media (max-width: 700px) { .vtool.views { max-width: 100%; bottom: 44px; } .vbench { bottom: 80px; } }
 .statline { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; border-bottom: 1px dashed #2a2d33; font-size: 13px; } .statline:last-child { border-bottom: 0; } .statline span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
 .scorebar { display: grid; grid-template-columns: 92px 1fr 30px; gap: 8px; align-items: center; font-size: 12px; }
 .warnbox { border: 1px solid #6d5a2a; background: rgba(224, 160, 48, 0.08); color: #ecd08c; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; }

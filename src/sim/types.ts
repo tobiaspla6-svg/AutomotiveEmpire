@@ -37,6 +37,10 @@ export type SuspType = 'solid' | 'macpherson' | 'wishbone' | 'multilink';
 export type BrakeType = 'drum' | 'disc' | 'vented' | 'ceramic';
 export type TireCompound = 'economy' | 'touring' | 'sport' | 'semislick';
 export type InteriorType = 'basic' | 'standard' | 'premium' | 'luxury';
+/** Paint finish (cosmetic: no effect on cost or engineering). */
+export type PaintFinish = 'solid' | 'metallic' | 'pearl' | 'matte';
+/** Alloy wheel design (cosmetic). */
+export type WheelStyle = 'multispoke' | 'turbine' | 'fivespoke';
 export type Gearbox = 'manual' | 'auto' | 'dct';
 
 export interface VehicleSpec {
@@ -70,6 +74,9 @@ export interface VehicleSpec {
   color: string;
   /** optional equipment level 0..1 (trim content); absent = 0 */
   equipment?: number;
+  /** Cosmetic choices shown by the 3D renderer; they do not change cost or engineering. Absent = the trim's default. */
+  finish?: PaintFinish;
+  wheelStyle?: WheelStyle;
 }
 
 export interface Tech { engine: number; chassis: number; aero: number; electronics: number; manufacturing: number }

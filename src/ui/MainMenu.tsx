@@ -28,7 +28,7 @@ export function MainMenu() {
         </header>
         <div className="modes">
           <button className="mode" onClick={() => go('setup-ceo')}>
-            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={8.2}><RoadCar spec={classic} /></CarViewer></div>
+            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={6.2}><RoadCar spec={classic} /></CarViewer></div>
             <div className="body">
               <span className="n">Mode 1</span><h2>Historical Automotive CEO</h2>
               <p className="dim">Take the chair at an established manufacturer in any year of its history.</p>
@@ -37,7 +37,7 @@ export function MainMenu() {
             </div>
           </button>
           <button className="mode" onClick={() => go('setup-founder')}>
-            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={7.6}><RoadCar spec={concept} /></CarViewer></div>
+            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={5.8}><RoadCar spec={concept} /></CarViewer></div>
             <div className="body">
               <span className="n">Mode 2</span><h2>Automotive Company Founder</h2>
               <p className="dim">Start a new marque from an empty drawing board and your seed capital.</p>
@@ -46,7 +46,7 @@ export function MainMenu() {
             </div>
           </button>
           <button className="mode" onClick={() => go('setup-motorsport')}>
-            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={7.8}><RaceCar discipline="f1" year={1992} color="#e8b04a" color2="#15171b" wing={0.6} /></CarViewer></div>
+            <div className="art" style={{ pointerEvents: 'none' }}><CarViewer distance={6.0}><RaceCar discipline="f1" year={1992} color="#e8b04a" color2="#15171b" wing={0.6} /></CarViewer></div>
             <div className="body">
               <span className="n">Mode 3</span><h2>Professional Motorsport Director</h2>
               <p className="dim">Run a works or independent racing team through full championship seasons.</p>
