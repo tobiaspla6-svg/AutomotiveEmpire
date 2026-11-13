@@ -20,7 +20,6 @@ import { BarList, Kpi, LineChart, Meter, Modal, Money, PageHead, PALETTE, Select
 import { MAKER } from '../data/manufacturers';
 import { companyStrategy } from '../sim/pricing';
 import { ImpactPreview } from './Impact';
-import { FactoryStages, SupplyPanel } from './Supply';
 import { RESTRUCTURE, restructuringSaving } from '../sim/company';
 import { startRestructuring } from '../sim/actions';
 
@@ -28,88 +27,6 @@ const ledgerLabels = (l: MonthLedger[]) => l.map((x) => `${MONTHS[x.m - 1]} ${St
 const yearly = (l: MonthLedger[], f: (x: MonthLedger) => number, n = 12) => l.slice(-n).reduce((a, x) => a + f(x), 0);
 
 // -------------------------------------------------------------------------------- Factories
-export function FactoriesView() {
-  const { g, p } = useGame();
-  const act = useStore((s) => s.act), ask = useStore((s) => s.ask);
-  const [build, setBuild] = useState(false);
-  const [nf, setNf] = useState({ name: '', country: p.country, capacity: 1000, automation: Math.min(0.3, maxAutomation(p)) });
-  const [lineFor, setLineFor] = useState<string | null>(null);
-  const [lineModel, setLineModel] = useState('');
-  const [lineUnits, setLineUnits] = useState(100);
-  const buildable = p.models.filter((m) => m.status === 'ready' || m.status === 'production');
-  const mAuto = maxAutomation(p);
-  const fac = p.factories.find((f) => f.id === lineFor);
-  const selModel = buildable.find((m) => m.id === lineModel) ?? buildable[0];
-  const free = fac ? Math.floor(fac.capacity * (1 - lineShareUsed(fac))) : 0;
-  return (
-    <>
-      <PageHead title="Factories" right={<button className="btn primary" onClick={() => setBuild(true)}>+ Build a factory</button>}>
-        Each plant has a monthly capacity shared between production lines. Tooling a line is a one-off investment; unit cost then falls with volume (supplier scale), cumulative output (learning curve) and automation, and rises with local wages.
-      </PageHead>
-      {p.factories.length === 0 && <div className="panel"><h3>No factory</h3><p className="dim">Build a plant to start production. A small craft workshop is enough for low-volume sports cars; volume cars need thousands of units a month to cover fixed costs.</p></div>}
-      {p.factories.map((f) => {
-        const used = lineShareUsed(f);
-        return (
-          <div key={f.id} className="panel col">
-            <div className="row between wrap">
-              <div><h3>{f.name}</h3><span className="small muted">{COUNTRY[f.country].name} · {REGION_NAME[f.region]} · since {f.builtYear}{f.disruption > 0 ? <span className="bad"> · output disrupted ({f.disruption} mo)</span> : null}</span></div>
-              <div className="row wrap">
-                {f.capacity > 0 && <button className="btn sm" disabled={!buildable.length} onClick={() => { setLineFor(f.id); setLineModel(buildable[0]?.id ?? ''); setLineUnits(Math.max(10, Math.min(200, Math.floor(f.capacity * (1 - used))))); }}>+ Production line</button>}
-                {f.capacity > 0 && !f.expansion && <button className="btn sm" onClick={() => act((gg) => expandFactory(gg, f.id, Math.round(f.capacity * 0.5)), 'Expansion ordered.')}>Expand +50% ({fmtMoney(factoryBuildCost(f.capacity * 0.5, f.automation, g.year) * 0.85)})</button>}
-                {f.capacity > 0 && f.automation < mAuto - 0.01 && <button className="btn sm" onClick={() => act((gg) => upgradeAutomation(gg, f.id, Math.min(mAuto, f.automation + 0.15)), 'Automation upgraded.')}>Automate +15% ({fmtMoney(automationCost(f.capacity, f.automation, Math.min(mAuto, f.automation + 0.15), g.year))})</button>}
-                <button className="btn sm danger" onClick={() => ask(`Sell ${f.name}?`, () => { act((gg) => sellFactory(gg, f.id)); })}>Sell</button>
-              </div>
-            </div>
-              {f.capacity > 0 && !f.expansion && <details className="small"><summary className="muted">Impact of expanding or automating (estimates)</summary>
-                <div className="grid g2"><div><b className="small">Expand +50%</b><ImpactPreview deps={[f.id, f.capacity, 'x']} horizon={18} run={(gg) => expandFactory(gg, f.id, Math.round(f.capacity * 0.5))} /></div>
-                  {f.automation < mAuto - 0.01 && <div><b className="small">Automate +15%</b><ImpactPreview deps={[f.id, f.automation, 'a']} horizon={12} run={(gg) => upgradeAutomation(gg, f.id, Math.min(mAuto, f.automation + 0.15))} /></div>}</div>
-              </details>}
-            <FactoryStages f={f} />
-            <div className="grid g4">
-              <Kpi label="Capacity" value={`${fmtNum(f.capacity)} / mo`} detail={f.expansion ? `+${fmtNum(f.expansion.add)} in ${f.expansion.monthsLeft} months` : undefined} />
-              <Kpi label="Allocated" value={`${Math.round(used * 100)}%`} detail={<Meter value={used * 100} />} />
-              <Kpi label="Automation" value={`${Math.round(f.automation * 100)}%`} detail={`max ${Math.round(mAuto * 100)}% with your technology`} />
-              <Kpi label="Fixed cost" value={`${fmtMoney(factoryFixedCost(f, g.year))} / mo`} />
-            </div>
-            {f.lines.length > 0 && <table><thead><tr><th>Line</th><th className="r">Capacity / mo</th><th className="r">Ramp-up</th><th>Output target</th><th className="r">Unit cost</th><th /></tr></thead><tbody>
-              {f.lines.map((l) => { const m = p.models.find((x) => x.id === l.modelId); if (!m) return null; const units = f.capacity * l.share; return (
-                <tr key={l.modelId}><td><b>{m.name}</b></td><td className="r">{fmtNum(units)}</td><td className="r">{Math.round(l.ramp * 100)}%</td>
-                  <td><Select value={l.target < 0 ? 'auto' : 'max'} options={[{ value: 'auto', label: 'Follow demand' }, { value: 'max', label: 'Full capacity' }]} onChange={(v) => act((gg) => setLineTarget(gg, f.id, m.id, v === 'auto' ? -1 : units))} /></td>
-                  <td className="r">{m.lastUnitCost ? fmtMoney(m.lastUnitCost) : '—'}</td><td className="r"><button className="btn sm ghost" onClick={() => act((gg) => removeLine(gg, f.id, m.id))}>Remove</button></td></tr>); })}
-            </tbody></table>}
-            {f.capacity <= 0 && <p className="warn">Under construction — production can start in {f.expansion?.monthsLeft} months.</p>}
-          </div>);
-      })}
-      {fac && selModel && (
-        <Modal onClose={() => setLineFor(null)}>
-          <h2>New production line at {fac.name}</h2>
-          <Select label="Model" value={selModel.id} options={buildable.map((m) => ({ value: m.id, label: `${m.name}${m.status === 'ready' ? ' (new)' : ''}` }))} onChange={setLineModel} />
-          <Slider label="Line capacity" value={Math.min(lineUnits, free)} min={1} max={Math.max(1, free)} onChange={setLineUnits} fmt={(v) => `${fmtNum(v)} cars / month`} />
-          <StatLine label="Free capacity in this plant" value={`${fmtNum(free)} / month`} />
-          <StatLine label="Tooling investment" value={fmtMoney(toolingCost(selModel, Math.min(lineUnits, free)))} />
-          <StatLine label="Last monthly demand for this model" value={selModel.lastDemand ? fmtNum(selModel.lastDemand) : 'not yet on sale'} />
-          <p className="small muted">The line ramps up from 30% to full rate over four months. Building in a region avoids its import tariff and cuts shipping costs.</p>
-          <div className="row end"><button className="btn" onClick={() => setLineFor(null)}>Cancel</button><button className="btn primary" disabled={free < 1} onClick={() => { if (act((gg) => addLine(gg, fac.id, selModel.id, Math.min(lineUnits, free)), 'Production line tooled.')) setLineFor(null); }}>Tool the line</button></div>
-        </Modal>
-      )}
-      {p.factories.length > 0 && <SupplyPanel />}
-      {build && (
-        <Modal onClose={() => setBuild(false)}>
-          <h2>Build a factory</h2>
-          <label className="field"><span className="lab"><span>Name</span></span><input type="text" value={nf.name} placeholder="optional" onChange={(e) => setNf({ ...nf, name: e.target.value })} /></label>
-          <Select label="Country" value={nf.country} options={COUNTRIES.map((c) => ({ value: c.id, label: `${c.name} — ${REGION_NAME[c.region]}, wage ≈ $${(c.wage2020 * 1).toFixed(0)}/h in 2020 terms` }))} onChange={(v) => setNf({ ...nf, country: v })} />
-          <Slider label="Capacity" value={nf.capacity} min={20} max={60000} step={nf.capacity < 500 ? 10 : nf.capacity < 5000 ? 100 : 1000} onChange={(v) => setNf({ ...nf, capacity: v })} fmt={(v) => `${fmtNum(v)} cars / month (${fmtNum(v * 12)} a year)`} />
-          <Slider label="Automation" value={Math.min(nf.automation, mAuto)} min={0} max={mAuto} step={0.05} onChange={(v) => setNf({ ...nf, automation: v })} fmt={(v) => `${Math.round(v * 100)}%`} hint="Automation cuts labour hours per car but raises investment and fixed costs." />
-          <StatLine label="Investment" value={<b>{fmtMoney(factoryBuildCost(nf.capacity, Math.min(nf.automation, mAuto), g.year))}</b>} />
-          <StatLine label="Construction time" value="15 months" />
-          <ImpactPreview deps={[nf.country, nf.capacity, nf.automation]} horizon={18} run={(gg) => buildFactory(gg, nf.name || 'New plant', nf.country, nf.capacity, Math.min(nf.automation, mAuto))} />
-          <div className="row end"><button className="btn" onClick={() => setBuild(false)}>Cancel</button><button className="btn primary" onClick={() => { if (act((gg) => buildFactory(gg, nf.name, nf.country, nf.capacity, Math.min(nf.automation, mAuto)), 'Construction started.')) setBuild(false); }}>Build</button></div>
-        </Modal>
-      )}
-    </>
-  );
-}
-
 // ----------------------------------------------------------------------------------- Market
 export function MarketView() {
   const { g, p } = useGame();

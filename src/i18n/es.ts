@@ -3,9 +3,10 @@ import type { MessageKey } from './en';
 
 import { pick } from './parts/pairs';
 import { STUDIO } from './parts/studio';
+import { FACTORY } from './parts/factory';
 
 export const es: Record<MessageKey, string> = {
-  ...pick(STUDIO, 1),
+  ...pick(STUDIO, 1), ...pick(FACTORY, 1),
   // ---- común
   'common.close': 'Cerrar', 'common.done': 'Listo', 'common.open': 'Abrir', 'common.loading': 'Cargando…',
   'mode.ceo': 'CEO histórico', 'mode.founder': 'Fundador de marca', 'mode.motorsport': 'Director de motorsport',
@@ -65,7 +66,7 @@ export const es: Record<MessageKey, string> = {
   'top.save': 'Guardar partida', 'top.saved': 'Partida guardada.', 'top.menu': 'Menú principal', 'top.raceWeekend': 'Fin de semana de carrera: {name}',
   'top.plus3': '+3 meses', 'top.plus3.hint': 'Avanzar tres meses (se detiene en las decisiones)', 'top.next': 'Mes siguiente', 'top.next.hint': 'Avanzar un mes (barra espaciadora)', 'top.working': 'Procesando…',
   'decision.required': 'Decisión necesaria', 'over.title': 'Tu mandato ha terminado', 'over.led': 'Dirigiste {name} de {from} a {to}.', 'over.books': 'Revisar las cuentas',
-  'stage.body': 'Taller de carrocería', 'stage.paint': 'Taller de pintura', 'stage.powertrain': 'Tren motriz', 'stage.assembly': 'Montaje final', 'stage.inspection': 'Inspección de calidad',
+  'stage.body': 'Carrocería', 'stage.paint': 'Pintura', 'stage.powertrain': 'Tren motriz', 'stage.assembly': 'Montaje final', 'stage.inspection': 'Inspección',
 
   // ---- panel
   'dash.eyebrow': 'Centro de mando', 'dash.founded': 'Fundada en {year} en {country}.',

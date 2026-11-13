@@ -22,6 +22,8 @@ const ES: Record<string, string> = {
   // platform classes and engine bays
   'Car (hatch, saloon, estate, coupé, crossover)': 'Turismo (compacto, berlina, familiar, cupé, crossover)', 'Sports (coupé, roadster, supercar)': 'Deportivo (cupé, roadster, superdeportivo)', 'Body-on-frame (pickup, SUV)': 'Chasis independiente (pickup, SUV)',
   'up to four cylinders': 'hasta cuatro cilindros', 'up to a V6 / flat-six': 'hasta un V6 / bóxer 6', 'any engine': 'cualquier motor',
+  // component categories
+  'Steel and aluminium': 'Acero y aluminio', 'Electronics and wiring': 'Electrónica y cableado', Semiconductors: 'Semiconductores', 'Batteries (traction)': 'Baterías (tracción)', Tyres: 'Neumáticos', Transmissions: 'Cajas de cambio', Seats: 'Asientos', Glass: 'Vidrio', 'Interior materials': 'Materiales de interior',
   // production stages, plant and supply vocabulary
   'Body shop': 'Carrocería', 'Paint shop': 'Pintura', 'Powertrain shop': 'Motores', 'Final assembly': 'Montaje final', Inspection: 'Inspección',
 };

@@ -2,9 +2,10 @@
 // Placeholders look like {name}; plural pairs end in .one / .other.
 import { pick } from './parts/pairs';
 import { STUDIO } from './parts/studio';
+import { FACTORY } from './parts/factory';
 
 export const en = {
-  ...pick(STUDIO, 0),
+  ...pick(STUDIO, 0), ...pick(FACTORY, 0),
   // ---- common
   'common.close': 'Close', 'common.done': 'Done', 'common.open': 'Open', 'common.loading': 'Loading…',
   'mode.ceo': 'Historical CEO', 'mode.founder': 'Company Founder', 'mode.motorsport': 'Motorsport Director',
