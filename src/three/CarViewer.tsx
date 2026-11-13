@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, MeshReflectorMaterial, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { useT, type MessageKey } from '../i18n';
 import { QUALITY_NAME, setQuality, useQuality, type Quality, type QualitySettings } from './quality';
 import { reportWebglFailure } from './hardware';
 
@@ -271,7 +272,7 @@ export function CarViewer({ children, autoRotate = true, height, distance = 7.2,
   const cam: [number, number, number] = [target[0] + Math.cos(el) * Math.cos(az) * distance, target[1] + Math.sin(el) * distance, target[2] + Math.cos(el) * Math.sin(az) * distance];
   return (
     <div ref={wrap} className={'cv' + (full ? ' full' : '')} style={{ height: full ? '100%' : height ?? '100%' }}>
-      <Canvas key={quality} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); reportWebglFailure(); })} shadows={Q.shadows === 'soft' ? { type: THREE.PCFShadowMap } : false} dpr={Q.dpr} camera={{ position: cam, fov: 30, near: 0.1, far: 80 }}
+      <Canvas key={quality} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); if (gl.domElement.isConnected) reportWebglFailure(); /* a canvas that was unmounted loses its context on purpose */ })} shadows={Q.shadows === 'soft' ? { type: THREE.PCFShadowMap } : false} dpr={Q.dpr} camera={{ position: cam, fov: 30, near: 0.1, far: 80 }}
         gl={{ antialias: Q.antialias, preserveDrawingBuffer: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1.0, outputColorSpace: THREE.SRGBColorSpace, powerPreference: 'high-performance' }}>
         <color attach="background" args={['#0e1013']} />
         <fog attach="fog" args={['#0e1013', 14, 26]} />
@@ -295,22 +296,23 @@ function Toolbar({ quality, rotate, setRotate, go, dist, full, onFull, onBench, 
   quality: Quality; Q: QualitySettings; rotate: boolean; setRotate: (v: boolean) => void; go: (v: ViewName | null, d?: number) => void; dist: number;
   full: boolean; onFull: () => void; onBench: () => void; benching: boolean; result: BenchResult | null;
 }) {
+  const { t } = useT();
   return (
     <>
-      <div className="vtool views" role="toolbar" aria-label="Camera views">
-        {(Object.keys(VIEWS) as ViewName[]).map((k) => <button key={k} className="vbtn" onClick={() => go(k)}>{VIEWS[k].label}</button>)}
+      <div className="vtool views" role="toolbar" aria-label={t('viewer.views')}>
+        {(Object.keys(VIEWS) as ViewName[]).map((k) => <button key={k} className="vbtn" data-camera={k} onClick={() => go(k)}>{t(`viewer.view.${k}` as MessageKey)}</button>)}
       </div>
-      <div className="vtool right" role="toolbar" aria-label="Viewer controls">
-        <button className="vbtn" aria-label="Zoom in" title="Zoom in" onClick={() => go(null, Math.max(2.6, dist * 0.82))}>+</button>
-        <button className="vbtn" aria-label="Zoom out" title="Zoom out" onClick={() => go(null, Math.min(16, dist / 0.82))}>−</button>
-        <button className={'vbtn' + (rotate ? ' on' : '')} title="Turntable rotation" onClick={() => setRotate(!rotate)}>⟳</button>
-        <button className="vbtn" title={full ? 'Exit full screen' : 'Full screen inspection'} onClick={onFull}>{full ? '⤡' : '⤢'}</button>
-        <select className="vsel" aria-label="Graphics quality" value={quality} onChange={(e) => setQuality(e.target.value as Quality)}>
-          {(Object.keys(QUALITY_NAME) as Quality[]).map((q) => <option key={q} value={q}>{QUALITY_NAME[q]} quality</option>)}
+      <div className="vtool right" role="toolbar" aria-label={t('viewer.controls')}>
+        <button className="vbtn" aria-label={t('viewer.zoomIn')} title={t('viewer.zoomIn')} onClick={() => go(null, Math.max(2.6, dist * 0.82))}>+</button>
+        <button className="vbtn" aria-label={t('viewer.zoomOut')} title={t('viewer.zoomOut')} onClick={() => go(null, Math.min(16, dist / 0.82))}>−</button>
+        <button className={'vbtn' + (rotate ? ' on' : '')} aria-label={t('viewer.rotate')} aria-pressed={rotate} title={t('viewer.rotate')} onClick={() => setRotate(!rotate)}>⟳</button>
+        <button className="vbtn" aria-label={full ? t('viewer.exitFull') : t('viewer.full')} title={full ? t('viewer.exitFull') : t('viewer.full')} onClick={onFull}>{full ? '⤡' : '⤢'}</button>
+        <select className="vsel" aria-label={t('viewer.quality')} title={t('viewer.quality')} value={quality} onChange={(e) => setQuality(e.target.value as Quality)}>
+          {(Object.keys(QUALITY_NAME) as Quality[]).map((q) => <option key={q} value={q}>{t(`gfx.${q}` as MessageKey)}</option>)}
         </select>
-        <button className="vbtn" title="Measure frame rate for 5 seconds" disabled={benching} onClick={onBench}>{benching ? 'Measuring…' : 'FPS test'}</button>
+        <button className="vbtn" title={t('viewer.fpsHint')} disabled={benching} onClick={onBench}>{benching ? t('viewer.measuring') : t('viewer.fps')}</button>
       </div>
-      {result && <div className="vbench" role="status">{result.avgFps.toFixed(0)} FPS avg · p95 {result.p95Ms.toFixed(1)} ms · {result.drawCalls} draw calls · {(result.triangles / 1000).toFixed(0)}k triangles · {result.width}×{result.height} @{result.dpr}x · {QUALITY_NAME[result.quality]}</div>}
+      {result && <div className="vbench" role="status">{result.avgFps.toFixed(0)} FPS · p95 {result.p95Ms.toFixed(1)} ms · {result.drawCalls} draw calls · {(result.triangles / 1000).toFixed(0)}k tris · {result.width}×{result.height} @{result.dpr}x · {t(`gfx.${result.quality}` as MessageKey)}</div>}
     </>
   );
 }

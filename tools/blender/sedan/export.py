@@ -125,10 +125,25 @@ def _joined(name, objs, lod):
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
     j.name = j.data.name = f"{name}_mesh"
     if lod > 0 and len(j.data.polygons) > 300:
+        # keep the full-detail surface as the shading reference before reducing it
+        src = j.copy()
+        src.data = j.data.copy()
+        src.name = f"{name}_normal_source"
+        bpy.context.scene.collection.objects.link(src)
         m = j.modifiers.new("Dec", "DECIMATE")
         m.ratio = DECIMATE[lod].get(name, DECIMATE[lod]["_"])
         m.use_collapse_triangulate = True
         U.apply_modifiers(j)
+        # Collapsing edges leaves long, uneven triangles; with normals recomputed from them a smooth panel shades
+        # as if it were creased (streaks along the shut lines). Each corner of the reduced mesh therefore takes its
+        # normal from the nearest point of the full-detail surface: fewer triangles, the same shading.
+        nt = j.modifiers.new("Normals", "DATA_TRANSFER")
+        nt.object = src
+        nt.use_loop_data = True
+        nt.data_types_loops = {"CUSTOM_NORMAL"}
+        nt.loop_mapping = "POLYINTERP_NEAREST"
+        U.apply_modifiers(j)
+        bpy.data.objects.remove(src)
     return j
 
 

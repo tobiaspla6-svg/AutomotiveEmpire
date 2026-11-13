@@ -30,8 +30,7 @@ export function ShowroomViewer({ scene }: { scene: ShowroomScene }) {
   return (
     <CarViewer distance={9.4} autoRotate target={[0, 0.5, 0]}>
       {scene === 'ceo' && <RoadCar spec={classic} />}
-      {/* one car on screen: always the full-detail model (the reduced levels of detail are for crowds of cars) */}
-      {scene === 'founder' && <VehicleView plan={plan} spec={modern} lodOverride={0} />}
+      {scene === 'founder' && <VehicleView plan={plan} spec={modern} />}
       {scene === 'motorsport' && <RaceCar discipline="f1" year={2024} color="#c9a35c" color2="#14161b" wing={0.6} />}
     </CarViewer>
   );
