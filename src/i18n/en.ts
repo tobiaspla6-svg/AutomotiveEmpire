@@ -1,6 +1,10 @@
 // English interface text. This file defines the message keys; es.ts must provide every one of them.
 // Placeholders look like {name}; plural pairs end in .one / .other.
+import { pick } from './parts/pairs';
+import { STUDIO } from './parts/studio';
+
 export const en = {
+  ...pick(STUDIO, 0),
   // ---- common
   'common.close': 'Close', 'common.done': 'Done', 'common.open': 'Open', 'common.loading': 'Loading…',
   'mode.ceo': 'Historical CEO', 'mode.founder': 'Company Founder', 'mode.motorsport': 'Motorsport Director',

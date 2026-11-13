@@ -9,8 +9,6 @@
 .card b { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- designer */
-.designer { display: grid; grid-template-columns: 330px minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
-@media (max-width: 1250px) { .designer { grid-template-columns: 300px minmax(0, 1fr); } .designer > .stats { grid-column: 1 / -1; } }
 .viewer { height: 400px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 35%, #2b2f36 0%, #131519 70%); position: relative; }
 .viewer .overlay { position: absolute; left: 12px; top: 10px; pointer-events: none; font-size: 12px; color: var(--ink2); text-shadow: 0 1px 2px #000; }
 .viewer .hint { position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: var(--ink3); pointer-events: none; }
@@ -58,7 +56,7 @@
   .g2, .g3, .g4 { grid-template-columns: minmax(0, 1fr); }
   .grid[style] { grid-template-columns: minmax(0, 1fr) !important; }
   .setup { grid-template-columns: minmax(0, 1fr); height: auto; } .setup > .left { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px 16px; } .setup > .right { padding: 18px 16px; }
-  .designer { grid-template-columns: minmax(0, 1fr); } .viewer { height: 280px; }
+  .viewer { height: 280px; }
   .race { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 44vh auto auto; height: auto; min-height: 100%; }
   .race .bar { padding: 8px 16px; } .race .stage { grid-row: 2; height: 44vh; } .race .tower { border-right: 0; max-height: 240px; } .race .side { border-left: 0; padding: 12px 16px; }
   .trow { padding: 3px 16px; } .race .stage .mini { width: 120px; height: 96px; }

@@ -96,7 +96,7 @@ export function LineChart(p: { series: Series[]; labels: string[]; height?: numb
 }
 
 /** Horizontal bars for a part-to-whole breakdown; values are direct-labelled. */
-export function BarList(p: { items: { label: string; value: number; color?: string }[]; fmt?: (v: number) => string; total?: boolean }) {
+export function BarList(p: { items: { label: string; value: number; color?: string }[]; fmt?: (v: number) => string; total?: boolean; totalLabel?: string }) {
   const max = Math.max(1e-9, ...p.items.map((i) => Math.abs(i.value)));
   const sum = p.items.reduce((a, i) => a + i.value, 0);
   const fmt = p.fmt ?? ((v: number) => String(Math.round(v)));
@@ -109,7 +109,7 @@ export function BarList(p: { items: { label: string; value: number; color?: stri
           <span className="num" style={{ textAlign: 'right' }}>{fmt(it.value)}</span>
         </div>
       ))}
-      {p.total && <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 76px', gap: 8, fontSize: 12.5, borderTop: '1px solid var(--line)', paddingTop: 5 }}><b>Total</b><span /><b className="num" style={{ textAlign: 'right' }}>{fmt(sum)}</b></div>}
+      {p.total && <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr 76px', gap: 8, fontSize: 12.5, borderTop: '1px solid var(--line)', paddingTop: 5 }}><b>{p.totalLabel ?? 'Total'}</b><span /><b className="num" style={{ textAlign: 'right' }}>{fmt(sum)}</b></div>}
     </div>
   );
 }

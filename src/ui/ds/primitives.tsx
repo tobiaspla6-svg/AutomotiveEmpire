@@ -100,7 +100,7 @@ export const HBar = memo(function HBar({ label, value, max = 1, color = 'var(--s
 export function Tabs<T extends string>({ value, options, onChange, label }: { value: T; options: { id: T; label: ReactNode }[]; onChange: (v: T) => void; label: string }) {
   return (
     <div className="tabs" role="tablist" aria-label={label}>
-      {options.map((o) => <button key={o.id} type="button" role="tab" aria-selected={o.id === value} className={'tab' + (o.id === value ? ' on' : '')} onClick={() => onChange(o.id)}>{o.label}</button>)}
+      {options.map((o) => <button key={o.id} type="button" role="tab" data-tab={o.id} aria-selected={o.id === value} className={'tab' + (o.id === value ? ' on' : '')} onClick={() => onChange(o.id)}>{o.label}</button>)}
     </div>
   );
 }

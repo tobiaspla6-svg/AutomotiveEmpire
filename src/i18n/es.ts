@@ -1,7 +1,11 @@
 // Texto de la interfaz en español. Debe incluir todas las claves de en.ts (el compilador lo exige).
 import type { MessageKey } from './en';
 
+import { pick } from './parts/pairs';
+import { STUDIO } from './parts/studio';
+
 export const es: Record<MessageKey, string> = {
+  ...pick(STUDIO, 1),
   // ---- común
   'common.close': 'Cerrar', 'common.done': 'Listo', 'common.open': 'Abrir', 'common.loading': 'Cargando…',
   'mode.ceo': 'CEO histórico', 'mode.founder': 'Fundador de marca', 'mode.motorsport': 'Director de motorsport',

@@ -59,10 +59,10 @@ export function Shell() {
           <SettingsButton />
           <button className="iconbtn" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
         </div>
-        {race ? <button className="btn primary" onClick={() => go('race')}><Icon name="flag" size={16} />{t('top.raceWeekend', { name: race.name })}</button>
+        {race ? <button className="btn primary" data-action="race-weekend" onClick={() => go('race')}><Icon name="flag" size={16} />{t('top.raceWeekend', { name: race.name })}</button>
           : <div className="row" style={{ gap: 8 }}>
             <button className="btn" disabled={busy || !!g.gameOver} onClick={() => advance(3)} title={t('top.plus3.hint')}><Icon name="fast" size={15} />{t('top.plus3')}</button>
-            <button className="btn primary" disabled={busy || !!g.gameOver} onClick={() => advance(1)} title={t('top.next.hint')}>{busy ? t('top.working') : t('top.next')}<Icon name="play" size={14} /></button>
+            <button className="btn primary" data-action="next-month" disabled={busy || !!g.gameOver} onClick={() => advance(1)} title={t('top.next.hint')}>{busy ? t('top.working') : t('top.next')}<Icon name="play" size={14} /></button>
           </div>}
       </header>
 
@@ -71,7 +71,7 @@ export function Shell() {
           <div key={grp.id} className="nav-group">
             <span className="nav-eyebrow">{t(grp.id)}</span>
             {grp.items.map((it) => (
-              <button key={it.id} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
+              <button key={it.id} data-view={it.id} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
                 <Icon name={it.icon} size={18} /><span className="nav-label">{t(it.label)}</span>{it.dot && <i className="dot" title={t('nav.attention')} />}
               </button>
             ))}

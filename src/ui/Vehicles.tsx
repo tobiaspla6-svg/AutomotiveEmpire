@@ -1,74 +1,80 @@
+// The vehicle range (Phase 4C): the selected model on the 3D stage with its engineering and pricing summary, then
+// the whole range as a comparison table. Designing or redesigning a car opens the engineering studio (Studio.tsx).
 import { useMemo, useState } from 'react';
-import type { BodyType, EngineLayout, PaintFinish, SegmentId, VehicleModel, VehicleSpec, WheelStyle } from '../sim/types';
+import type { VehicleModel, VehicleSpec } from '../sim/types';
 import { useGame, useStore } from '../store/game';
-import { BODY, CYL, LAYOUT_NAME, SCORE_KEYS, computeVehicle, defaultVehicle, suggestFinalDrive } from '../sim/engineering';
-import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
-import { SEG, SEGMENTS, segPrice } from '../data/world';
-import { cancelDevelopment, retireModel, setPrice, startDevelopment, validateSpec } from '../sim/actions';
-import { devEngineersNeeded, estimateUnitCost, makeModel } from '../sim/company';
-import { annualSupply, computeMarket, suggestSegment } from '../sim/market';
+import { useT, type MessageKey } from '../i18n';
+import { useTerm } from '../i18n/terms';
+import { money, num } from '../i18n/format';
+import { BODY, LAYOUT_NAME, SCORE_KEYS, defaultVehicle } from '../sim/engineering';
+import { SEG, REGION_IDS } from '../data/world';
+import { cancelDevelopment, retireModel, setPrice } from '../sim/actions';
+import { devEngineersNeeded, estimateUnitCost } from '../sim/company';
+import { annualSupply, computeMarket } from '../sim/market';
 import { DEALER_NET, TYPICAL_VOLUME, contributionAt, demandCurve, priceGuide } from '../sim/pricing';
-import { BAY_NAME, CLASS_NAME, defaultChoice, enginesOf, familyEngine, familyOf, familyUsers, findVariant, planDevelopment, platformOf, platformsOf, platformUsers, type EngineChoice, type PlatformChoice } from '../sim/families';
+import { familyOf, familyUsers, platformOf, platformUsers } from '../sim/families';
+import { trimsOf } from '../sim/trims';
+import { renderDescriptor } from '../sim/render';
 import { EngineeringPanel } from './Engineering';
 import { TrimsPanel } from './Trims';
 import { RegionalPricing } from './Regional';
-import { fmtMoney, fmtNum } from '../sim/util';
-import { BarList, LineChart, PageHead, ScoreBar, Seg, Select, Slider, StatLine, Tag } from './common';
+import { PageHead, ScoreBar, StatLine, Tag } from './common';
+import { Icon } from './ds/icons';
+import { EmptyState, Panel } from './ds/primitives';
+import { PriceLadder, SpecTile, Studio } from './Studio';
 import { VehicleStage } from './VehicleStage';
-import { trimsOf } from '../sim/trims';
-import { renderDescriptor, specDescriptor } from '../sim/render';
-import { FINISH_NAME } from '../three/assets/looks';
-import { REGION_IDS } from '../data/world';
 
-const STATUS: Record<VehicleModel['status'], string> = { design: 'Design', development: 'In development', ready: 'Ready — needs a production line', production: 'In production', retired: 'Retired' };
-const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+const k = (s: string) => s as MessageKey;
 
 export function VehiclesView() {
   const { g, p } = useGame();
+  const { t, lang } = useT();
+  const term = useTerm();
   const act = useStore((s) => s.act), ask = useStore((s) => s.ask);
   const [editing, setEditing] = useState<{ spec: VehicleSpec; basedOn?: string; name: string } | null>(null);
   const [inspect, setInspect] = useState<string | null>(null);
-  if (editing) return <Designer init={editing.spec} basedOn={editing.basedOn} initName={editing.name} onClose={() => setEditing(null)} />;
+  if (editing) return <Studio init={editing.spec} basedOn={editing.basedOn} initName={editing.name} onClose={() => setEditing(null)} />;
   const models = p.models.filter((m) => m.status !== 'retired');
   const shown = models.find((m) => m.id === inspect) ?? models[0];
+  const open = () => setEditing({ spec: { ...defaultVehicle(g.year), color: p.color }, name: '' });
   return (
     <>
-      <PageHead title="Vehicles" right={<button className="btn primary" onClick={() => setEditing({ spec: { ...defaultVehicle(g.year), color: p.color }, name: '' })}>+ Design a new vehicle</button>}>
-        Engineer cars from the cylinder bore up, develop them, and manage the range. Redesigning an existing model as a new generation re-uses its platform and engine where they are unchanged.
-      </PageHead>
-      {models.length === 0 && <div className="panel"><h3>No vehicles yet</h3><p className="dim">Open the design studio to engineer your first car. You have {p.engineers} engineers; technology level is about {Math.round((p.tech.engine + p.tech.chassis) / 2)}.</p></div>}
+      <PageHead title={t('veh.title')} right={<button className="btn primary" data-action="new-vehicle" onClick={open}><Icon name="wrench" size={16} />{t('veh.new')}</button>}>{t('veh.sub')}</PageHead>
+      {models.length === 0 && <div className="panel"><EmptyState icon="vehicle" title={t('veh.none.title')}>{t('veh.none.body', { engineers: p.engineers, tech: Math.round((p.tech.engine + p.tech.chassis) / 2) })}</EmptyState></div>}
       {shown && (
-        <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)' }}>
+        <div className="range-hero">
           <ModelStage m={shown} />
           <ModelCard m={shown} />
         </div>
       )}
+      {models.length > 0 && (
+        <Panel eyebrow={t('veh.range')} title={t('veh.range.sub')} pad={false} className="range-table">
+          <div className="tablewrap" style={{ maxHeight: 460 }}><table>
+            <thead><tr><th>{t('veh.col.model')}</th><th>{t('veh.col.status')}</th><th>{t('veh.col.segment')}</th><th className="r">{t('veh.col.power')}</th><th className="r">0–100</th><th className="r">{t('veh.col.cost')}</th><th className="r">{t('veh.col.price')}</th><th className="r">{t('veh.col.sold')}</th><th className="r">{t('veh.col.demand')}</th><th className="r">{t('veh.col.stock')}</th><th /></tr></thead>
+            <tbody>{models.map((m) => {
+              const sold = REGION_IDS.reduce((a, r) => a + m.lastSales[r], 0);
+              const cost = m.lastUnitCost || estimateUnitCost(g, p, m);
+              return (
+                <tr key={m.id} data-model={m.id} className={'click' + (shown?.id === m.id ? ' me' : '')} onClick={() => setInspect(m.id)}>
+                  <td><b>{m.name}</b>{m.historical && <> <Tag kind="h" title={t('veh.histHint')}>{t('veh.hist')}</Tag></>}<div className="tiny muted">{t('veh.gen', { n: m.generation, year: m.designYear })}{m.launchYear ? ` · ${t('veh.onSale', { year: m.launchYear })}` : ''}</div></td>
+                  <td>{m.status === 'development' ? <span className="warn">{t('veh.devLeft', { n: Math.ceil(m.devMonthsLeft) })}</span> : m.status === 'ready' ? <span className="accent">{t('veh.status.ready')}</span> : t(k(`veh.status.${m.status}`))}</td>
+                  <td>{term(SEG[m.segment].name)}</td>
+                  <td className="r">{Math.round(m.stats.powerKw)} kW</td><td className="r">{m.stats.zeroTo100.toFixed(1)} s</td>
+                  <td className="r">{money(cost, lang)}</td>
+                  <td className="r" onClick={(e) => e.stopPropagation()}>{m.status === 'development' ? '—' : <PriceInput price={m.price} label={t('veh.priceOf', { name: m.name })} onCommit={(v) => act((gg) => setPrice(gg, m.id, v))} />}</td>
+                  <td className="r">{num(sold, lang)}</td><td className="r">{num(m.lastDemand, lang)}</td><td className="r">{num(m.inventory, lang)}</td>
+                  <td className="r" onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+                    {m.status === 'development' ? <button className="btn sm danger" onClick={() => ask(t('veh.confirmCancel', { name: m.name, spent: money(m.devCostPaid, lang) }), () => { act((gg) => cancelDevelopment(gg, m.id), t('veh.cancelled')); })}>{t('veh.cancel')}</button> : <>
+                      <button className="btn sm" onClick={() => setEditing({ spec: JSON.parse(JSON.stringify(m.spec)), basedOn: m.id, name: nextName(m.name) })}>{t('veh.newGen')}</button>{' '}
+                      <button className="btn sm ghost" onClick={() => ask(t('veh.confirmRetire', { name: m.name }), () => { act((gg) => retireModel(gg, m.id)); })}>{t('veh.retire')}</button></>}
+                  </td>
+                </tr>);
+            })}</tbody>
+          </table></div>
+        </Panel>
+      )}
       {shown && <TrimsPanel m={shown} />}
       {shown && <RegionalPricing m={shown} />}
-      {models.length > 0 && (
-        <div className="panel flush"><div className="tablewrap" style={{ maxHeight: 460 }}><table>
-          <thead><tr><th>Model</th><th>Status</th><th>Segment</th><th className="r">Power</th><th className="r">0–100</th><th className="r">Unit cost</th><th className="r">Price</th><th className="r">Sold / mo</th><th className="r">Demand</th><th className="r">Stock</th><th /></tr></thead>
-          <tbody>{models.map((m) => {
-            const sold = REGION_IDS.reduce((a, r) => a + m.lastSales[r], 0);
-            const cost = m.lastUnitCost || estimateUnitCost(g, p, m);
-            return (
-              <tr key={m.id} className={'click' + (shown?.id === m.id ? ' me' : '')} onClick={() => setInspect(m.id)}>
-                <td><b>{m.name}</b>{m.historical && <> <Tag kind="h" title="Real model name, years and engine layout; all other details estimated">hist.</Tag></>}<div className="tiny muted">Gen {m.generation} · designed {m.designYear}{m.launchYear ? ` · on sale since ${m.launchYear}` : ''}</div></td>
-                <td>{m.status === 'development' ? <span className="warn">Development · {Math.ceil(m.devMonthsLeft)} mo left</span> : m.status === 'ready' ? <span className="accent">{STATUS.ready}</span> : STATUS[m.status]}</td>
-                <td>{SEG[m.segment].name}</td>
-                <td className="r">{Math.round(m.stats.powerKw)} kW</td><td className="r">{m.stats.zeroTo100.toFixed(1)} s</td>
-                <td className="r">{fmtMoney(cost)}</td>
-                <td className="r" onClick={(e) => e.stopPropagation()}>{m.status === 'development' ? '—' : <PriceInput price={m.price} label={`Price of ${m.name}`} onCommit={(v) => act((gg) => setPrice(gg, m.id, v))} />}</td>
-                <td className="r">{fmtNum(sold)}</td><td className="r">{fmtNum(m.lastDemand)}</td><td className="r">{fmtNum(m.inventory)}</td>
-                <td className="r" onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
-                  {m.status === 'development' ? <button className="btn sm danger" onClick={() => act((gg) => cancelDevelopment(gg, m.id), 'Programme cancelled.')}>Cancel</button> : <>
-                    <button className="btn sm" onClick={() => setEditing({ spec: JSON.parse(JSON.stringify(m.spec)), basedOn: m.id, name: nextName(m.name) })}>New generation</button>{' '}
-                    <button className="btn sm ghost" onClick={() => ask(`Retire the ${m.name}? Its production lines will be freed.`, () => { act((gg) => retireModel(gg, m.id)); })}>Retire</button></>}
-                </td>
-              </tr>);
-          })}</tbody>
-        </table></div></div>
-      )}
       <EngineeringPanel />
     </>
   );
@@ -85,23 +91,27 @@ const nextName = (n: string) => { const m = n.match(/^(.*?)(?: Mk ?(\d+))?$/); r
 /** The selected model in the studio viewer, with a choice of version when it has trims. */
 function ModelStage({ m }: { m: VehicleModel }) {
   const { g, p } = useGame();
+  const { t } = useT();
+  const term = useTerm();
   const [trimId, setTrimId] = useState<string>('');
   const trims = trimsOf(m);
-  const trim = trims.find((t) => t.id === trimId);
+  const trim = trims.find((x) => x.id === trimId);
   const spec = trim?.spec ?? m.spec;
   return (
-    <VehicleStage desc={renderDescriptor(p, m, trim)} spec={spec} year={g.year} height={360}
-      title={<><b>{m.name}</b>{trim ? ` ${trim.name}` : ''} · {BODY[spec.body].name} · {SEG[m.segment].name}</>}
-      extra={trims.length > 0 && <div className="row" style={{ gap: 6, marginTop: 4 }}><span className="tiny muted">Show version</span>
-        <select aria-label="Version shown in 3D" value={trimId} onChange={(e) => setTrimId(e.target.value)}>
-          <option value="">Model (base specification)</option>
-          {trims.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+    <VehicleStage desc={renderDescriptor(p, m, trim)} spec={spec} year={g.year} height="clamp(320px, 44vh, 500px)"
+      title={<><b>{m.name}</b>{trim ? ` ${trim.name}` : ''} · {term(BODY[spec.body].name)} · {term(SEG[m.segment].name)}</>}
+      extra={trims.length > 0 && <div className="row" style={{ gap: 6, marginTop: 4 }}><span className="tiny muted">{t('veh.showVersion')}</span>
+        <select aria-label={t('veh.versionAria')} value={trimId} onChange={(e) => setTrimId(e.target.value)}>
+          <option value="">{t('veh.baseSpec')}</option>
+          {trims.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
         </select></div>} />
   );
 }
 
 function ModelCard({ m }: { m: VehicleModel }) {
   const { g, p } = useGame();
+  const { t, lang } = useT();
+  const term = useTerm();
   const s = m.stats;
   const act = useStore((st) => st.act);
   const cost = m.lastUnitCost || estimateUnitCost(g, p, m);
@@ -115,272 +125,42 @@ function ModelCard({ m }: { m: VehicleModel }) {
   const curve = useMemo(() => demandCurve(g, p, m, vol, mk), [mk, m.id, vol]);
   const at = (price: number) => { const d = Math.min(curve(price), vol); return { d, profit: contributionAt(price, guide.unitCost) * d }; };
   const now = at(m.price), rec = at(guide.recommended);
+  const m$ = (v: number) => money(v, lang);
+  const f = familyOf(p, m), pl = platformOf(p, m), v = f?.variants.find((x) => x.id === m.engineVariantId);
+  const cars = (n: number) => t(n === 1 ? 'st.cars.one' : 'st.cars.other', { n });
   return (
-    <div className="panel col" style={{ gap: 8 }}>
-      <div className="row between"><h3>{m.name}</h3><span className="muted small">{STATUS[m.status]}</span></div>
-      <div className="grid g2" style={{ gap: 4 }}>
-        <StatLine label="Engine" value={m.spec.engine.layout === 'EV' ? `Electric, ${m.spec.engine.batteryKwh} kWh` : `${LAYOUT_NAME[m.spec.engine.layout]} ${(m.spec.engine.displacement / 1000).toFixed(1)} L`} />
-        {(() => { const f = familyOf(p, m), pl = platformOf(p, m), v = f?.variants.find((x) => x.id === m.engineVariantId); return <>
-          <StatLine label="Engine family" value={f ? `${f.name}${v ? ` · ${v.name}` : ''} (${familyUsers(p, f.id).length} car${familyUsers(p, f.id).length > 1 ? 's' : ''})` : '—'} title="Cars sharing an engine family buy its parts together and share its faults and its maturity." />
-          <StatLine label="Platform" value={pl ? `${pl.name} (${platformUsers(p, pl.id).length} car${platformUsers(p, pl.id).length > 1 ? 's' : ''})` : '—'} />
-        </>; })()}
-        <StatLine label="Power / torque" value={`${Math.round(s.powerKw)} kW / ${Math.round(s.torqueNm)} Nm`} />
-        <StatLine label="Mass" value={`${Math.round(s.mass)} kg`} /><StatLine label="Top speed" value={`${Math.round(s.topSpeed)} km/h`} />
-        <StatLine label={s.engine.isEV ? 'Consumption' : 'Fuel (combined)'} value={s.engine.isEV ? `${s.fuelCombined.toFixed(1)} kWh/100 km` : `${s.fuelCombined.toFixed(1)} L/100 km`} />
-        <StatLine label="Unit cost" value={fmtMoney(cost)} /><StatLine label="Contribution per car (after dealer)" value={<span className={margin < 0 ? 'bad' : 'good'}>{fmtMoney(margin)}{m.price > 0 ? ` · ${Math.round((margin / (m.price * DEALER_NET)) * 100)}%` : ''}</span>} />
+    <div className="panel col range-card" style={{ gap: 12 }}>
+      <div className="row between"><div className="col" style={{ gap: 0 }}><span className="eyebrow">{term(SEG[m.segment].name)}</span><h3>{m.name}</h3></div><span className={'status-chip ' + m.status}>{t(k(`veh.status.${m.status}`))}</span></div>
+      <div className="spec-tiles four">
+        <SpecTile label={t('st.power')} value={Math.round(s.powerKw)} unit="kW" />
+        <SpecTile label="0–100" value={s.zeroTo100.toFixed(1)} unit="s" />
+        <SpecTile label={t('st.topSpeed')} value={Math.round(s.topSpeed)} unit="km/h" />
+        <SpecTile label={t('st.kerbMass')} value={Math.round(s.mass)} unit="kg" />
       </div>
-      {onSale && <div className="col" style={{ gap: 3 }}>
-        <h4>Pricing at {fmtNum(vol)} cars / month <span className="muted tiny">(estimates from today's market)</span></h4>
-        <div className="grid g2" style={{ gap: 4 }}>
-          <StatLine label="Your price" value={<b>{fmtMoney(m.price)}</b>} /><StatLine label="Recommended retail price" value={<b>{fmtMoney(guide.recommended)}</b>} title="The price that earns the most contribution at this volume, given the demand curve and your competitors' current prices." />
-          <StatLine label="Worth to buyers" value={fmtMoney(guide.value)} title="What buyers of this segment consider a fair price for this car from your brand, including any scarcity premium. Above it, demand falls away quickly." /><StatLine label="Break-even price" value={<span className={m.price < guide.breakEven ? 'bad' : ''}>{fmtMoney(guide.breakEven)}</span>} title={`Unit cost plus ${fmtMoney(guide.devPerCar)} development and ${fmtMoney(guide.toolingPerCar)} tooling per car over ${fmtNum(guide.lifeUnits)} cars, after the dealer's ${Math.round((1 - DEALER_NET) * 100)}% margin.`} />
-          <StatLine label="Est. sales at your price" value={`${fmtNum(now.d)} / mo`} /><StatLine label="Est. sales at recommended" value={`${fmtNum(rec.d)} / mo`} />
-          <StatLine label="Est. contribution at your price" value={<span className={now.profit < 0 ? 'bad' : ''}>{fmtMoney(now.profit)} / mo</span>} /><StatLine label="Est. contribution at recommended" value={`${fmtMoney(rec.profit)} / mo`} />
+      <div className="col" style={{ gap: 2 }}>
+        <StatLine label={t('veh.engine')} value={m.spec.engine.layout === 'EV' ? t('veh.electric', { kwh: m.spec.engine.batteryKwh }) : `${term(LAYOUT_NAME[m.spec.engine.layout])} ${(m.spec.engine.displacement / 1000).toFixed(1)} L · ${Math.round(s.torqueNm)} Nm`} />
+        <StatLine label={t('st.arch.family')} value={f ? `${f.name}${v ? ` · ${v.name}` : ''} (${cars(familyUsers(p, f.id).length)})` : '—'} title={t('st.arch.familyHint')} />
+        <StatLine label={t('veh.platform')} value={pl ? `${pl.name} (${cars(platformUsers(p, pl.id).length)})` : '—'} />
+        <StatLine label={s.engine.isEV ? t('st.consumption') : t('veh.fuelCombined')} value={s.engine.isEV ? `${s.fuelCombined.toFixed(1)} kWh/100 km` : `${s.fuelCombined.toFixed(1)} L/100 km`} />
+        <StatLine label={t('veh.contribution')} value={m.price > 0 ? <span className={margin < 0 ? 'bad' : 'good'}>{m$(margin)} · {Math.round((margin / (m.price * DEALER_NET)) * 100)}%</span> : '—'} />
+      </div>
+      {onSale && <div className="col" style={{ gap: 6 }}>
+        <h4>{t('veh.pricingAt', { n: num(vol, lang) })} <span className="muted tiny">({t('veh.pricingNote')})</span></h4>
+        <PriceLadder cost={guide.unitCost} breakEven={guide.breakEven} recommended={guide.recommended} worth={guide.value} mark={m.price > 0 ? { v: m.price, label: t('veh.yourPrice') } : undefined} fmt={m$}
+          labels={{ cost: t('st.market.unitCost'), breakEven: t('st.market.breakEven'), recommended: t('st.market.recommended'), worth: t('st.market.worth') }}
+          hints={{ cost: t('st.market.unitCostHint'), breakEven: t('st.market.breakEvenHint'), recommended: t('st.market.recommendedHint'), worth: t('st.market.worthHint') }} />
+        <div className="grid g2" style={{ gap: '2px 16px' }}>
+          <StatLine label={t('veh.salesAtYours')} value={t('veh.perMo', { v: num(now.d, lang) })} /><StatLine label={t('veh.salesAtRec')} value={t('veh.perMo', { v: num(rec.d, lang) })} />
+          <StatLine label={t('veh.contribAtYours')} value={<span className={now.profit < 0 ? 'bad' : ''}>{t('veh.perMo', { v: m$(now.profit) })}</span>} /><StatLine label={t('veh.contribAtRec')} value={t('veh.perMo', { v: m$(rec.profit) })} />
         </div>
-        {m.price <= 0 && <p className="tiny muted">Not priced yet: a new production line opens at the recommended price, and you can change it at any time.</p>}
-        {m.price > 0 && m.price < guide.breakEven && <div className="warnbox">Below break-even: at {fmtMoney(m.price)} each car fails to cover its share of development and tooling.</div>}
-        {m.price > guide.value * 1.35 && <div className="warnbox">Priced {Math.round((m.price / guide.value - 1) * 100)}% above what buyers think the car is worth: expect weak sales.</div>}
-        {m.price > 0 && Math.abs(m.price / guide.recommended - 1) > 0.03 && <div className="row"><button className="btn sm" onClick={() => act((gg) => setPrice(gg, m.id, Math.round(guide.recommended / 10) * 10), 'Price set to the recommended retail price.')}>Use recommended price</button></div>}
+        {m.price <= 0 && <p className="tiny muted">{t('veh.notPriced')}</p>}
+        {m.price > 0 && m.price < guide.breakEven && <div className="warnbox">{t('veh.belowBreakEven', { price: m$(m.price) })}</div>}
+        {m.price > guide.value * 1.35 && <div className="warnbox">{t('veh.overWorth', { pct: Math.round((m.price / guide.value - 1) * 100) })}</div>}
+        {m.price > 0 && Math.abs(m.price / guide.recommended - 1) > 0.03 && <div className="row"><button className="btn sm" onClick={() => act((gg) => setPrice(gg, m.id, Math.round(guide.recommended / 10) * 10), t('veh.priceSet'))}>{t('veh.useRecommended')}</button></div>}
       </div>}
-      <div className="col" style={{ gap: 4 }}>{SCORE_KEYS.map((k) => <ScoreBar key={k} label={cap(k)} value={s.scores[k]} color={(SEG[m.segment].weights[k] ?? 0) >= 0.15 ? 'var(--accent)' : 'var(--s1)'} />)}</div>
-      <p className="tiny muted">Scores are relative to the standards of {g.year}: an ageing design scores lower every year. Highlighted bars matter most to {SEG[m.segment].name.toLowerCase()} buyers.</p>
-      {m.status === 'development' && <p className="small warn">In development: {Math.ceil(m.devMonthsLeft)} of {m.devMonthsTotal} months left · {fmtMoney(m.devCostPaid)} of {fmtMoney(m.devCostTotal)} spent · needs ≈{Math.round(devEngineersNeeded(g, p, m))} engineers.</p>}
+      <div className="col" style={{ gap: 4 }}>{SCORE_KEYS.map((key) => <ScoreBar key={key} label={t(k(`score.${key}`))} value={s.scores[key]} color={(SEG[m.segment].weights[key] ?? 0) >= 0.15 ? 'var(--accent)' : 'var(--s1)'} />)}</div>
+      <p className="tiny muted">{t('veh.scoresNote', { year: g.year, segment: term(SEG[m.segment].name).toLowerCase() })}</p>
+      {m.status === 'development' && <p className="small warn">{t('veh.devProgress', { left: Math.ceil(m.devMonthsLeft), total: m.devMonthsTotal, paid: m$(m.devCostPaid), budget: m$(m.devCostTotal), eng: Math.round(devEngineersNeeded(g, p, m)) })}</p>}
     </div>
-  );
-}
-
-// ----------------------------------------------------------------------------- design studio
-const TABS = ['Architecture', 'Body', 'Chassis', 'Engine', 'Driveline', 'Running gear', 'Aero', 'Cabin'] as const;
-const BASIC_TABS: (typeof TABS)[number][] = ['Architecture', 'Body', 'Cabin'];
-const LAYOUTS: EngineLayout[] = ['I2', 'I3', 'I4', 'I5', 'I6', 'V6', 'V8', 'V10', 'V12', 'F4', 'F6', 'F12', 'EV'];
-
-function Designer({ init, basedOn, initName, onClose }: { init: VehicleSpec; basedOn?: string; initName: string; onClose: () => void }) {
-  const { g, p } = useGame();
-  const act = useStore((s) => s.act);
-  const [rawSpec, setSpec] = useState<VehicleSpec>(init);
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Architecture');
-  const [view, setView] = useState<'basic' | 'advanced'>('basic');
-  // architecture: 'auto' re-uses what fits (as engineering would), 'new' develops it with the car, or a chosen family / platform
-  const [engSel, setEngSel] = useState<string>('auto');
-  const [platSel, setPlatSel] = useState<string>('auto');
-  const base = basedOn ? p.models.find((m) => m.id === basedOn) : undefined;
-  const auto = useMemo(() => defaultChoice(p, rawSpec, base), [rawSpec, p.engines?.length, p.platforms?.length]);
-  const engineChoice: EngineChoice = engSel === 'auto' ? auto.engine : engSel === 'new' ? { kind: 'new' } : { kind: 'family', familyId: engSel };
-  const platformChoice: PlatformChoice = platSel === 'auto' ? auto.platform : platSel === 'new' ? { kind: 'new' } : { kind: 'platform', platformId: platSel };
-  const plan = useMemo(() => planDevelopment(g, p, rawSpec, engineChoice, platformChoice), [rawSpec, engSel, platSel, auto, g.year, p.tech]);
-  const spec = plan.spec; // the platform's hardpoints applied
-  const chosenFam = engineChoice.kind === 'family' ? enginesOf(p).find((f) => f.id === engineChoice.familyId) : undefined;
-  const chosenPlat = platformChoice.kind === 'platform' ? platformsOf(p).find((x) => x.id === platformChoice.platformId) : undefined;
-  const [name, setName] = useState(initName);
-  const [segOverride, setSegOverride] = useState<SegmentId | null>(null);
-  const up = (patch: Partial<VehicleSpec>) => setSpec((s) => ({ ...s, ...patch }));
-  const upE = (patch: Partial<VehicleSpec['engine']>) => setSpec((s) => ({ ...s, engine: { ...s.engine, ...patch } }));
-  const stats = useMemo(() => computeVehicle(spec, { year: g.year, tech: p.tech }), [spec, g.year, p.tech]);
-  const temp = useMemo(() => { const m = makeModel({ ...g, nextId: 0 } as typeof g, 'x', spec, 'family', p.tech, g.year); return m; }, [spec, g.year]);
-  const unit = estimateUnitCost(g, p, temp, 400);
-  const autoSeg = suggestSegment(stats.scores as unknown as Record<string, number>, spec.body, unit, g.year);
-  const seg = segOverride ?? autoSeg;
-  temp.segment = seg;
-  const [planVol, setPlanVol] = useState<number | null>(null);
-  const vol = planVol ?? TYPICAL_VOLUME[seg];
-  const mk = useMemo(() => computeMarket(g), [g.year, g.month, g.companies.length]);
-  const guide = useMemo(() => priceGuide(g, p, temp, vol, { mk, devCost: plan.total }), [mk, temp, seg, vol, plan.total]);
-  const volToSlider = (v: number) => Math.round((Math.log(v / 5) / Math.log(4000)) * 100);
-  const sliderToVol = (t: number) => { const v = 5 * Math.pow(4000, t / 100); const stepSize = v < 50 ? 1 : v < 500 ? 10 : v < 5000 ? 50 : 500; return Math.round(v / stepSize) * stepSize; };
-  const missing = missingTechs(spec, p.tech);
-  const invalid = validateSpec(spec);
-  const lock = (id: string) => !hasTech(p.tech, id);
-  const note = (id: string) => (lock(id) ? `needs ${TECH_BY_ID[id].year} tech` : undefined);
-  const ev = spec.engine.layout === 'EV';
-  const e = spec.engine;
-  const rpmLabels = stats.engine.curve.map((c) => String(c.rpm));
-  const maxGears = lock('gears5') ? 4 : lock('gears6') ? 5 : lock('gears8') ? 6 : lock('gears10') ? 8 : 10;
-  const def = SEG[seg];
-  const fit = (def.bodyFit[spec.body] ?? 0.3);
-  return (
-    <>
-      <PageHead title={base ? `New generation of the ${base.name}` : 'Design studio'} right={<button className="btn" onClick={onClose}>← Back to the range</button>}>
-        Every number on the right is calculated from your specification with physical models: mean-effective-pressure engine model, time-step acceleration with traction limits, road-load fuel consumption and a bill-of-materials cost model.
-      </PageHead>
-      <div className="designer">
-        <div className="panel col">
-          <div className="row between"><Seg value={view} options={[{ value: 'basic', label: 'Basic' }, { value: 'advanced', label: 'Advanced' }]} onChange={(v) => { setView(v); if (v === 'basic' && !BASIC_TABS.includes(tab)) setTab('Architecture'); }} />
-            <span className="tiny muted">{view === 'basic' ? 'The decisions that matter most; engineering fills in the rest.' : 'Every engineering parameter.'}</span></div>
-          <Seg value={tab} options={TABS.filter((t) => view === 'advanced' || BASIC_TABS.includes(t)).map((t) => ({ value: t, label: t }))} onChange={setTab} />
-          {chosenPlat && ['Chassis', 'Driveline', 'Running gear'].includes(tab) && <p className="tiny warn">Built on the {chosenPlat.name}: chassis, engine position, suspension pick-up points, crash structure, drivetrain options and the size range are fixed by the platform.</p>}
-          {tab === 'Architecture' && <>
-            <Select label="Engine family" value={engSel} onChange={(v) => {
-              setEngSel(v);
-              const f = enginesOf(p).find((x) => x.id === v);
-              if (f) { const vv = findVariant(f, rawSpec.engine) ?? f.variants.find((x) => x.status === 'ready') ?? f.variants[0]; setSpec((s0) => ({ ...s0, engine: familyEngine(f, vv) })); }
-            }} options={[
-              { value: 'auto', label: `Automatic — ${auto.engine.kind === 'family' ? `re-use ${enginesOf(p).find((f) => f.id === (auto.engine as { familyId: string }).familyId)?.name}` : 'develop a new engine with the car'}` },
-              { value: 'new', label: 'Develop a new engine family with this car' },
-              ...enginesOf(p).map((f) => ({ value: f.id, label: `${f.name} — ${f.layout} ${f.layout === 'EV' ? `${Math.round(f.baseMotorKw)} kW` : `${(f.baseDisplacement / 1000).toFixed(1)} L`} · ${familyUsers(p, f.id).length} car(s)${f.status !== 'ready' ? ' · in development' : ''}` })),
-            ]} />
-            {chosenFam && <>
-              <Select label="Variant" value={findVariant(chosenFam, rawSpec.engine)?.id ?? 'custom'} onChange={(v) => { const vv = chosenFam.variants.find((x) => x.id === v); if (vv) setSpec((s0) => ({ ...s0, engine: familyEngine(chosenFam, vv) })); }}
-                options={[...chosenFam.variants.map((v) => ({ value: v.id, label: `${v.name}${v.status !== 'ready' ? ' (calibrating)' : ''}` })), { value: 'custom', label: 'New variant (set it on the Engine tab)', disabled: true }]} />
-              <p className="tiny muted">Family envelope: {chosenFam.layout === 'EV' ? `motor ${Math.round(chosenFam.baseMotorKw * 0.5)}–${Math.round(chosenFam.baseMotorKw * 2)} kW, any battery` : `${Math.round(chosenFam.baseDisplacement * 0.8)}–${Math.round(chosenFam.baseDisplacement * 1.25)} cc, ${chosenFam.valvetrain.toUpperCase()}, ${chosenFam.fuelSystem.toUpperCase()}${chosenFam.aluBlock ? ', aluminium block' : ''}`}. Aspiration, boost, compression, rev limit, cam and hybrid assistance make variants.</p>
-            </>}
-            <Select label="Platform" value={platSel} onChange={setPlatSel} options={[
-              { value: 'auto', label: `Automatic — ${auto.platform.kind === 'platform' ? `re-use ${platformsOf(p).find((x) => x.id === (auto.platform as { platformId: string }).platformId)?.name}` : 'develop a new platform with the car'}` },
-              { value: 'new', label: 'Develop a new platform with this car' },
-              ...platformsOf(p).map((x) => ({ value: x.id, label: `${x.name} — ${x.cls}, ${x.chassis}, ${x.enginePos} engine · ${platformUsers(p, x.id).length} car(s)${x.status !== 'ready' ? ' · in development' : ''}` })),
-            ]} />
-            {chosenPlat && <p className="tiny muted">{CLASS_NAME[chosenPlat.cls]} · {chosenPlat.chassis} structure · engine at the {chosenPlat.enginePos}, bay for {BAY_NAME[chosenPlat.bay]} · {chosenPlat.drives.join(' / ')} · size {chosenPlat.sizeMin.toFixed(2)}–{chosenPlat.sizeMax.toFixed(2)}{chosenPlat.transaxle ? ' · rear transaxle' : ''}</p>}
-            {view === 'basic' && <>
-              <Select label="Body style" value={spec.body} options={(Object.keys(BODY) as BodyType[]).map((b) => ({ value: b, label: BODY[b].name }))} onChange={(v) => up({ body: v, seats: BODY[v].seats })} />
-              <Select label="Driven wheels" value={spec.drive} onChange={(v) => up({ drive: v })} options={(chosenPlat ? chosenPlat.drives : ['FWD', 'RWD', 'AWD'] as const).map((d) => ({ value: d, label: d, disabled: !chosenPlat && d === 'FWD' && spec.enginePos !== 'front' && !ev }))} />
-              {!ev && <Select label="Gearbox" value={spec.gearbox} onChange={(v) => up({ gearbox: v })} options={[{ value: 'manual', label: 'Manual' }, { value: 'auto', label: 'Automatic' }, { value: 'dct', label: 'Dual-clutch', disabled: lock('dct'), note: note('dct') }]} />}
-              <Select label="Tyres" value={spec.tireCompound} onChange={(v) => up({ tireCompound: v })} options={[{ value: 'economy', label: 'Economy' }, { value: 'touring', label: 'Touring' }, { value: 'sport', label: 'Sport', disabled: lock('sporttire') }, { value: 'semislick', label: 'Semi-slick', disabled: lock('semislick') }]} />
-            </>}
-            {plan.errors.length > 0 && <div className="errbox">{plan.errors.map((x) => <div key={x}>{x}</div>)}</div>}
-          </>}
-          {tab === 'Body' && <>
-            <Select label="Body style" value={spec.body} options={(Object.keys(BODY) as BodyType[]).map((b) => ({ value: b, label: BODY[b].name }))} onChange={(v) => up({ body: v, seats: Math.min(spec.seats, BODY[v].seats + 2) > 0 ? BODY[v].seats : spec.seats })} />
-            <Slider label="Size" value={spec.size} min={chosenPlat ? chosenPlat.sizeMin : 0.85} max={chosenPlat ? chosenPlat.sizeMax : 1.15} step={0.005} onChange={(v) => up({ size: v })} fmt={() => `${stats.length.toFixed(2)} × ${stats.width.toFixed(2)} m · wheelbase ${stats.wheelbase.toFixed(2)} m`} hint={chosenPlat ? `The ${chosenPlat.name} stretches between these sizes.` : undefined} />
-            <Select label="Seats" value={spec.seats} options={[2, 4, 5, 7].map((n) => ({ value: n, label: `${n} seats`, disabled: n > BODY[spec.body].seats + 2 }))} onChange={(v) => up({ seats: v })} />
-            <Slider label="Engineering quality & craftsmanship" value={spec.quality} min={0} max={1} step={0.01} onChange={(v) => up({ quality: v })} fmt={(v) => `${Math.round(v * 100)}%`} hint="Tighter tolerances, better materials and more testing: reliability and refinement up, cost up steeply." />
-            <label className="field"><span className="lab"><span>Paint</span></span><div className="row wrap" style={{ gap: 6 }}>{['#b3261e', '#f2f2f0', '#15171b', '#8f969e', '#1f5fbf', '#0c4d2c', '#e8b04a', '#d95926', '#5b2a86'].map((c) => <button key={c} aria-label={`Paint ${c}`} onClick={() => up({ color: c })} style={{ width: 24, height: 24, borderRadius: 6, background: c, border: spec.color === c ? '2px solid var(--accent)' : '1px solid var(--line2)', cursor: 'pointer' }} />)}<input type="color" value={spec.color} onChange={(ev2) => up({ color: ev2.target.value })} /></div></label>
-            <Select label="Paint finish" value={spec.finish ?? 'default'} onChange={(v) => up({ finish: v === 'default' ? undefined : v as PaintFinish })}
-              options={[{ value: 'default', label: 'Trim default' }, ...(Object.keys(FINISH_NAME) as PaintFinish[]).map((f) => ({ value: f, label: FINISH_NAME[f] }))]} />
-            <Select label="Wheel design" value={spec.wheelStyle ?? 'default'} onChange={(v) => up({ wheelStyle: v === 'default' ? undefined : v as WheelStyle })}
-              options={[{ value: 'default', label: 'Trim default' }, { value: 'multispoke', label: 'Multi-spoke (aero)' }, { value: 'turbine', label: 'Turbine' }, { value: 'fivespoke', label: 'Five-spoke sport' }]} />
-            <p className="tiny muted">Paint finish and wheel design are cosmetic: they change how the car looks in the 3D studio, not its cost or engineering. Wheel size, ride height and aero parts are engineering choices (Running gear, Chassis and Aero tabs) and the 3D model follows them.</p>
-          </>}
-          {tab === 'Chassis' && <>
-            <Select label="Chassis construction" value={spec.chassis} onChange={(v) => up({ chassis: v })} options={[
-              { value: 'ladder', label: 'Ladder frame (tough, heavy)' }, { value: 'steel', label: 'Steel monocoque' }, { value: 'spaceframe', label: 'Tubular spaceframe (light, labour-intensive)' },
-              { value: 'aluminium', label: 'Aluminium monocoque', disabled: lock('aluminium'), note: note('aluminium') }, { value: 'carbon', label: 'Carbon-fibre monocoque', disabled: lock('carbon'), note: note('carbon') }]} />
-            <Select label="Body panels" value={spec.panels} onChange={(v) => up({ panels: v })} options={[
-              { value: 'steel', label: 'Steel' }, { value: 'aluminium', label: 'Aluminium' }, { value: 'fibreglass', label: 'Fibreglass', disabled: lock('fibreglass'), note: note('fibreglass') }, { value: 'carbon', label: 'Carbon fibre', disabled: lock('carbonpanel'), note: note('carbonpanel') }]} />
-            <Select label="Engine position" value={spec.enginePos} onChange={(v) => up({ enginePos: v, drive: v !== 'front' && spec.drive === 'FWD' ? 'RWD' : spec.drive })} options={[{ value: 'front', label: 'Front' }, { value: 'mid', label: 'Mid (behind the seats)' }, { value: 'rear', label: 'Rear (behind the axle)' }]} />
-            <Select label="Safety engineering" value={spec.safety} onChange={(v) => up({ safety: v })} options={[
-              { value: 0, label: 'None' }, { value: 1, label: 'Crumple zones & seat belts', disabled: lock('safety1'), note: note('safety1') }, { value: 2, label: 'ABS & airbags', disabled: lock('safety2'), note: note('safety2') }, { value: 3, label: 'Stability control & assistance', disabled: lock('safety3'), note: note('safety3') }]} />
-            <div className="col" style={{ gap: 3 }}><h4>Mass breakdown</h4><BarList items={Object.entries(stats.massBreakdown).map(([label, value]) => ({ label, value }))} fmt={(v) => `${Math.round(v)} kg`} total /></div>
-          </>}
-          {tab === 'Engine' && <>
-            <Select label="Architecture" value={e.layout} onChange={(v) => upE({ layout: v })} options={LAYOUTS.map((l) => ({ value: l, label: LAYOUT_NAME[l], disabled: l === 'EV' && lock('ev'), note: l === 'EV' ? note('ev') : undefined }))} />
-            {ev ? <>
-              <Slider label="Motor power" value={e.motorKw} min={30} max={800} step={5} onChange={(v) => upE({ motorKw: v })} fmt={(v) => `${v} kW`} />
-              <Slider label="Battery capacity" value={e.batteryKwh} min={10} max={150} step={1} onChange={(v) => upE({ batteryKwh: v })} fmt={(v) => `${v} kWh`} />
-              <p className="small muted">Battery mass and cost per kWh fall quickly with powertrain technology level (currently {p.tech.engine.toFixed(0)}).</p>
-            </> : <>
-              <Slider label="Displacement" value={e.displacement} min={CYL[e.layout] * 160} max={Math.min(8400, CYL[e.layout] * 900)} step={10} onChange={(v) => upE({ displacement: v })} fmt={(v) => `${v} cc (${Math.round(v / CYL[e.layout])} cc / cyl)`} />
-              <Slider label="Bore / stroke ratio" value={e.boreStroke} min={0.7} max={1.6} step={0.01} onChange={(v) => upE({ boreStroke: v })} fmt={(v) => `${v.toFixed(2)} · ${(stats.engine.bore * 1000).toFixed(0)} × ${(stats.engine.stroke * 1000).toFixed(0)} mm`} hint="Oversquare engines (>1) have a short stroke: lower piston speed, so they can rev higher." />
-              <Select label="Valvetrain" value={e.valvetrain} onChange={(v) => upE({ valvetrain: v })} options={[{ value: 'ohv', label: 'Pushrod OHV, 2 valves' }, { value: 'sohc', label: 'Single overhead cam, 2 valves' }, { value: 'dohc2', label: 'Twin cam, 2 valves' }, { value: 'dohc4', label: 'Twin cam, 4 valves', disabled: lock('dohc4'), note: note('dohc4') }]} />
-              <Select label="Fuel system" value={e.fuelSystem} onChange={(v) => upE({ fuelSystem: v })} options={[{ value: 'carb', label: 'Carburettor' }, { value: 'mfi', label: 'Mechanical injection', disabled: lock('mfi'), note: note('mfi') }, { value: 'efi', label: 'Electronic injection', disabled: lock('efi'), note: note('efi') }, { value: 'di', label: 'Direct injection', disabled: lock('di'), note: note('di') }]} />
-              <Select label="Aspiration" value={e.aspiration} onChange={(v) => upE({ aspiration: v })} options={[{ value: 'na', label: 'Naturally aspirated' }, { value: 'supercharged', label: 'Supercharged' }, { value: 'turbo', label: 'Turbocharged', disabled: lock('turbo'), note: note('turbo') }, { value: 'twinturbo', label: 'Twin-turbo', disabled: lock('twinturbo'), note: note('twinturbo') }]} />
-              {e.aspiration !== 'na' && <Slider label="Boost pressure" value={e.boost} min={0.2} max={2.2} step={0.05} onChange={(v) => upE({ boost: v })} fmt={(v) => `${v.toFixed(2)} bar`} />}
-              <Slider label="Compression ratio" value={e.compression} min={6} max={14} step={0.1} onChange={(v) => upE({ compression: v })} fmt={(v) => `${v.toFixed(1)} : 1 · knock margin ${stats.engine.knockMargin.toFixed(1)}`} hint="Higher compression improves efficiency until the fuel knocks. Boost raises the effective compression." />
-              <Slider label="Rev limit" value={e.redline} min={3500} max={10000} step={100} onChange={(v) => upE({ redline: v })} fmt={(v) => `${v} rpm · piston ${stats.engine.pistonSpeed.toFixed(1)} / ${stats.engine.pistonSpeedLimit.toFixed(1)} m/s`} />
-              <Slider label="Cam profile" value={e.cam} min={0} max={1} step={0.01} onChange={(v) => upE({ cam: v })} fmt={(v) => (v < 0.3 ? 'Mild (torque)' : v < 0.65 ? 'Sport' : 'Race (top-end)')} />
-              <div className="row wrap">
-                <label className="row small" style={{ gap: 6, opacity: lock('vvt') ? 0.5 : 1 }}><input type="checkbox" checked={e.vvt} disabled={lock('vvt')} onChange={(x) => upE({ vvt: x.target.checked })} /> Variable valve timing{lock('vvt') ? ` (${TECH_BY_ID.vvt.year})` : ''}</label>
-                <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={e.aluBlock} onChange={(x) => upE({ aluBlock: x.target.checked })} /> Aluminium block</label>
-              </div>
-              <Slider label="Hybrid electric assist" value={e.hybridKw} min={0} max={200} step={5} disabled={lock('hybrid')} onChange={(v) => upE({ hybridKw: v })} fmt={(v) => (lock('hybrid') ? `needs ${TECH_BY_ID.hybrid.year} tech` : v ? `${v} kW` : 'None')} />
-            </>}
-          </>}
-          {tab === 'Driveline' && <>
-            <Select label="Driven wheels" value={spec.drive} onChange={(v) => up({ drive: v })} options={[{ value: 'FWD', label: 'Front-wheel drive', disabled: spec.enginePos !== 'front' && !ev }, { value: 'RWD', label: 'Rear-wheel drive' }, { value: 'AWD', label: 'All-wheel drive', disabled: lock('awd') && spec.body !== 'suv' && spec.body !== 'pickup', note: spec.body !== 'suv' && spec.body !== 'pickup' ? note('awd') : undefined }]} />
-            {!ev && <>
-              <Select label="Gearbox" value={spec.gearbox} onChange={(v) => up({ gearbox: v })} options={[{ value: 'manual', label: 'Manual' }, { value: 'auto', label: 'Automatic (torque converter)' }, { value: 'dct', label: 'Dual-clutch', disabled: lock('dct'), note: note('dct') }]} />
-              <Slider label="Number of gears" value={Math.min(spec.gears, maxGears)} min={3} max={maxGears} onChange={(v) => up({ gears: v })} fmt={(v) => `${v}-speed`} />
-              <Slider label="Final drive ratio" value={spec.finalDrive} min={2.2} max={5.5} step={0.05} onChange={(v) => up({ finalDrive: v })} fmt={(v) => `${v.toFixed(2)} : 1`} hint="Shorter (higher number) = stronger acceleration, lower top speed and higher cruising revs." />
-              <div className="row small" style={{ gap: 8 }}><button className="btn" onClick={() => up({ finalDrive: suggestFinalDrive(spec, { year: g.year, tech: p.tech }) })}>Match gearing to top speed</button><span className="muted">engineer's suggestion: {suggestFinalDrive(spec, { year: g.year, tech: p.tech }).toFixed(2)} : 1</span></div>
-              {spec.enginePos === 'front' && spec.drive !== 'FWD' && <label className="row small" style={{ gap: 6 }}><input type="checkbox" checked={!!spec.transaxle} onChange={(x) => up({ transaxle: x.target.checked })} /> Rear transaxle (gearbox at the rear axle: ≈ 4 % more weight on the driven wheels, costlier driveline)</label>}
-            </>}
-            {ev && <p className="small muted">Electric cars use a single-speed reduction gear.</p>}
-            <StatLine label="Weight on front axle" value={`${Math.round(stats.weightFront * 100)}%`} />
-          </>}
-          {tab === 'Running gear' && <>
-            <Select label="Front suspension" value={spec.suspFront} onChange={(v) => up({ suspFront: v })} options={[{ value: 'solid', label: 'Solid axle' }, { value: 'macpherson', label: 'MacPherson strut' }, { value: 'wishbone', label: 'Double wishbone' }, { value: 'multilink', label: 'Multi-link', disabled: lock('multilink'), note: note('multilink') }]} />
-            <Select label="Rear suspension" value={spec.suspRear} onChange={(v) => up({ suspRear: v })} options={[{ value: 'solid', label: 'Solid axle' }, { value: 'macpherson', label: 'Strut / semi-trailing arm' }, { value: 'wishbone', label: 'Double wishbone' }, { value: 'multilink', label: 'Multi-link', disabled: lock('multilink'), note: note('multilink') }]} />
-            <Slider label="Suspension tuning" value={spec.sport} min={0} max={1} step={0.01} onChange={(v) => up({ sport: v })} fmt={(v) => (v < 0.3 ? 'Comfort' : v < 0.65 ? 'Balanced' : 'Track')} />
-            <Select label="Brakes" value={spec.brakes} onChange={(v) => up({ brakes: v })} options={[{ value: 'drum', label: 'Drums' }, { value: 'disc', label: 'Solid discs', disabled: lock('disc'), note: note('disc') }, { value: 'vented', label: 'Ventilated discs', disabled: lock('vented'), note: note('vented') }, { value: 'ceramic', label: 'Carbon-ceramic', disabled: lock('ceramic'), note: note('ceramic') }]} />
-            <Slider label="Tyre width" value={spec.tireWidth} min={125} max={345} step={5} onChange={(v) => up({ tireWidth: v })} fmt={(v) => `${v} mm`} />
-            <Select label="Tyre compound" value={spec.tireCompound} onChange={(v) => up({ tireCompound: v })} options={[{ value: 'economy', label: 'Economy (low rolling resistance)' }, { value: 'touring', label: 'Touring' }, { value: 'sport', label: 'Sport', disabled: lock('sporttire'), note: note('sporttire') }, { value: 'semislick', label: 'Semi-slick', disabled: lock('semislick'), note: note('semislick') }]} />
-            <Slider label="Wheel diameter" value={spec.wheelDia} min={12} max={22} onChange={(v) => up({ wheelDia: v })} fmt={(v) => `${v}"`} />
-          </>}
-          {tab === 'Aero' && <>
-            <Slider label="Drag optimisation" value={spec.aeroOpt} min={0} max={1} step={0.01} onChange={(v) => up({ aeroOpt: v })} fmt={() => `Cd ${stats.cd.toFixed(3)}`} hint="Wind-tunnel hours spent smoothing the body. Adds development cost." />
-            <Slider label="Rear wing" value={spec.wing} min={0} max={1} step={0.01} disabled={lock('wing')} onChange={(v) => up({ wing: v })} fmt={(v) => (lock('wing') ? `needs ${TECH_BY_ID.wing.year} tech` : v < 0.03 ? 'None' : `${Math.round(v * 100)}%`)} />
-            <Slider label="Front splitter" value={spec.splitter} min={0} max={1} step={0.01} disabled={lock('splitter')} onChange={(v) => up({ splitter: v })} fmt={(v) => (lock('splitter') ? `needs ${TECH_BY_ID.splitter.year} tech` : v < 0.03 ? 'None' : `${Math.round(v * 100)}%`)} />
-            <label className="row small" style={{ gap: 6, opacity: lock('flatfloor') ? 0.5 : 1 }}><input type="checkbox" checked={spec.flatFloor} disabled={lock('flatfloor')} onChange={(x) => up({ flatFloor: x.target.checked })} /> Flat underbody & diffuser{lock('flatfloor') ? ` (${TECH_BY_ID.flatfloor.year})` : ''}</label>
-            <StatLine label="Frontal area" value={`${stats.frontalArea.toFixed(2)} m²`} /><StatLine label="Drag area CdA" value={`${stats.cdA.toFixed(2)} m²`} />
-            <StatLine label="Vertical load at 200 km/h" value={<span className={stats.downforce200 >= 0 ? 'good' : 'warn'}>{stats.downforce200 >= 0 ? `${Math.round(stats.downforce200)} kg downforce` : `${Math.round(-stats.downforce200)} kg lift`}</span>} />
-          </>}
-          {tab === 'Cabin' && <>
-            <Select label="Interior" value={spec.interior} onChange={(v) => up({ interior: v })} options={[{ value: 'basic', label: 'Basic' }, { value: 'standard', label: 'Standard' }, { value: 'premium', label: 'Premium' }, { value: 'luxury', label: 'Hand-finished luxury' }]} />
-            <div className="col" style={{ gap: 3 }}><h4>Cost of parts per car</h4><BarList items={Object.entries(stats.costBreakdown).map(([label, value]) => ({ label, value }))} fmt={(v) => fmtMoney(v)} total /></div>
-            <StatLine label="Assembly labour" value={`${Math.round(stats.labourHours)} hours`} />
-          </>}
-        </div>
-
-        <div className="col">
-          <VehicleStage desc={specDescriptor(spec, undefined, chosenPlat ?? null)} spec={spec} year={g.year} height={430} autoRotate={false}
-            title={<>{BODY[spec.body].name} · {stats.length.toFixed(2)} m long · wheelbase {stats.wheelbase.toFixed(2)} m · {Math.round(stats.mass)} kg</>} />
-          <div className="panel">
-            <div className="grid g2">
-              <div><h4>Torque (Nm)</h4><LineChart height={170} width={330} series={[{ name: 'Torque', color: '#3987e5', values: stats.engine.curve.map((c) => c.nm) }]} labels={rpmLabels} xTitle="rpm" fmt={(v) => `${Math.round(v)}`} /></div>
-              <div><h4>Power (kW)</h4><LineChart height={170} width={330} series={[{ name: 'Power', color: '#d95926', values: stats.engine.curve.map((c) => c.kw) }]} labels={rpmLabels} xTitle="rpm" fmt={(v) => `${Math.round(v)}`} /></div>
-            </div>
-            <p className="tiny muted">{ev ? 'Electric motor: constant torque to base speed, then constant power.' : `Indicated efficiency ${(stats.engine.etaI * 100).toFixed(0)}% · peak BMEP ${stats.engine.bmepPeak.toFixed(1)} bar · ${stats.engine.specificKwL.toFixed(0)} kW/L · engine ${Math.round(stats.engine.mass)} kg · engine reliability ${Math.round(stats.engine.reliability)}/100`}</p>
-          </div>
-          {(missing.length > 0 || invalid.length > 0) && <div className="errbox">{invalid.map((x) => <div key={x}>{x}</div>)}{missing.length > 0 && <div>Technology not yet mastered: {missing.map((id) => `${TECH_BY_ID[id].name} (${TECH_BY_ID[id].year})`).join(', ')}. Invest in research or choose an alternative.</div>}</div>}
-          {stats.warnings.length > 0 && <div className="warnbox">{stats.warnings.map((w) => <div key={w}>• {w}</div>)}</div>}
-        </div>
-
-        <div className="col stats">
-          <div className="panel col" style={{ gap: 4 }}>
-            <h4>Performance</h4>
-            <StatLine label="Power" value={`${Math.round(stats.powerKw)} kW (${Math.round(stats.powerKw * 1.36)} PS) @ ${Math.round(stats.engine.powerRpm)}`} />
-            <StatLine label="Torque" value={`${Math.round(stats.torqueNm)} Nm @ ${Math.round(stats.engine.torqueRpm)}`} />
-            <StatLine label="Kerb mass" value={`${Math.round(stats.mass)} kg · ${Math.round(stats.powerToWeight)} kW/t`} />
-            <StatLine label="0–100 km/h" value={`${stats.zeroTo100.toFixed(1)} s`} /><StatLine label="Quarter mile" value={`${stats.quarterMile.toFixed(1)} s`} />
-            <StatLine label="80–120 km/h" value={stats.passing80to120 != null ? `${stats.passing80to120.toFixed(1)} s` : '—'} title="Full-throttle overtaking, through the gears." /><StatLine label="0–200 km/h" value={stats.zeroTo200 != null ? `${stats.zeroTo200.toFixed(1)} s` : '—'} />
-            <StatLine label="Top speed" value={`${Math.round(stats.topSpeed)} km/h`} /><StatLine label="Braking 100–0" value={`${stats.braking100.toFixed(1)} m`} />
-            <StatLine label="Cornering" value={`${stats.lateralG.toFixed(2)} g`} />
-            <StatLine label={ev ? 'Consumption' : 'Fuel urban / highway'} value={ev ? `${stats.fuelCombined.toFixed(1)} kWh/100 km` : `${stats.fuelUrban.toFixed(1)} / ${stats.fuelHighway.toFixed(1)} L/100 km`} />
-            <StatLine label="Range" value={`${Math.round(stats.rangeKm)} km`} />
-          </div>
-          <div className="panel col" style={{ gap: 5 }}>
-            <h4>Ratings for {g.year}</h4>
-            {SCORE_KEYS.map((k) => <ScoreBar key={k} label={cap(k)} value={stats.scores[k]} color={(def.weights[k] ?? 0) >= 0.15 ? 'var(--accent)' : 'var(--s1)'} />)}
-          </div>
-          <div className="panel col" style={{ gap: 6 }}>
-            <h4>Market & programme</h4>
-            <Select label={`Target segment (best fit: ${SEG[autoSeg].name})`} value={seg} options={SEGMENTS.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => setSegOverride(v)} />
-            {fit < 0.7 && <div className="warnbox">A {BODY[spec.body].name.toLowerCase()} is a poor fit for {def.name.toLowerCase()} buyers (body-style fit {Math.round(fit * 100)}%).</div>}
-            <Slider label="Planned volume" value={volToSlider(vol)} min={0} max={100} onChange={(t) => setPlanVol(sliderToVol(t))} fmt={() => `${fmtNum(vol)} cars / month`} hint="Unit cost, the share of development each car must carry, scarcity and the recommended price all depend on how many you plan to build." />
-            <StatLine label="Unit cost at this volume" value={fmtMoney(guide.unitCost)} title="Parts and assembly labour per car." />
-            <StatLine label="Development + tooling per car" value={fmtMoney(guide.devPerCar + guide.toolingPerCar)} title={`Spread over ${fmtNum(guide.lifeUnits)} cars: the planned volume for the ${Math.round(guide.lifeUnits / vol / 12)} years a ${def.name.toLowerCase()} model usually stays on sale.`} />
-            <StatLine label="Break-even price" value={fmtMoney(guide.breakEven)} title="List price at which a car covers its unit cost and its share of development and tooling after the dealer's margin." />
-            <StatLine label="Segment reference price" value={fmtMoney(segPrice(seg, g.year))} />
-            <StatLine label="Worth to buyers (est.)" value={fmtMoney(guide.value)} title="What buyers of this segment consider a fair price for this car from your brand at this volume. Better cars, stronger brands and — for prestige makers — rarer cars are worth more." />
-            <StatLine label="Recommended retail price (est.)" value={<b>{fmtMoney(guide.recommended)}</b>} title="The price that earns the most contribution at the planned volume with competitors at today's prices. You can set any price once the car is on sale." />
-            <StatLine label="Contribution margin (est.)" value={<span className={guide.contribution < 0 ? 'bad' : 'good'}>{fmtMoney(guide.contribution)} / car · {Math.round(guide.contributionPct * 100)}%</span>} title="Net price after the dealer's margin minus unit cost, at the recommended price." />
-            <StatLine label="Demand at that price (est.)" value={guide.blind ? 'no dealers yet' : `${fmtNum(guide.rawDemand)} / month`} />
-            {!guide.viable && <div className="warnbox">Not viable at this volume: the break-even price is {Math.round((guide.breakEven / guide.recommended - 1) * 100)}% above the best price the market will pay. Raise the volume, cut cost, or accept a loss-making flagship.</div>}
-            {guide.viable && !guide.blind && guide.rawDemand < vol * 0.6 && <div className="warnbox">Estimated demand is well below the planned volume — plan a smaller line, or a cheaper or better car.</div>}
-            {!guide.blind && guide.rawDemand > vol * 1.5 && <p className="tiny muted">Demand exceeds the planned volume; the recommended price already rations the cars you can build.</p>}
-            <h4>Development programme</h4>
-            <StatLine label="Vehicle engineering" value={fmtMoney(plan.vehicleCost)} title="Body, cabin, integration, crash testing and homologation of this car." />
-            <StatLine label={plan.engine.kind === 'new' ? 'New engine family' : plan.engine.kind === 'variant' ? `New variant of ${plan.engine.family?.name}` : `Engine: ${plan.engine.family?.name} (re-used)`} value={fmtMoney(plan.engine.cost)} />
-            <StatLine label={plan.platform.kind === 'new' ? 'New platform' : `Platform: ${plan.platform.platform?.name} (re-used)`} value={fmtMoney(plan.platform.cost)} />
-            <StatLine label={<b>Programme budget</b>} value={<b>{fmtMoney(plan.total)}</b>} title="Charged month by month as the work progresses." />
-            {plan.total < plan.fullCost - 1 && <StatLine label="Saved by sharing" value={<span className="good">{fmtMoney(plan.fullCost - plan.total)} ({Math.round((1 - plan.total / plan.fullCost) * 100)}%)</span>} />}
-            <StatLine label="Development time" value={`≈ ${plan.months} months with enough engineers`} />
-            {plan.waitsFor.length > 0 && <p className="tiny warn">Sign-off waits for {plan.waitsFor.join(' and ')}.</p>}
-            <StatLine label="Line tooling" value={`${fmtMoney(stats.toolingPerUnitCapacity)} per unit of monthly capacity`} />
-            <label className="field"><span className="lab"><span>Model name</span></span><input type="text" value={name} maxLength={32} placeholder="e.g. GT 2000" onChange={(x) => setName(x.target.value)} /></label>
-            <button className="btn primary" disabled={missing.length > 0 || invalid.length > 0 || !name.trim() || !plan.ok} onClick={() => { if (act((gg) => startDevelopment(gg, name, rawSpec, seg, basedOn, { engine: engineChoice, platform: platformChoice }), 'Development programme started.')) onClose(); }}>Start development</button>
-            <p className="tiny muted">You have {p.engineers} engineers and {fmtMoney(p.cash)} in cash.</p>
-          </div>
-        </div>
-      </div>
-    </>
   );
 }

@@ -31,6 +31,7 @@
 .nav-foot .seg { align-self: flex-start; }
 
 .main { overflow: auto; padding: 22px 28px 56px; display: flex; flex-direction: column; gap: 16px; min-width: 0; scroll-behavior: smooth; }
+.main > * { flex-shrink: 0; } /* screens scroll; nothing is squeezed to fit */
 .pagehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; } .pagehead p { color: var(--ink2); max-width: 78ch; }
 .screen-loading { display: grid; place-items: center; height: 40vh; color: var(--ink3); }
 .screen-loading::before { content: ""; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line3); border-top-color: var(--accent2); margin-right: 10px; animation: spin 0.8s linear infinite; }
