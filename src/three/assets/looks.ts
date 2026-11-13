@@ -10,6 +10,44 @@ export const FINISH: Record<PaintFinish, { metalness: number; roughness: number;
   pearl: { metalness: 0.42, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.03, iridescence: 0.55 },
   matte: { metalness: 0.32, roughness: 0.62, clearcoat: 0, clearcoatRoughness: 0.5 },
 };
+/** Strength of the metallic flake layer per finish (0 = none). */
+export const FLAKE: Record<PaintFinish, number> = { solid: 0, metallic: 0.09, pearl: 0.06, matte: 0.04 };
+
+/**
+ * Metallic flake: the base coat's normal is jittered per 0.4 mm cell (object space), so fine sparkles catch the
+ * light while the clear coat above stays perfectly smooth (it has its own, unperturbed normal).
+ */
+function addFlake(m: THREE.MeshPhysicalMaterial) {
+  const u = { uFlake: { value: 0 }, uFlakeScale: { value: 2600 } };
+  m.userData.flake = u;
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.uFlake = u.uFlake;
+    sh.uniforms.uFlakeScale = u.uFlakeScale;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vFlakePos;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFlakePos = position;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vFlakePos;
+uniform float uFlake;
+uniform float uFlakeScale;
+vec3 flakeHash(vec3 p) {
+  p = fract(p * vec3(443.897, 441.423, 437.195));
+  p += dot(p, p.yxz + 19.19);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+if (uFlake > 0.0) {
+  vec3 cellP = vFlakePos * uFlakeScale;
+  // fade out when a flake is smaller than a pixel: sparkle up close, no aliasing noise at a distance
+  float fade = clamp(1.6 - length(fwidth(cellP)), 0.0, 1.0);
+  vec3 fl = flakeHash(floor(cellP)) * 2.0 - 1.0;
+  normal = normalize(normal + uFlake * fade * fl);
+}`);
+  };
+  m.customProgramCacheKey = () => 'ae-flake';
+}
+
 export const FINISH_NAME: Record<PaintFinish, string> = { solid: 'Solid gloss', metallic: 'Metallic', pearl: 'Pearlescent', matte: 'Satin matte' };
 
 /** Turn a slot material from the GLB into this car's paint (keeps the panel-gap maps of the body slot). */
@@ -21,6 +59,7 @@ export function makePaint(src: THREE.Material, color: string, finish: PaintFinis
     m.clearcoatNormalMap = s.normalMap;
     m.clearcoatNormalScale.copy(s.normalScale);
   }
+  addFlake(m);
   applyPaint(m, color, finish);
   return m;
 }
@@ -37,6 +76,8 @@ export function applyPaint(m: THREE.MeshPhysicalMaterial, color: string, finish:
   const mm = m as unknown as Record<string, unknown>;
   if ('iridescenceThicknessMinimum' in mm) { mm.iridescenceThicknessMinimum = 180; mm.iridescenceThicknessMaximum = 520; } else m.iridescenceThicknessRange = [180, 520];
   m.envMapIntensity = 1;
+  const fl = m.userData.flake as { uFlake: { value: number } } | undefined;
+  if (fl) fl.uFlake.value = FLAKE[finish];
   m.needsUpdate = true;
 }
 

@@ -8,3 +8,5 @@ dist
 assets-src/**/renders/preview-*
 assets-src/**/renders/detail-*
 __pycache__/
+assets-src/**/renders/probe-*
+assets-src/**/renders/wheelcheck-*

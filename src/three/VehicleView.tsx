@@ -25,7 +25,7 @@ export type AssetStatus = 'loading' | 'ready' | 'failed' | 'procedural';
 function AssetCar({ plan, fallback, onStatus }: { plan: AssetPlan; fallback: React.ReactNode; onStatus?: (s: AssetStatus, info?: string) => void }) {
   const [, Q] = useQuality();
   const lod = Math.min(Q.lod, plan.asset.lods.length - 1);
-  const skey = structureKey(plan, lod) + '|' + Q.tireSegments;
+  const skey = structureKey(plan, lod) + '|' + Q.tireSegments + '|' + Q.transmission;
   const [inst, setInst] = useState<CarInstance | null>(null);
   const [failed, setFailed] = useState(false);
   const planRef = useRef(plan);
@@ -39,7 +39,7 @@ function AssetCar({ plan, fallback, onStatus }: { plan: AssetPlan; fallback: Rea
       .then(([car, wheels, tire]) => {
         if (!alive) return;
         const t1 = performance.now();
-        const built = buildCar(planRef.current, car, wheels, tire, Q.tireSegments);
+        const built = buildCar(planRef.current, car, wheels, tire, Q.tireSegments, Q.transmission);
         const t2 = performance.now();
         (globalThis as { __aeAssetTiming?: unknown }).__aeAssetTiming = { loadMs: Math.round(t1 - t0), buildMs: Math.round(t2 - t1), lod, triangles: built.stats.triangles, meshes: built.stats.meshes };
         const old = current.current;

@@ -6,7 +6,7 @@ is located by projecting its points onto the half grid (sub-quad accuracy) and d
 import numpy as np
 import design as D
 
-TW, TH = 4096, 2048
+TW, TH = 2048, 1024
 GAP_DARK = 0.0013     # half width of the dark gap (m)
 GAP_EDGE = 0.0034     # half width including the rolled panel edges (m)
 

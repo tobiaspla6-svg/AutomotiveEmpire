@@ -29,7 +29,7 @@ function fakeCar(): GLTF {
   g.setAttribute('normal', new THREE.Float32BufferAttribute([0, 0, -1, 0, 0, 1, 1, 0, 0, 0, 1, 0], 3));
   g.setIndex([0, 1, 2, 0, 2, 3]);
   const scene = group('Scene',
-    group('body', mesh('shell', paint, g), mesh('trim', mat('trim_chrome'))),
+    group('body', mesh('shell', paint, g), mesh('trim', mat('trim_chrome')), mesh('windows', mat('glass')), mesh('lens', mat('lamp_lens_red'))),
     group('grille_ice', mesh('bars', mat('trim_chrome'))), group('grille_ev', mesh('panel', mat('trim_black'))),
     group('exhaust_single', mesh('e1', mat('exhaust'))), group('exhaust_dual', mesh('e2', mat('exhaust'))), group('exhaust_quad', mesh('e4', mat('exhaust'))),
     group('aero_lip_spoiler', mesh('lip', mat('paint'))), group('aero_wing', mesh('wing', mat('trim_black'))),
@@ -136,6 +136,33 @@ describe('car instance', () => {
     for (const s of [...owned, ...mats]) expect(s).toHaveBeenCalled();
     expect(tplGeo).not.toHaveBeenCalled();
     expect(inst.root.parent).toBeNull();
+  });
+});
+
+describe('quality-dependent materials', () => {
+  it('uses transmissive glass and lenses only when asked (High quality) and never touches the template', () => {
+    const car = fakeCar();
+    const p = plan(sedan());
+    const tpl = (car.scene.getObjectByName('windows') as THREE.Mesh).material as THREE.Material;
+    const hi = buildCar(p, car, fakeWheels(), PROFILE, 96, true);
+    const g = (hi.root.getObjectByName('windows') as THREE.Mesh).material as THREE.MeshPhysicalMaterial;
+    expect(g).not.toBe(tpl);
+    expect(g.transmission).toBe(1);
+    expect(((hi.root.getObjectByName('lens') as THREE.Mesh).material as THREE.MeshPhysicalMaterial).transmission).toBeGreaterThan(0.5);
+    const lo = buildCar(p, car, fakeWheels(), PROFILE, 48, false);
+    expect((lo.root.getObjectByName('windows') as THREE.Mesh).material).toBe(tpl);
+  });
+
+  it('gives metallic and pearl paint a flake layer and solid paint none', async () => {
+    const { FLAKE } = await import('../src/three/assets/looks');
+    const inst = buildCar(plan(sedan({ finish: 'metallic' })), fakeCar(), fakeWheels(), PROFILE);
+    const paint = inst.materials.get('paint_body') as THREE.MeshPhysicalMaterial;
+    const flake = paint.userData.flake as { uFlake: { value: number } };
+    expect(flake.uFlake.value).toBe(FLAKE.metallic);
+    styleCar(inst, { ...plan(sedan()), paint: { color: '#ffffff', finish: 'solid' } });
+    expect(flake.uFlake.value).toBe(0);
+    expect(FLAKE.metallic).toBeGreaterThan(0);
+    expect(FLAKE.metallic).toBeLessThan(0.2); // subtle: no glitter
   });
 });
 

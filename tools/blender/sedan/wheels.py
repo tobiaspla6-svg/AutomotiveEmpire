@@ -90,6 +90,35 @@ def _window_outline(t0, t1, r_in, r_out, half_w, twist=0.0, n=9, corner=0.35):
     return xy
 
 
+def _transfer_face_normals(ob, ref, tol=0.0015):
+    """Vertices lying on the original dished face take its smooth normal (no faceting on the spoke tops);
+    the spoke sides and bevels keep their own crisp normals."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromObject(ref, bpy.context.evaluated_depsgraph_get())
+    on = []
+    for v in ob.data.vertices:
+        loc, nor, idx, dist = tree.find_nearest(ob.matrix_world @ v.co)
+        if loc is not None and dist < tol:
+            # only the visible front face, not the back of the disc
+            if nor.y > 0.2:
+                on.append(v.index)
+    print("[sedan] rim normals transferred on", len(on), "of", len(ob.data.vertices), "vertices", flush=True)
+    if not on:
+        return
+    vg = ob.vertex_groups.new(name="face")
+    vg.add(on, 1.0, "REPLACE")
+    m = ob.modifiers.new("Normals", "DATA_TRANSFER")
+    m.object = ref
+    m.use_loop_data = True
+    m.data_types_loops = {"CUSTOM_NORMAL"}
+    m.loop_mapping = "POLYINTERP_NEAREST"
+    m.vertex_group = "face"
+    U.apply_modifiers(ob)
+    g = ob.vertex_groups.get("face")
+    if g is not None:
+        ob.vertex_groups.remove(g)
+
+
 def rim(name, mats, design):
     r_lip = RIM_R + 0.018
     # barrel (inner visible surface) with a lip curl, thickened
@@ -102,7 +131,7 @@ def rim(name, mats, design):
     m.thickness = 0.006
     m.offset = -1
     U.apply_modifiers(barrel)
-    U.shade_smooth(barrel)
+    U.shade_smooth(barrel, 40)
     # wheel face: a dished disc (closed solid), then the openings between the spokes are cut out
     hub_y, face_r = 0.050, RIM_R - 0.004
     front = [(0.0, hub_y + 0.012), (0.03, hub_y + 0.012), (0.05, hub_y + 0.006), (0.075, hub_y + 0.004),
@@ -110,6 +139,13 @@ def rim(name, mats, design):
     back = [(face_r, FACE_Y - 0.03), (0.17, hub_y - 0.002), (0.11, hub_y - 0.016), (0.06, hub_y - 0.024), (0.0, hub_y - 0.024)]
     disc = lathe(name, front + back, steps=96, mat=mats["rim_alloy"], close=True)
     U.recalc_normals(disc)
+    U.shade_smooth(disc)
+    # the uncut dished face: its smooth normals are transferred to the spokes after cutting and bevelling
+    ref = disc.copy()
+    ref.data = disc.data.copy()
+    ref.name = name + "_ref"
+    U.link(ref)
+    U.shade_smooth(ref)
     spec = {
         "sport5": dict(n=5, r_in=0.078, r_out=face_r - 0.016, w=lambda r: 0.020 + 0.028 * (r - 0.078) / 0.12, twist=0.0),
         "turbine10": dict(n=10, r_in=0.08, r_out=face_r - 0.014, w=lambda r: 0.0085 + 0.010 * (r - 0.08) / 0.13, twist=0.42),
@@ -137,7 +173,9 @@ def rim(name, mats, design):
     U.boolean(disc, cut)
     bpy.data.objects.remove(cut)
     _bevel(disc, 0.0018, 2, 30)
-    U.shade_smooth(disc)
+    U.shade_smooth(disc, 32)
+    _transfer_face_normals(disc, ref)
+    bpy.data.objects.remove(ref)
     # lug bolts and centre cap
     parts = [barrel]
     for k in range(5):
@@ -184,7 +222,7 @@ def brakes(mats, disc_r=0.182):
     cal = lathe("caliper", prof, steps=24, angle=math.radians(68), mat=mats["caliper"], close=True, start=math.radians(102))
     U.recalc_normals(cal)
     _bevel(cal, 0.006, 3, 40)
-    U.shade_smooth(cal)
+    U.shade_smooth(cal, 45)
     cal["contract"] = "caliper"
     rotor["contract"] = "brake_disc"
     return rotor, cal

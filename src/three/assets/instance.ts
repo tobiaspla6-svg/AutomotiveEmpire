@@ -77,18 +77,29 @@ export function tuneTemplate(gltf: GLTF) {
 }
 
 const OVERRIDE = ['paint', 'paint_body', 'trim_chrome', 'caliper', 'int_upholstery', 'int_accent', 'rim_alloy'];
+const TRANSMISSIVE = ['glass', 'lamp_lens', 'lamp_lens_red'];
 
-export function buildCar(plan: AssetPlan, car: GLTF, wheels: GLTF, tire: TireProfile, tireSegments = 96): CarInstance {
+/** Physically transmissive glass and lenses (High quality): real Fresnel reflections, the interior seen through. */
+export function transmissiveMaterial(name: string): THREE.MeshPhysicalMaterial {
+  const m = new THREE.MeshPhysicalMaterial({ name, metalness: 0, transmission: 1, thickness: 0.004, roughness: 0.015, ior: 1.5, envMapIntensity: 1.25 });
+  if (name === 'glass') { m.color.set('#cfdadd'); m.attenuationColor.set('#55666d'); m.attenuationDistance = 0.35; m.thickness = 0.005; }
+  else if (name === 'lamp_lens') { m.color.set('#ffffff'); m.ior = 1.49; m.roughness = 0.0; }
+  else { m.color.set('#c0101a'); m.transmission = 0.7; m.roughness = 0.06; m.emissive.set('#3a0204'); m.attenuationColor.set('#8a0008'); m.attenuationDistance = 0.02; m.thickness = 0.006; }
+  return m;
+}
+
+export function buildCar(plan: AssetPlan, car: GLTF, wheels: GLTF, tire: TireProfile, tireSegments = 96, transmission = false): CarInstance {
   const root = new THREE.Group();
   root.name = plan.asset.id;
   const geometries: THREE.BufferGeometry[] = [];
   const materials = new Map<string, THREE.Material>();
   const components = new Map<string, THREE.Object3D>();
   const own = (m: THREE.Material): THREE.Material => {
-    if (!OVERRIDE.includes(m.name)) return m;
+    const glassy = transmission && TRANSMISSIVE.includes(m.name);
+    if (!OVERRIDE.includes(m.name) && !glassy) return m;
     let o = materials.get(m.name);
     if (!o) {
-      o = m.name === 'paint' || m.name === 'paint_body' ? makePaint(m, plan.paint.color, plan.paint.finish) : m.clone();
+      o = glassy ? transmissiveMaterial(m.name) : m.name === 'paint' || m.name === 'paint_body' ? makePaint(m, plan.paint.color, plan.paint.finish) : m.clone();
       materials.set(m.name, o);
     }
     return o;

@@ -53,19 +53,15 @@ def grid_mesh(name, G, uv=None, face_mat=None, mats=None, flip=False):
 
 
 def shade_smooth(ob, angle=None):
-    for p in ob.data.polygons:
-        p.use_smooth = True
-    if angle is not None:
-        m = ob.modifiers.new("SmoothByAngle", "NODES")
-        # Blender 4.1+: smooth by angle node group from the essentials asset library
-        try:
-            bpy.ops.object.select_all(action="DESELECT")
-            bpy.context.view_layer.objects.active = ob
-            ob.select_set(True)
-            ob.modifiers.remove(m)
-            bpy.ops.object.shade_smooth_by_angle(angle=angle, keep_sharp_edges=True)
-        except Exception:
-            ob.modifiers.remove(m) if m.name in ob.modifiers else None
+    """Smooth shading; with `angle` (degrees) edges sharper than that stay crisp (machined parts, bevels)."""
+    if angle is None:
+        for p in ob.data.polygons:
+            p.use_smooth = True
+        return
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = ob
+    ob.select_set(True)
+    bpy.ops.object.shade_smooth_by_angle(angle=__import__("math").radians(angle), keep_sharp_edges=True)
 
 
 def apply_modifiers(ob):
@@ -85,13 +81,14 @@ def mirror_merge(ob, axis=1, threshold=1e-4):
     apply_modifiers(ob)
 
 
-def boolean(ob, cutter, op="DIFFERENCE", solver="EXACT", hole_tolerant=False):
+def boolean(ob, cutter, op="DIFFERENCE", solver="EXACT", hole_tolerant=False, self_intersect=False):
     m = ob.modifiers.new("Bool", "BOOLEAN")
     m.operation = op
     m.object = cutter
     m.solver = solver
     if solver == "EXACT":
         m.use_hole_tolerant = hole_tolerant
+        m.use_self = self_intersect
         m.material_mode = "TRANSFER"
     apply_modifiers(ob)
 

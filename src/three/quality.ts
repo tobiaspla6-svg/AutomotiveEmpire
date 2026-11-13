@@ -15,12 +15,16 @@ export interface QualitySettings {
   /** tyre lathe segments */
   tireSegments: number;
   antialias: boolean;
+  /** light the studio with the HDR photograph (otherwise generated light panels; no download) */
+  hdr: boolean;
+  /** physically transmissive glass and lamp lenses (an extra render pass) */
+  transmission: boolean;
 }
 
 export const QUALITY: Record<Quality, QualitySettings> = {
-  low: { dpr: [0.75, 1], lod: 1, envRes: 128, shadows: 'none', shadowRes: 256, tireSegments: 48, antialias: false },
-  medium: { dpr: [1, 1.5], lod: 1, envRes: 256, shadows: 'contact', shadowRes: 512, tireSegments: 72, antialias: true },
-  high: { dpr: [1, 2], lod: 0, envRes: 512, shadows: 'soft', shadowRes: 1024, tireSegments: 96, antialias: true },
+  low: { dpr: [0.75, 1], lod: 2, envRes: 128, shadows: 'none', shadowRes: 256, tireSegments: 48, antialias: false, hdr: false, transmission: false },
+  medium: { dpr: [1, 1.5], lod: 1, envRes: 256, shadows: 'contact', shadowRes: 512, tireSegments: 72, antialias: true, hdr: true, transmission: false },
+  high: { dpr: [1, 2], lod: 0, envRes: 512, shadows: 'soft', shadowRes: 1024, tireSegments: 96, antialias: true, hdr: true, transmission: true },
 };
 export const QUALITY_NAME: Record<Quality, string> = { low: 'Low', medium: 'Medium', high: 'High' };
 

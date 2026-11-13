@@ -66,7 +66,10 @@ export function treadNormalMap(): THREE.DataTexture {
   for (let y = 0; y < H; y++) {
     const v = y / (H - 1);
     const onTread = v > 0.36 && v < 0.64;
+    // sidewalls: fine concentric ribs near the rim and a smooth band (no lettering)
+    const wall = (v > 0.04 && v < 0.2) || (v > 0.8 && v < 0.96);
     for (let x = 0; x < W; x++) {
+      if (wall) { h[y * W + x] = (v * 60) % 1 < 0.35 ? -0.35 : 0; continue; }
       if (!onTread) continue;
       const u = x / W;
       const lat = (v - 0.5) / 0.14;               // -1 .. 1 across the tread

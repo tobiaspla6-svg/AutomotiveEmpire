@@ -1,34 +1,54 @@
 // Automotive studio viewer (Phase 4): light-panel HDR environment, neutral tone mapping, soft contact shadows,
 // camera presets, zoom, smooth 360° rotation, fullscreen inspection, quality presets and an FPS benchmark.
 // It only displays what it is given; it never computes gameplay.
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, MeshReflectorMaterial, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { QUALITY_NAME, setQuality, useQuality, type Quality, type QualitySettings } from './quality';
 
-/** Studio lighting: softboxes and strip lights rendered into an HDR cube map (no image download, works offline). */
-export function Studio({ envRes = 256, keyShadow = false, shadowRes = 1024 }: { envRes?: number; keyShadow?: boolean; shadowRes?: number }) {
+const BASE = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
+/** "Studio Small 09" by Sergej Majboroda, Poly Haven, CC0 1.0 (public domain); 1k Radiance HDR, 1.6 MB. */
+export const STUDIO_HDR = `${BASE}assets/env/studio_small_09_1k.hdr`;
+
+/** Generated light-panel studio (no download): softboxes and strip lights rendered into an HDR cube map. */
+function PanelEnvironment({ envRes }: { envRes: number }) {
+  return (
+    <Environment resolution={envRes} frames={1} background={false}>
+      <color attach="background" args={['#07080a']} />
+      <SkyDome />
+      <Lightformer form="rect" intensity={2.4} position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[10, 4.5, 1]} />
+      <Lightformer form="rect" intensity={4} position={[0, 2.6, -6]} rotation={[0, 0, 0]} scale={[16, 0.6, 1]} />
+      <Lightformer form="rect" intensity={4} position={[0, 2.6, 6]} rotation={[0, Math.PI, 0]} scale={[16, 0.6, 1]} />
+      <Lightformer form="rect" intensity={1.2} position={[0, 0.9, -6]} rotation={[0, 0, 0]} scale={[16, 0.25, 1]} />
+      <Lightformer form="rect" intensity={1.2} position={[0, 0.9, 6]} rotation={[0, Math.PI, 0]} scale={[16, 0.25, 1]} />
+      <Lightformer form="rect" intensity={1.6} position={[8, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[5, 3, 1]} color="#fff1dd" />
+      <Lightformer form="rect" intensity={1.3} position={[-8, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} scale={[5, 3, 1]} color="#dfe8ff" />
+    </Environment>
+  );
+}
+
+/** Photographed studio (CC0 HDRI) plus two long strip lights for crisp highlight lines along the flanks. */
+function HdrEnvironment({ envRes }: { envRes: number }) {
+  return (
+    <Environment files={STUDIO_HDR} resolution={envRes} frames={1} background={false} environmentIntensity={0.72}>
+      <Lightformer form="rect" intensity={2.2} position={[0, 2.6, -7]} rotation={[0, 0, 0]} scale={[16, 0.45, 1]} />
+      <Lightformer form="rect" intensity={2.2} position={[0, 2.6, 7]} rotation={[0, Math.PI, 0]} scale={[16, 0.45, 1]} />
+    </Environment>
+  );
+}
+
+/** Studio lighting. With `hdr`, the photographed studio is used once downloaded; until then, or if it fails,
+ *  the generated light panels light the car. */
+export function Studio({ envRes = 256, keyShadow = false, shadowRes = 1024, hdr = false }: { envRes?: number; keyShadow?: boolean; shadowRes?: number; hdr?: boolean }) {
+  const panels = <PanelEnvironment envRes={envRes} />;
   return (
     <>
-      <ambientLight intensity={0.08} />
-      <directionalLight position={[3.5, 8, -2.5]} intensity={1.1} castShadow={keyShadow} shadow-mapSize={[shadowRes, shadowRes]} shadow-bias={-0.0004} shadow-normalBias={0.02}
+      <ambientLight intensity={0.06} />
+      <directionalLight position={[3.5, 8, -2.5]} intensity={hdr ? 0.7 : 1.1} castShadow={keyShadow} shadow-mapSize={[shadowRes, shadowRes]} shadow-bias={-0.0004} shadow-normalBias={0.02}
         shadow-camera-left={-4} shadow-camera-right={4} shadow-camera-top={4} shadow-camera-bottom={-4} shadow-camera-near={1} shadow-camera-far={20} />
-      <Environment resolution={envRes} frames={1} background={false}>
-        <color attach="background" args={['#07080a']} />
-        <SkyDome />
-        {/* overhead softbox */}
-        <Lightformer form="rect" intensity={2.4} position={[0, 6, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[10, 4.5, 1]} />
-        {/* long strip lights either side: crisp highlight lines along the flanks */}
-        <Lightformer form="rect" intensity={4} position={[0, 2.6, -6]} rotation={[0, 0, 0]} scale={[16, 0.6, 1]} />
-        <Lightformer form="rect" intensity={4} position={[0, 2.6, 6]} rotation={[0, Math.PI, 0]} scale={[16, 0.6, 1]} />
-        <Lightformer form="rect" intensity={1.2} position={[0, 0.9, -6]} rotation={[0, 0, 0]} scale={[16, 0.25, 1]} />
-        <Lightformer form="rect" intensity={1.2} position={[0, 0.9, 6]} rotation={[0, Math.PI, 0]} scale={[16, 0.25, 1]} />
-        {/* front and rear fills, warm and cool */}
-        <Lightformer form="rect" intensity={1.6} position={[8, 2.5, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[5, 3, 1]} color="#fff1dd" />
-        <Lightformer form="rect" intensity={1.3} position={[-8, 2.5, 0]} rotation={[0, Math.PI / 2, 0]} scale={[5, 3, 1]} color="#dfe8ff" />
-      </Environment>
+      {hdr ? <ViewerBoundary fallback={panels}><Suspense fallback={panels}><HdrEnvironment envRes={envRes} /></Suspense></ViewerBoundary> : panels}
     </>
   );
 }
@@ -250,7 +270,7 @@ export function CarViewer({ children, autoRotate = true, height, distance = 7.2,
         <color attach="background" args={['#0e1013']} />
         <fog attach="fog" args={['#0e1013', 14, 26]} />
         <InspectHook />
-        <Studio envRes={Q.envRes} keyShadow={Q.shadows === 'soft'} shadowRes={Q.shadowRes} />
+        <Studio envRes={Q.envRes} keyShadow={Q.shadows === 'soft'} shadowRes={Q.shadowRes} hdr={Q.hdr} />
         <ViewerBoundary fallback={null}>{children}</ViewerBoundary>
         <Floor reflect={Q.shadows === 'soft'} />
         {Q.shadows !== 'none' && <ContactShadows key={sceneVersion ?? 'live'} frames={sceneVersion ? 2 : Infinity} position={[0, 0.002, 0]} opacity={0.85} scale={11} blur={Q.shadows === 'soft' ? 2.6 : 2.2} far={2.4} resolution={Q.shadowRes} color="#000000" />}

@@ -93,53 +93,106 @@ def decimate_copy(objs, ratio, suffix):
     return out
 
 
+INTERIOR_LOD = {
+    1: ("seat", "dash", "floor", "door_", "steering", "headliner", "bulkhead", "parcel", "console", "cluster", "touch", "firewall", "tunnel"),
+    2: ("seat_driver_cushion", "seat_driver_back", "seat_passenger_cushion", "seat_passenger_back", "seat_rear", "dash", "floor", "door_0", "door_1", "headliner", "steering_rim"),
+}
+DECIMATE = {1: {"body": 0.32, "interior": 0.45, "_": 0.5}, 2: {"body": 0.13, "interior": 0.3, "_": 0.3}}
+
+
+def _joined(name, objs, lod):
+    """Copies of the objects joined into one mesh (one draw per material), decimated for LOD > 0."""
+    copies = []
+    for o in objs:
+        if o.type != "MESH":
+            continue
+        c = o.copy()
+        c.data = o.data.copy()
+        mw = o.matrix_world.copy()
+        c.parent = None
+        c.matrix_world = mw
+        bpy.context.scene.collection.objects.link(c)
+        copies.append(c)
+    if not copies:
+        return None
+    bpy.ops.object.select_all(action="DESELECT")
+    for c in copies:
+        c.select_set(True)
+    bpy.context.view_layer.objects.active = copies[0]
+    if len(copies) > 1:
+        bpy.ops.object.join()
+    j = bpy.context.view_layer.objects.active
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    j.name = j.data.name = f"{name}_mesh"
+    if lod > 0 and len(j.data.polygons) > 300:
+        m = j.modifiers.new("Dec", "DECIMATE")
+        m.ratio = DECIMATE[lod].get(name, DECIMATE[lod]["_"])
+        m.use_collapse_triangulate = True
+        U.apply_modifiers(j)
+    return j
+
+
+def _draws(objs):
+    return sum(len({p.material_index for p in o.data.polygons}) for o in objs if o.type == "MESH")
+
+
 def export_all(cats, rims, brake_parts, mats, out_dir, log):
     os.makedirs(out_dir, exist_ok=True)
     M.export_paint_setup(mats["paint_body"])
     for o in bpy.data.objects:
         o.hide_render = False
-    # ---------------------------------------------------------------- LOD 0
-    roots = []
-    for name, objs in cats.items():
-        roots.append(group(name, objs))
-    for name, x, track in (("wheel_FL", D.AX_F, D.TRACK_F), ("wheel_FR", D.AX_F, -D.TRACK_F), ("wheel_RL", D.AX_R, D.TRACK_R), ("wheel_RR", D.AX_R, -D.TRACK_R)):
-        e = bpy.data.objects.new(name, None)
-        e.location = (x, track / 2, D.TIRE_R)
-        bpy.context.scene.collection.objects.link(e)
-        roots.append(e)
-    info = {"lod0_tris": tri_count([o for objs in cats.values() for o in objs])}
-    # hide wheel instances while exporting
-    sizes = {"sedan.lod0.glb": _export(os.path.join(out_dir, "sedan.lod0.glb"), roots)}
-    # ---------------------------------------------------------------- LOD 1: decimated shell, simplified interior
-    lod_cats = {}
-    for name, objs in cats.items():
-        meshes = [o for o in objs if o.type == "MESH"]
-        if name == "interior":
-            meshes = [o for o in meshes if any(k in o.name for k in ("seat", "dash", "floor", "door_", "steering_rim", "headliner", "bulkhead", "parcel"))]
-        lod_cats[name] = decimate_copy(meshes, 0.3, ".lod1")
-    lroots = [group(n, objs) for n, objs in lod_cats.items()]
-    # the LOD0 groups still hold the contract names: move them aside, then name the LOD1 groups
-    wheel_empties = [o for o in roots if o.name.startswith("wheel_")]
-    for o in roots:
-        o.name = o.name + "_lod0"
-    for r, n in zip(lroots, lod_cats.keys()):
-        r.name = n
-    wl = []
-    for e in wheel_empties:
-        c = bpy.data.objects.new(e.name.replace("_lod0", ""), None)
-        c.location = e.location
-        bpy.context.scene.collection.objects.link(c)
-        wl.append(c)
-    info["lod1_tris"] = tri_count([o for objs in lod_cats.values() for o in objs])
-    sizes["sedan.lod1.glb"] = _export(os.path.join(out_dir, "sedan.lod1.glb"), lroots + wl)
-    for o in roots:
-        o.name = o.name.replace("_lod0", "")
-    # ---------------------------------------------------------------- wheels
-    sizes["wheels.glb"] = _export(os.path.join(out_dir, "wheels.glb"), list(rims) + list(brake_parts))
-    info["wheel_tris"] = {r.name: tri_count([r] + list(r.children_recursive)) for r in rims}
+    info, sizes = {}, {}
+    for lod in (0, 1, 2):
+        made, roots = [], []
+        for name, objs in cats.items():
+            subset = objs
+            if name == "interior" and lod > 0:
+                subset = [o for o in objs if any(k in o.name for k in INTERIOR_LOD[lod])]
+            j = _joined(name, subset, lod)
+            if j is None:
+                continue
+            made.append(j)
+            g = bpy.data.objects.new(name, None)
+            bpy.context.scene.collection.objects.link(g)
+            j.parent = g
+            roots.append(g)
+        for wname, x, track in (("wheel_FL", D.AX_F, D.TRACK_F), ("wheel_FR", D.AX_F, -D.TRACK_F), ("wheel_RL", D.AX_R, D.TRACK_R), ("wheel_RR", D.AX_R, -D.TRACK_R)):
+            e = bpy.data.objects.new(wname, None)
+            e.location = (x, track / 2, D.TIRE_R)
+            bpy.context.scene.collection.objects.link(e)
+            roots.append(e)
+        bad = [r.name for r in roots if "." in r.name]
+        assert not bad, f"contract names already taken: {bad}"
+        fn = f"sedan.lod{lod}.glb"
+        info[f"lod{lod}"] = {"tris": tri_count(made), "draws": _draws(made), "meshes": len(made)}
+        sizes[fn] = _export(os.path.join(out_dir, fn), roots)
+        for o in made + roots:
+            bpy.data.objects.remove(o)
+    # ---------------------------------------------------------------- wheels: each rim, the disc and the caliper joined
+    wroots = []
+    for r in list(rims) + list(brake_parts):
+        parts = [r] + list(r.children_recursive)
+        j = _joined(r.name + "_tmp", parts, 0)
+        g = bpy.data.objects.new(r.name + "_tmpgrp", None)
+        bpy.context.scene.collection.objects.link(g)
+        j.parent = g
+        wroots.append((r, g, j))
+    for r, g, j in wroots:
+        r.name = r.name + "_src"
+    for r, g, j in wroots:
+        g.name = r.name.replace("_src", "")
+        j.name = g.name + "_mesh"
+    info["wheels"] = {g.name: {"tris": tri_count([j]), "draws": _draws([j])} for r, g, j in wroots}
+    sizes["wheels.glb"] = _export(os.path.join(out_dir, "wheels.glb"), [g for r, g, j in wroots])
+    for r, g, j in wroots:
+        bpy.data.objects.remove(j)
+        bpy.data.objects.remove(g)
+        r.name = r.name.replace("_src", "")
     # ---------------------------------------------------------------- tyre profile for the browser
     with open(os.path.join(out_dir, "tire_profile.json"), "w") as f:
         json.dump({"profile": W.TIRE_PROFILE, "grooves": W.TIRE_GROOVES, "grooveDepth": 0.007}, f, indent=1)
     info["sizes"] = sizes
     log("export", json.dumps(info))
+    with open(os.path.join(out_dir, "..", "..", "..", "..", "assets-src", "sedan-ref", "export-report.json"), "w") as f:
+        json.dump(info, f, indent=1)
     return info

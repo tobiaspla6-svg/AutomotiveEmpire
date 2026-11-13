@@ -109,9 +109,11 @@ describe('asset catalogue and component compatibility', () => {
   });
 
   it('LODs get lighter and stay inside a web budget', () => {
-    const [l0, l1] = SEDAN_REF.lods;
+    const [l0, l1, l2] = SEDAN_REF.lods;
     expect(l1.tris).toBeLessThan(l0.tris * 0.5);
-    expect(l0.tris).toBeLessThan(300_000);
+    expect(l2.tris).toBeLessThan(l1.tris * 0.6);
+    // budget raised in Phase 4B (real shut-line grooves, lamp internals, interior): hero LOD0 ≤ 350k triangles
+    expect(l0.tris).toBeLessThan(350_000);
     expect(l0.bytes + SEDAN_REF.wheels.bytes).toBeLessThan(2_500_000);
   });
 

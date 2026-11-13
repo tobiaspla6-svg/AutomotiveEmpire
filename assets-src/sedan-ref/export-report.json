@@ -1,0 +1,45 @@
+{
+ "lod0": {
+  "tris": 315480,
+  "draws": 42,
+  "meshes": 11
+ },
+ "lod1": {
+  "tris": 109130,
+  "draws": 42,
+  "meshes": 11
+ },
+ "lod2": {
+  "tris": 49349,
+  "draws": 41,
+  "meshes": 11
+ },
+ "wheels": {
+  "rim_multi15": {
+   "tris": 27180,
+   "draws": 3
+  },
+  "rim_sport5": {
+   "tris": 13624,
+   "draws": 3
+  },
+  "rim_turbine10": {
+   "tris": 21622,
+   "draws": 3
+  },
+  "brake_disc": {
+   "tris": 3944,
+   "draws": 2
+  },
+  "caliper": {
+   "tris": 1104,
+   "draws": 1
+  }
+ },
+ "sizes": {
+  "sedan.lod0.glb": 1061144,
+  "sedan.lod1.glb": 728188,
+  "sedan.lod2.glb": 485344,
+  "wheels.glb": 259596
+ }
+}

@@ -26,6 +26,7 @@ import materials as M
 import studio
 import wheels as W
 import details as X
+import details2 as X2
 import seams as SM
 import interior as I
 
@@ -249,10 +250,11 @@ def build_glasshouse(mats):
     return ob, glass
 
 
-REF_VIEWS = {  # file stem -> (location, rotation, size) of an image empty in the scene
-    "front": ((3.2, 0, 0.75), (math.radians(90), 0, math.radians(90)), 2.2),
-    "side": ((0, -1.6, 0.75), (math.radians(90), 0, 0), 5.2),
-    "rear": ((-3.3, 0, 0.75), (math.radians(90), 0, math.radians(-90)), 2.2),
+REF_VIEWS = {  # file stem -> (location, rotation, size): images are drawn at 220 px/m by reference_sheet.py
+    "side": ((0, 1.7, 0.80), (math.radians(90), 0, math.radians(180)), 5.6),
+    "front": ((3.3, 0, 0.80), (math.radians(90), 0, math.radians(90)), 2.4),
+    "rear": ((-3.4, 0, 0.80), (math.radians(90), 0, math.radians(-90)), 2.4),
+    "top": ((0, 0, -0.002), (0, math.radians(180), 0), 5.6),
     "front34": ((3.0, -3.0, 1.2), (math.radians(90), 0, math.radians(45)), 3.0),
     "interior": ((0, 3.2, 1.2), (math.radians(90), 0, math.radians(180)), 2.5),
 }
@@ -280,6 +282,45 @@ def add_references(ref_dir):
                 break
     log("reference images", n)
     return n
+
+
+def reference_check():
+    """Orthographic side and front renders at the design sheet's scale, composited over the blueprints
+    (assets-src/sedan-ref/renders/refcheck-*.png): the model's silhouette against the intended design."""
+    sc = bpy.context.scene
+    hdr = os.path.join(ROOT, "public", "assets", "env", "studio_small_09_1k.hdr")
+    studio.setup(res=(1232, 418), samples=16, hdr=hdr)
+    sc.render.film_transparent = True
+    for o in bpy.data.objects:
+        if o.name == "StudioFloor":
+            o.hide_render = True
+    cam = sc.camera
+    cam.data.type = "ORTHO"
+    for view, res, scale, loc, rot in (("side", (1232, 418), 5.6, (0, 8, 0.80), (90, 0, 180)), ("front", (528, 418), 2.4, (8, 0, 0.80), (90, 0, 90))):
+        sc.render.resolution_x, sc.render.resolution_y = res
+        cam.data.ortho_scale = scale
+        cam.location = loc
+        cam.rotation_euler = tuple(math.radians(a) for a in rot)
+        out = os.path.join(OUT_SRC, "renders", f"refcheck-{view}-car.png")
+        sc.render.filepath = out
+        bpy.ops.render.render(write_still=True)
+        car = np.array(bpy.data.images.load(out).pixels[:], np.float32).reshape(res[1], res[0], 4)
+        bp = bpy.data.images.load(os.path.join(OUT_SRC, "references", f"{view}.png"))
+        ref = np.array(bp.pixels[:], np.float32).reshape(bp.size[1], bp.size[0], 4)
+        h, w = min(ref.shape[0], car.shape[0]), min(ref.shape[1], car.shape[1])
+        comp = ref[:h, :w].copy()
+        a = car[:h, :w, 3:4] * 0.55
+        comp[..., :3] = comp[..., :3] * (1 - a) + car[:h, :w, :3] * a
+        # redraw the blueprint lines on top so they stay visible
+        lines = (ref[:h, :w, :3].mean(axis=2, keepdims=True) < 0.5)
+        comp[..., :3] = np.where(lines, ref[:h, :w, :3] * 0.6 + np.array([0.9, 0.35, 0.05]) * 0.4, comp[..., :3])
+        img = bpy.data.images.new(f"refcheck_{view}", w, h, alpha=True)
+        img.pixels.foreach_set(comp.reshape(-1))
+        img.filepath_raw = os.path.join(OUT_SRC, "renders", f"refcheck-{view}.png")
+        img.file_format = "PNG"
+        img.save()
+        os.remove(out)
+    log("reference check written")
 
 
 def bake_ao(body, size=(2048, 1024), samples=48):
@@ -388,6 +429,7 @@ def main():
     cats["grille_ev"] = [panel]
     det += X.intakes(body, mats)
     det += X.rear_diffuser(body, mats)
+    log("shut lines: %d grooves" % X2.shut_lines(body, mats))
     open_cabin(body, par)
     U.shade_smooth(body)
     lenses = [o for o in det if o.name in ("headlamp_lens", "taillamp_lens", "lightbar_lens")] + [panel]
@@ -400,19 +442,22 @@ def main():
     det += X.cowl_and_wipers(mats)
     det.append(X.antenna(mats))
     det += X.rear_plate(body, mats)
-    det += X.arch_lips(body, mats)
+    det += X2.arch_flanges(body, mats)
+    det += X2.headlamp_internals(bpy.data.objects["headlamp_lens"], mats)
+    det += X2.taillamp_internals(bpy.data.objects["taillamp_lens"], mats)
+    det += X2.mirror_indicators(mats)
     for k, v in X.aero(mats).items():
         cats[k] = v
     log("details done %.1fs" % (time.time() - t0))
     gh, glass = build_glasshouse(mats)
     U.shade_smooth(gh)
     U.shade_smooth(glass)
-    cats["body"] += det + [gh, glass]
+    cats["body"] += det + [gh, glass] + X2.window_seals(glass, mats)
     cats["interior"] = I.build(mats, gh)
     sets = build_wheels(mats)
     mount_wheels(sets)
     log("geometry done in %.1fs" % (time.time() - t0))
-    if "--no-ao" not in ARGS and STAGE not in ("preview", "detail", "probe"):
+    if "--no-ao" not in ARGS and STAGE not in ("preview", "detail", "probe", "refcheck", "wheelcheck"):
         if bpy.context.scene.world is None:
             bpy.context.scene.world = bpy.data.worlds.new("BakeWorld")
         bake_ao(body)
@@ -421,14 +466,19 @@ def main():
     for k, objs in cats.items():
         for o in objs:
             o.hide_render = k not in shown
-    if RENDERS or STAGE in ("preview", "detail", "probe"):
+    if STAGE == "refcheck":
+        reference_check()
+    if RENDERS or STAGE in ("preview", "detail", "probe", "wheelcheck"):
         os.makedirs(os.path.join(OUT_SRC, "renders"), exist_ok=True)
         hdr = os.path.join(ROOT, "public", "assets", "env", "studio_small_09_1k.hdr")
         cam = studio.setup(res=(1280, 720) if RENDERS else (960, 540), samples=64 if RENDERS else 24, hdr=hdr if os.path.exists(hdr) else None)
         if "--zebra" in ARGS:
             studio.zebra(mats)
         review = ["front34", "rear34", "side", "front", "rear", "headlight", "wheel", "interior"]
-        views = ["front34", "side"] if STAGE == "probe" else ["front34", "side", "rear34", "front"] if STAGE == "preview" else (["detail_mirror", "interior", "detail_front"] if STAGE == "detail" else review)
+        views = ["wheel"] if STAGE == "wheelcheck" else ["front34", "side"] if STAGE == "probe" else ["front34", "side", "rear34", "front"] if STAGE == "preview" else (["detail_mirror", "interior", "detail_front"] if STAGE == "detail" else review)
+        if STAGE == "wheelcheck":
+            bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1280, 720
+            bpy.context.scene.cycles.samples = 48
         targets = {"detail_mirror": (0.6, 0.9, 1.0), "interior": (0.0, 0.0, 0.85), "headlight": (2.15, 0.62, 0.70), "wheel": (D.AX_F, 0.85, 0.36)}
         for v in views:
             studio.render(cam, v, os.path.join(OUT_SRC, "renders", f"{STAGE}-{v}.png"), target=targets.get(v, (0, 0, 0.68)))
@@ -436,7 +486,7 @@ def main():
     os.makedirs(OUT_SRC, exist_ok=True)
     add_references(next((a.split("=", 1)[1] for a in ARGS if a.startswith("--references=")), os.path.join(OUT_SRC, "references")))
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_SRC, "sedan.blend"), compress=True)
-    if EXPORT and STAGE not in ("preview", "detail", "probe"):
+    if EXPORT and STAGE not in ("preview", "detail", "probe", "refcheck", "wheelcheck"):
         import export as E
         for c in sets.values():
             bpy.context.view_layer.layer_collection.children["Wheels"].children[c.name].exclude = False

@@ -171,7 +171,7 @@ def lamp(body, mats, front=True):
         me = bpy.data.meshes.new(f"{tag}lamp_back_{side}")
         bm.to_mesh(me)
         bm.free()
-        me.materials.append(mats["lamp_housing"])
+        me.materials.append(mats["lamp_bezel"])
         bp = U.link(bpy.data.objects.new(me.name, me))
         U.recalc_normals(bp)
         parts.append(bp)
@@ -189,30 +189,6 @@ def lamp(body, mats, front=True):
         if len(led) > 4:
             led.sort(key=lambda p: abs(p[1]))
             parts.append(tube(f"{tag}lamp_led_{side}", led, 0.0045 if front else 0.006, mats["lamp_led" if front else "lamp_led_red"]))
-        if front:
-            # two projector modules
-            for k, yy in enumerate((0.56, 0.70)):
-                zz = 0.704
-                x, _ = hit_x(tree, side * yy, zz, True)
-                if x is None:
-                    continue
-                pj = bpy.data.objects.new(f"projector_{side}_{k}", bpy.data.meshes.new(f"projector_{side}_{k}"))
-                bm = bmesh.new()
-                bmesh.ops.create_cone(bm, cap_ends=True, segments=24, radius1=0.026, radius2=0.03, depth=0.05)
-                bm.to_mesh(pj.data)
-                bm.free()
-                pj.data.materials.append(mats["lamp_housing"])
-                U.link(pj)
-                pj.rotation_euler = (0, math.pi / 2, 0)
-                pj.location = (x - 0.05, side * yy, zz)
-                parts.append(pj)
-                bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=0.022, location=(x - 0.026, side * yy, zz))
-                ln = bpy.context.active_object
-                ln.name = f"projector_lens_{side}_{k}"
-                ln.scale = (0.45, 1, 1)
-                ln.data.materials.append(mats["lamp_lens_inner"])
-                U.shade_smooth(ln)
-                parts.append(ln)
     return parts
 
 
@@ -328,22 +304,16 @@ def intakes(body, mats):
     tree = bvh(body)
     parts.append(mesh_insert("intake_lower_mesh", tree, offset_outline(lo, -0.008), mats, cell=0.024, depth=0.03))
     corner = [(0.665, 0.30), (0.785, 0.29), (0.812, 0.315), (0.80, 0.475), (0.765, 0.505), (0.70, 0.495), (0.675, 0.46)]
+    surface = bvh(body)  # before cutting: the insert is placed relative to the bumper surface, not the pocket
     opening(body, "intake_corner", corner, 2.0, 2.7, mats, "grille_mesh", None, mirror=True, smooth_iters=1)
-    tree = bvh(body)
     for side in (1, -1):
-        pts = []
-        for y in np.linspace(0.67, 0.80, 12):
-            xx, _ = hit_x(tree, side * y, 0.395, True)
-            if xx is not None:
-                pts.append((xx - 0.025, side * y, 0.395))
-        if len(pts) > 3:
-            f = tube(f"intake_fin_{side}", pts, 0.009, mats["trim_black"])
-            f.scale = (1, 1, 0.5)
-            parts.append(f)
+        ol = [(side * y, z) for y, z in offset_outline(chaikin(corner, 1), -0.008)]
+        parts.append(mesh_insert(f"intake_corner_mesh_{side}", surface, ol, mats, cell=0.022, depth=0.03))
+    tree = bvh(body)
     pts = []
-    for y in np.linspace(-0.70, 0.70, 50):
-        xx, _ = hit_x(tree, y, 0.235, True)
-        if xx is not None:
+    for y in np.linspace(-0.46, 0.46, 36):
+        xx, nor = hit_x(tree, y, 0.235, True)
+        if xx is not None and nor is not None and nor.x > 0.8:   # only under the flat centre of the bumper
             pts.append((xx + 0.004, y, 0.226))
     parts.append(tube("front_lip", pts, 0.010, mats["trim_black"]))
     return parts
