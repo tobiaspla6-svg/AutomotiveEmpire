@@ -10,7 +10,7 @@
   "meshes": 11
  },
  "lod2": {
-  "tris": 49349,
+  "tris": 49350,
   "draws": 41,
   "meshes": 11
  },
@@ -37,9 +37,9 @@
   }
  },
  "sizes": {
-  "sedan.lod0.glb": 1061144,
-  "sedan.lod1.glb": 728188,
-  "sedan.lod2.glb": 485344,
-  "wheels.glb": 259596
+  "sedan.lod0.glb": 1061072,
+  "sedan.lod1.glb": 728056,
+  "sedan.lod2.glb": 485492,
+  "wheels.glb": 259000
  }
 }
