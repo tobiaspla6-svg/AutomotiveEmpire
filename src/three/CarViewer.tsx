@@ -7,6 +7,7 @@ import { ContactShadows, Environment, Lightformer, MeshReflectorMaterial, OrbitC
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { QUALITY_NAME, setQuality, useQuality, type Quality, type QualitySettings } from './quality';
+import { reportWebglFailure } from './hardware';
 
 const BASE = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL ?? '/';
 /** "Studio Small 09" by Sergej Majboroda, Poly Haven, CC0 1.0 (public domain); 1k Radiance HDR, 1.6 MB. */
@@ -244,9 +245,13 @@ export interface CarViewerProps {
   initialView?: ViewName;
   /** changes whenever the displayed car changes (static shadows are re-rendered then) */
   sceneVersion?: string;
+  /** receives every finished FPS test (from the toolbar button or `benchTrigger`) */
+  onBench?: (r: BenchResult) => void;
+  /** incrementing this starts a 5-second FPS test from outside (the settings dialog) */
+  benchTrigger?: number;
 }
 
-export function CarViewer({ children, autoRotate = true, height, distance = 7.2, controls = false, target = [0, 0.62, 0], initialView = 'front34', sceneVersion }: CarViewerProps) {
+export function CarViewer({ children, autoRotate = true, height, distance = 7.2, controls = false, target = [0, 0.62, 0], initialView = 'front34', sceneVersion, onBench, benchTrigger }: CarViewerProps) {
   const [quality, Q] = useQuality();
   const wrap = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState(autoRotate);
@@ -254,6 +259,7 @@ export function CarViewer({ children, autoRotate = true, height, distance = 7.2,
   const [bench, setBench] = useState(0);
   const [result, setResult] = useState<BenchResult | null>(null);
   const [full, setFull] = useState(false);
+  useEffect(() => { if (benchTrigger) { setResult(null); setBench((b) => b + 1); } }, [benchTrigger]);
   useEffect(() => {
     const f = () => setFull(document.fullscreenElement === wrap.current);
     document.addEventListener('fullscreenchange', f);
@@ -265,7 +271,7 @@ export function CarViewer({ children, autoRotate = true, height, distance = 7.2,
   const cam: [number, number, number] = [target[0] + Math.cos(el) * Math.cos(az) * distance, target[1] + Math.sin(el) * distance, target[2] + Math.cos(el) * Math.sin(az) * distance];
   return (
     <div ref={wrap} className={'cv' + (full ? ' full' : '')} style={{ height: full ? '100%' : height ?? '100%' }}>
-      <Canvas key={quality} shadows={Q.shadows === 'soft' ? { type: THREE.PCFShadowMap } : false} dpr={Q.dpr} camera={{ position: cam, fov: 30, near: 0.1, far: 80 }}
+      <Canvas key={quality} onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); reportWebglFailure(); })} shadows={Q.shadows === 'soft' ? { type: THREE.PCFShadowMap } : false} dpr={Q.dpr} camera={{ position: cam, fov: 30, near: 0.1, far: 80 }}
         gl={{ antialias: Q.antialias, preserveDrawingBuffer: true, toneMapping: THREE.NeutralToneMapping, toneMappingExposure: 1.0, outputColorSpace: THREE.SRGBColorSpace, powerPreference: 'high-performance' }}>
         <color attach="background" args={['#0e1013']} />
         <fog attach="fog" args={['#0e1013', 14, 26]} />
@@ -276,7 +282,7 @@ export function CarViewer({ children, autoRotate = true, height, distance = 7.2,
         {Q.shadows !== 'none' && <ContactShadows key={sceneVersion ?? 'live'} frames={sceneVersion ? 2 : Infinity} position={[0, 0.002, 0]} opacity={0.85} scale={11} blur={Q.shadows === 'soft' ? 2.6 : 2.2} far={2.4} resolution={Q.shadowRes} color="#000000" />}
         {Q.shadows === 'soft' && sceneVersion && <StaticShadows version={sceneVersion} />}
         <CameraRig rig={rig} target={target} rotate={rotate || bench > 0 && !result} minD={2.6} maxD={16} />
-        <Bench run={bench} quality={quality} onDone={(r) => setResult(r)} />
+        <Bench run={bench} quality={quality} onDone={(r) => { setResult(r); onBench?.(r); }} />
       </Canvas>
       {controls && <Toolbar quality={quality} Q={Q} rotate={rotate} setRotate={setRotate} go={go} dist={rig.dist} full={full}
         onFull={() => { if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined); else wrap.current?.requestFullscreen?.().catch(() => undefined); }}

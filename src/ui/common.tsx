@@ -77,16 +77,16 @@ export function LineChart(p: { series: Series[]; labels: string[]; height?: numb
     <div style={{ position: 'relative' }}>
       {p.series.length > 1 && <div className="row wrap small" style={{ gap: 12, marginBottom: 4 }}>{p.series.map((s) => <span key={s.name} className="row" style={{ gap: 5 }}><i className="swatch" style={{ background: s.color }} /><span className="dim">{s.name}</span></span>)}</div>}
       <svg ref={ref} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img" aria-label={p.series.map((s) => s.name).join(', ')}>
-        {ticks.map((t) => <g key={t}><line x1={padL} x2={W - padR} y1={Y(t)} y2={Y(t)} stroke={Math.abs(t) < step * 1e-6 ? '#4a4e57' : '#2a2d33'} strokeWidth={1} /><text x={padL - 6} y={Y(t) + 4} textAnchor="end" fontSize={11} fill="#8b8d93">{fmt(t)}</text></g>)}
+        {ticks.map((t) => <g key={t}><line x1={padL} x2={W - padR} y1={Y(t)} y2={Y(t)} stroke={Math.abs(t) < step * 1e-6 ? '#4a505c' : '#242830'} strokeWidth={1} /><text x={padL - 6} y={Y(t) + 4} textAnchor="end" fontSize={11} fill="#8b8d93">{fmt(t)}</text></g>)}
         {p.labels.map((l, i) => ((i % xt === 0 && n - 1 - i >= xt * 0.7) || i === n - 1) && i < n ? <text key={i} x={X(i)} y={H - 6} textAnchor={i === n - 1 ? 'end' : i === 0 ? 'start' : 'middle'} fontSize={11} fill="#8b8d93">{l}</text> : null)}
         {p.series.map((s) => <polyline key={s.name} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" points={s.values.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')} />)}
         {hover !== null && <g>
-          <line x1={X(hover)} x2={X(hover)} y1={padT} y2={H - padB} stroke="#6b7078" strokeWidth={1} />
-          {p.series.map((s) => s.values[hover] !== undefined && <circle key={s.name} cx={X(hover)} cy={Y(s.values[hover])} r={4} fill={s.color} stroke="#1a1b1e" strokeWidth={2} />)}
+          <line x1={X(hover)} x2={X(hover)} y1={padT} y2={H - padB} stroke="#6f7686" strokeWidth={1} />
+          {p.series.map((s) => s.values[hover] !== undefined && <circle key={s.name} cx={X(hover)} cy={Y(s.values[hover])} r={4} fill={s.color} stroke="#14161b" strokeWidth={2} />)}
         </g>}
       </svg>
       {hover !== null && (
-        <div style={{ position: 'absolute', top: 4, left: `${clamp((X(hover) / W) * 100, 12, 70)}%`, transform: 'translateX(8px)', background: '#23262c', border: '1px solid #3a3e46', borderRadius: 8, padding: '6px 9px', fontSize: 12, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 2 }}>
+        <div style={{ position: 'absolute', top: 4, left: `${clamp((X(hover) / W) * 100, 12, 70)}%`, transform: 'translateX(8px)', background: '#21252c', border: '1px solid #444a57', borderRadius: 8, padding: '6px 9px', fontSize: 12, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 2 }}>
           <div className="muted">{p.labels[hover] ?? ''}{p.xTitle ? ` ${p.xTitle}` : ''}</div>
           {p.series.map((s) => s.values[hover] !== undefined && <div key={s.name} className="row" style={{ gap: 6 }}><i className="swatch" style={{ background: s.color }} /><span className="dim">{s.name}</span><b className="num" style={{ marginLeft: 'auto', paddingLeft: 10 }}>{fmt(s.values[hover])}</b></div>)}
         </div>
@@ -105,7 +105,7 @@ export function BarList(p: { items: { label: string; value: number; color?: stri
       {p.items.map((it) => (
         <div key={it.label} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 76px', gap: 8, alignItems: 'center', fontSize: 12.5 }} title={`${it.label}: ${fmt(it.value)}${sum ? ` (${Math.round((it.value / sum) * 100)}%)` : ''}`}>
           <span className="dim" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
-          <div style={{ height: 10, background: '#24272c', borderRadius: 4 }}><div style={{ width: `${(Math.abs(it.value) / max) * 100}%`, height: '100%', background: it.color ?? 'var(--s1)', borderRadius: 4 }} /></div>
+          <div style={{ height: 10, background: '#252932', borderRadius: 4 }}><div style={{ width: `${(Math.abs(it.value) / max) * 100}%`, height: '100%', background: it.color ?? 'var(--s1)', borderRadius: 4 }} /></div>
           <span className="num" style={{ textAlign: 'right' }}>{fmt(it.value)}</span>
         </div>
       ))}
@@ -113,4 +113,4 @@ export function BarList(p: { items: { label: string; value: number; color?: stri
     </div>
   );
 }
-export const PALETTE = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+export const PALETTE = ['#6ea8f0', '#dd8c55', '#3fbfa0', '#c9a35c', '#d6728f', '#7fbf5e', '#9d8ff2', '#ea6b5b'];

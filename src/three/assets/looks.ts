@@ -48,13 +48,14 @@ if (uFlake > 0.0) {
   m.customProgramCacheKey = () => 'ae-flake';
 }
 
-export const FINISH_NAME: Record<PaintFinish, string> = { solid: 'Solid gloss', metallic: 'Metallic', pearl: 'Pearlescent', matte: 'Satin matte' };
+export { FINISH_NAME } from './names';
 
 /** Turn a slot material from the GLB into this car's paint (keeps the panel-gap maps of the body slot). */
-export function makePaint(src: THREE.Material, color: string, finish: PaintFinish): THREE.MeshPhysicalMaterial {
+export function makePaint(src: THREE.Material, color: string, finish: PaintFinish, useMaps = true): THREE.MeshPhysicalMaterial {
   const s = src as THREE.MeshStandardMaterial;
-  const m = new THREE.MeshPhysicalMaterial({ name: src.name, map: s.map ?? null, normalMap: s.normalMap ?? null });
-  if (s.normalMap) {
+  // the baked panel-gap / occlusion maps follow the body's UVs; decimated levels of detail distort them, so only LOD0 uses them
+  const m = new THREE.MeshPhysicalMaterial({ name: src.name, map: useMaps ? s.map ?? null : null, normalMap: useMaps ? s.normalMap ?? null : null });
+  if (useMaps && s.normalMap) {
     m.normalScale.copy(s.normalScale);
     m.clearcoatNormalMap = s.normalMap;
     m.clearcoatNormalScale.copy(s.normalScale);
