@@ -61,7 +61,7 @@ def build_body(mats):
     U.link(ob)
     U.mirror_merge(ob)
     U.recalc_normals(ob)
-    fair_tops(ob)
+    fair_skin(ob, par)
     log("body skin", len(ob.data.polygons), "faces")
     bake_seams(G, mats)
     return ob, par
@@ -90,6 +90,77 @@ def fair_tops(ob, iterations=24):
     log("faired %d top vertices, max move %.1f mm" % (len(sel), moved * 1000))
 
 
+def fair_skin(ob, par, iterations=12, lam=0.6):
+    """Laplacian fairing of the whole skin (volume-preserving) to remove the loft's sampling ripple, which shows as
+    wobbly reflections. Rows on the shoulder crease and the belt keep their position, so feature lines stay crisp."""
+    keep = set()
+    acc = 0
+    for k, n in enumerate(S.SPAN_COUNTS):
+        acc += n
+        name = S.TRACKS[k + 1][0]
+        if name in ("crease_lo", "crease", "shoulder", "belt", "sill_crease"):
+            keep.update({acc - 1, acc, acc + 1})
+    V = len(par)
+    vg = ob.vertex_groups.new(name="fair")
+    uv = ob.data.uv_layers.active.data
+    vrow = {}
+    for loop in ob.data.loops:
+        v = (uv[loop.index].uv.y * SM.TH - 0.5) / (SM.TH - 1)
+        vrow[loop.vertex_index] = int(round(v * (V - 1)))
+    full = [i for i, r in vrow.items() if r not in keep]
+    vg.add(full, 1.0, "REPLACE")
+    m = ob.modifiers.new("Fair", "LAPLACIANSMOOTH")
+    m.vertex_group = "fair"
+    m.iterations = iterations
+    m.lambda_factor = lam
+    m.lambda_border = 0.0
+    m.use_volume_preserve = True
+    m.use_normalized = True
+    U.apply_modifiers(ob)
+    g = ob.vertex_groups.get("fair")
+    if g is not None:
+        ob.vertex_groups.remove(g)
+    log("faired skin: %d of %d vertices" % (len(full), len(vrow)))
+
+
+def surface_reference(body):
+    """A copy of the uncut, faired skin: its smooth normals are transferred to the cut body afterwards."""
+    ref = body.copy()
+    ref.data = body.data.copy()
+    ref.name = ref.data.name = "SkinReference"
+    U.link(ref)
+    ref.hide_render = True
+    return ref
+
+
+def transfer_normals(objs, ref, tol=0.0025):
+    """Give every vertex lying on the original surface the smooth normal of the uncut skin. Boolean cuts leave
+    sliver faces around openings whose own normals shade badly (ragged-looking edges); this removes that, while
+    pocket walls and other off-surface geometry keep their own normals."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromObject(ref, bpy.context.evaluated_depsgraph_get())
+    for ob in objs:
+        if ob is None or ob.type != "MESH":
+            continue
+        vg = ob.vertex_groups.new(name="onskin")
+        mw = ob.matrix_world
+        on = [v.index for v in ob.data.vertices if (lambda h: h[0] is not None and h[3] < tol)(tree.find_nearest(mw @ v.co))]
+        if not on:
+            ob.vertex_groups.remove(vg)
+            continue
+        vg.add(on, 1.0, "REPLACE")
+        m = ob.modifiers.new("Normals", "DATA_TRANSFER")
+        m.object = ref
+        m.use_loop_data = True
+        m.data_types_loops = {"CUSTOM_NORMAL"}
+        m.loop_mapping = "POLYINTERP_NEAREST"
+        m.vertex_group = "onskin"
+        U.apply_modifiers(ob)
+        g = ob.vertex_groups.get("onskin")
+        if g is not None:
+            ob.vertex_groups.remove(g)
+
+
 def bake_seams(G, mats):
     t = time.time()
     mask, nrm = SM.bake(G)
@@ -109,7 +180,7 @@ def bake_seams(G, mats):
         img.file_format = "PNG"
         img.save()
         imgs.append(img)
-    M.attach_paint_maps(mats["paint_body"], imgs[0], imgs[1])
+    M.attach_paint_maps(mats["paint_body"], imgs[0], None if "--no-normal" in ARGS else imgs[1])
     log("seams baked %.1fs" % (time.time() - t))
 
 
@@ -302,6 +373,8 @@ def main():
     U.clear_scene()
     mats = M.make_materials()
     body, par = build_body(mats)
+    U.shade_smooth(body)
+    ref = surface_reference(body)
     cut_arches(body, mats)
     U.shade_smooth(body)
     cats = {"body": [body]}
@@ -309,14 +382,17 @@ def main():
     det += X.lamp(body, mats, True)
     det += X.lamp(body, mats, False)
     det += X.rear_lightbar(body, mats)
-    panel, bars, sur = X.grille(body, mats)
-    det.append(sur)
+    panel, bars, sur, frame = X.grille(body, mats)
+    det += [sur, frame]
     cats["grille_ice"] = bars
     cats["grille_ev"] = [panel]
     det += X.intakes(body, mats)
     det += X.rear_diffuser(body, mats)
     open_cabin(body, par)
     U.shade_smooth(body)
+    lenses = [o for o in det if o.name in ("headlamp_lens", "taillamp_lens", "lightbar_lens")] + [panel]
+    transfer_normals([body] + lenses, ref)
+    bpy.data.objects.remove(ref)
     for layout in ("single", "dual", "quad"):
         cats["exhaust_" + layout] = X.exhausts(mats, layout)
     det += X.mirrors(body, mats)
@@ -336,7 +412,7 @@ def main():
     sets = build_wheels(mats)
     mount_wheels(sets)
     log("geometry done in %.1fs" % (time.time() - t0))
-    if "--no-ao" not in ARGS and STAGE not in ("preview", "detail"):
+    if "--no-ao" not in ARGS and STAGE not in ("preview", "detail", "probe"):
         if bpy.context.scene.world is None:
             bpy.context.scene.world = bpy.data.worlds.new("BakeWorld")
         bake_ao(body)
@@ -345,17 +421,22 @@ def main():
     for k, objs in cats.items():
         for o in objs:
             o.hide_render = k not in shown
-    if RENDERS or STAGE in ("preview", "detail"):
+    if RENDERS or STAGE in ("preview", "detail", "probe"):
         os.makedirs(os.path.join(OUT_SRC, "renders"), exist_ok=True)
-        cam = studio.setup(res=(1280, 720) if RENDERS else (960, 540), samples=64 if RENDERS else 24)
-        views = ["front34", "side", "rear34", "front"] if STAGE == "preview" else (["detail_mirror", "interior", "detail_front"] if STAGE == "detail" else list(studio.VIEWS))
+        hdr = os.path.join(ROOT, "public", "assets", "env", "studio_small_09_1k.hdr")
+        cam = studio.setup(res=(1280, 720) if RENDERS else (960, 540), samples=64 if RENDERS else 24, hdr=hdr if os.path.exists(hdr) else None)
+        if "--zebra" in ARGS:
+            studio.zebra(mats)
+        review = ["front34", "rear34", "side", "front", "rear", "headlight", "wheel", "interior"]
+        views = ["front34", "side"] if STAGE == "probe" else ["front34", "side", "rear34", "front"] if STAGE == "preview" else (["detail_mirror", "interior", "detail_front"] if STAGE == "detail" else review)
+        targets = {"detail_mirror": (0.6, 0.9, 1.0), "interior": (0.0, 0.0, 0.85), "headlight": (2.15, 0.62, 0.70), "wheel": (D.AX_F, 0.85, 0.36)}
         for v in views:
-            studio.render(cam, v, os.path.join(OUT_SRC, "renders", f"{STAGE}-{v}.png"), target=(0.6, 0.9, 1.0) if v == "detail_mirror" else ((0.0, 0.0, 0.85) if v == "interior" else (0, 0, 0.68)))
+            studio.render(cam, v, os.path.join(OUT_SRC, "renders", f"{STAGE}-{v}.png"), target=targets.get(v, (0, 0, 0.68)))
             log("render", v, "%.1fs" % (time.time() - t0))
     os.makedirs(OUT_SRC, exist_ok=True)
     add_references(next((a.split("=", 1)[1] for a in ARGS if a.startswith("--references=")), os.path.join(OUT_SRC, "references")))
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_SRC, "sedan.blend"), compress=True)
-    if EXPORT and STAGE not in ("preview", "detail"):
+    if EXPORT and STAGE not in ("preview", "detail", "probe"):
         import export as E
         for c in sets.values():
             bpy.context.view_layer.layer_collection.children["Wheels"].children[c.name].exclude = False

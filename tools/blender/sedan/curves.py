@@ -47,6 +47,41 @@ def pchip(xs, ys):
     return f
 
 
+def cspline(xs, ys):
+    """Natural cubic spline (C2: continuous curvature, so zebra stripes stay smooth across knots)."""
+    xs = np.asarray(xs, float)
+    ys = np.asarray(ys, float)
+    if xs[0] > xs[-1]:
+        xs, ys = xs[::-1], ys[::-1]
+    n = len(xs)
+    h = np.diff(xs)
+    A = np.zeros((n, n))
+    r = np.zeros(n)
+    A[0, 0] = A[-1, -1] = 1.0
+    for i in range(1, n - 1):
+        A[i, i - 1] = h[i - 1]
+        A[i, i] = 2 * (h[i - 1] + h[i])
+        A[i, i + 1] = h[i]
+        r[i] = 3 * ((ys[i + 1] - ys[i]) / h[i] - (ys[i] - ys[i - 1]) / h[i - 1])
+    cc = np.linalg.solve(A, r)
+    b = np.diff(ys) / h - h * (2 * cc[:-1] + cc[1:]) / 3
+    d = np.diff(cc) / (3 * h)
+
+    def f(x):
+        x = np.asarray(x, float)
+        xc = np.clip(x, xs[0], xs[-1])
+        i = np.clip(np.searchsorted(xs, xc) - 1, 0, n - 2)
+        t = xc - xs[i]
+        y = ys[i] + b[i] * t + cc[i] * t ** 2 + d[i] * t ** 3
+        # linear extension beyond the ends
+        lo, hi = x < xs[0], x > xs[-1]
+        slope0 = b[0]
+        slope1 = b[-1] + 2 * cc[-2] * h[-1] + 3 * d[-1] * h[-1] ** 2
+        return np.where(lo, ys[0] + slope0 * (x - xs[0]), np.where(hi, ys[-1] + slope1 * (x - xs[-1]), y))
+
+    return f
+
+
 def catmull_rom(points, counts, ghost_start=None, ghost_end=None, alpha=0.5):
     """Centripetal Catmull-Rom through `points` (K x 3). counts[k] samples on span k (end point excluded except last).
 

@@ -43,8 +43,23 @@ def _strip_cutter_faces(ob, cutter_mat):
     U.delete_faces(ob, lambda f, uv: f.material_index in idx)
 
 
-def opening(body, name, outline, x_lo, x_hi, mats, wall_mat, lens_mat=None, mirror=True):
+def chaikin(poly, iters=3, k=0.25):
+    """Corner-cutting smoothing of a closed outline (rounded, clean opening edges)."""
+    P = np.array(poly, float)
+    for _ in range(iters):
+        Q = []
+        for i in range(len(P)):
+            a, b = P[i], P[(i + 1) % len(P)]
+            Q.append(a * (1 - k) + b * k)
+            Q.append(a * k + b * (1 - k))
+        P = np.array(Q)
+    return [tuple(p) for p in P]
+
+
+def opening(body, name, outline, x_lo, x_hi, mats, wall_mat, lens_mat=None, mirror=True, smooth_iters=3):
     """Cut an opening through the skin. Returns the lens / insert patch (or None)."""
+    if smooth_iters:
+        outline = chaikin(outline, smooth_iters)
     cutter = U.link(U.prism(name + "_cut", outline, "x", x_lo, x_hi, mirror=mirror, mat=mats[wall_mat]))
     lens = None
     if lens_mat:
@@ -219,33 +234,72 @@ def rear_lightbar(body, mats):
 
 
 # -------------------------------------------------------------------------------------- grille, intakes
-def grille(body, mats):
-    """Opening with ICE bars (grille_ice) and a closed EV panel (grille_ev); the game shows one of them."""
-    ol = full_outline(D.GRILLE)
-    panel = opening(body, "grille_ev_panel", ol, 2.05, 2.7, mats, "grille_mesh", "trim_black", mirror=False)
-    tree = bvh(panel)
-    # push the EV panel back slightly so it reads as an insert
-    panel.location.x -= 0.004
-    ice = []
-    zs = np.arange(0.425, 0.64, 0.022)
-    for k, z in enumerate(zs):
-        pts = []
-        for y in np.linspace(-0.46, 0.46, 60):
-            if not _inside(ol, y, z, -0.012):
+def mesh_insert(name, tree, outline, mats, cell=0.024, depth=0.03, mat="grille_mesh", front=True):
+    """A 3D diamond mesh set back behind an opening: small bevelled diamonds on a staggered grid."""
+    bm = bmesh.new()
+    ys = [p[0] for p in outline]
+    zs = [p[1] for p in outline]
+    row = 0
+    for z in np.arange(min(zs) + cell * 0.6, max(zs) - cell * 0.3, cell * 0.5):
+        off = (row % 2) * cell / 2
+        row += 1
+        for y in np.arange(min(ys) + off, max(ys), cell):
+            if not _inside(outline, y, z, 0.006):
                 continue
-            x, _ = hit_x(tree, y, z, True)
-            if x is not None:
-                pts.append((x - 0.022, y, z))
+            xs, _ = hit_x(tree, y, z, front)
+            if xs is None:
+                continue
+            x0 = xs - depth if front else xs + depth
+            hw, hh, t = cell * 0.36, cell * 0.22, 0.008
+            pts = [(0, hw, 0), (0, 0, hh), (0, -hw, 0), (0, 0, -hh)]
+            fr = [bm.verts.new((x0 + (t / 2 if front else -t / 2), y + p[1], z + p[2])) for p in pts]
+            bk = [bm.verts.new((x0 - (t / 2 if front else -t / 2), y + p[1] * 0.6, z + p[2] * 0.6)) for p in pts]
+            bm.faces.new(fr if front else fr[::-1])
+            for i in range(4):
+                j = (i + 1) % 4
+                bm.faces.new((fr[i], bk[i], bk[j], fr[j]) if front else (fr[j], bk[j], bk[i], fr[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.materials.append(mats[mat])
+    return U.link(bpy.data.objects.new(name, me))
+
+
+def grille(body, mats):
+    """Opening with the combustion grille (diamond mesh, chrome blade: grille_ice) and a closed EV panel
+    (grille_ev); the game shows one of them. The gloss-black frame and chrome surround are always shown."""
+    ol = chaikin(full_outline(D.GRILLE), 2, 0.2)
+    panel = opening(body, "grille_ev_panel", ol, 2.05, 2.7, mats, "grille_mesh", "trim_black", mirror=False, smooth_iters=0)
+    tree = bvh(panel)
+    panel.location.x -= 0.004
+    ice = [mesh_insert("grille_diamonds", tree, offset_outline(ol, -0.01), mats, cell=0.026, depth=0.035)]
+    # one horizontal chrome blade across the grille
+    for k, z in enumerate((0.545,)):
+        pts = []
+        for y in np.linspace(-0.5, 0.5, 80):
+            if not _inside(ol, y, z, -0.01):
+                continue
+            xx, _ = hit_x(tree, y, z, True)
+            if xx is not None:
+                pts.append((xx - 0.012, y, z))
         if len(pts) > 3:
-            ice.append(tube(f"grille_bar_{k}", pts, 0.0042, mats["trim_chrome"]))
-    # mesh backing and surround
-    back = []
-    for y, z in resample(ol, 120):
-        x, _ = hit_x(tree, y, z, True)
-        if x is not None:
-            back.append((x - 0.004, y, z))
-    sur = tube("grille_surround", back, 0.006, mats["trim_chrome"], closed=True)
-    return panel, ice, sur
+            blade = tube(f"grille_blade_{k}", pts, 0.0075, mats["trim_chrome"])
+            blade.scale = (1, 1, 0.55)
+            ice.append(blade)
+    # frame: gloss black ring set just inside the opening, chrome surround on the edge
+    rim, sur = [], []
+    for y, z in resample(ol, 160):
+        xx, _ = hit_x(tree, y, z, True)
+        if xx is not None:
+            sur.append((xx - 0.002, y, z))
+    for y, z in resample(offset_outline(ol, -0.012), 160):
+        xx, _ = hit_x(tree, y, z, True)
+        if xx is not None:
+            rim.append((xx - 0.01, y, z))
+    s1 = tube("grille_surround", sur, 0.0055, mats["trim_chrome"], closed=True)
+    s2 = tube("grille_frame", rim, 0.011, mats["trim_black"], closed=True)
+    return panel, ice, s1, s2
 
 
 def _inside(poly, y, z, margin=0.0):
@@ -267,18 +321,32 @@ def _inside(poly, y, z, margin=0.0):
 
 
 def intakes(body, mats):
-    lower = opening(body, "intake_lower", full_outline(D.LOWER_INTAKE), 2.0, 2.7, mats, "grille_mesh", None, mirror=False)
-    # vertical corner intakes (air curtains)
-    curtain = [(0.70, 0.31), (0.78, 0.30), (0.80, 0.33), (0.79, 0.50), (0.74, 0.52), (0.70, 0.49)]
-    opening(body, "intake_corner", curtain, 2.0, 2.7, mats, "grille_mesh", None, mirror=True)
-    # splitter lip under the bumper (gloss black)
+    """Lower intake with a diamond mesh, corner intakes with a horizontal fin, gloss-black lip."""
+    parts = []
+    lo = chaikin(full_outline(D.LOWER_INTAKE), 3)
+    opening(body, "intake_lower", lo, 2.0, 2.7, mats, "grille_mesh", None, mirror=False, smooth_iters=0)
     tree = bvh(body)
+    parts.append(mesh_insert("intake_lower_mesh", tree, offset_outline(lo, -0.008), mats, cell=0.024, depth=0.03))
+    corner = [(0.665, 0.30), (0.785, 0.29), (0.812, 0.315), (0.80, 0.475), (0.765, 0.505), (0.70, 0.495), (0.675, 0.46)]
+    opening(body, "intake_corner", corner, 2.0, 2.7, mats, "grille_mesh", None, mirror=True, smooth_iters=1)
+    tree = bvh(body)
+    for side in (1, -1):
+        pts = []
+        for y in np.linspace(0.67, 0.80, 12):
+            xx, _ = hit_x(tree, side * y, 0.395, True)
+            if xx is not None:
+                pts.append((xx - 0.025, side * y, 0.395))
+        if len(pts) > 3:
+            f = tube(f"intake_fin_{side}", pts, 0.009, mats["trim_black"])
+            f.scale = (1, 1, 0.5)
+            parts.append(f)
     pts = []
-    for y in np.linspace(-0.66, 0.66, 40):
-        x, _ = hit_x(tree, y, 0.235, True)
-        if x is not None:
-            pts.append((x + 0.004, y, 0.226))
-    return [tube("front_lip", pts, 0.010, mats["trim_black"])]
+    for y in np.linspace(-0.70, 0.70, 50):
+        xx, _ = hit_x(tree, y, 0.235, True)
+        if xx is not None:
+            pts.append((xx + 0.004, y, 0.226))
+    parts.append(tube("front_lip", pts, 0.010, mats["trim_black"]))
+    return parts
 
 
 def rear_diffuser(body, mats):
@@ -295,26 +363,16 @@ def rear_diffuser(body, mats):
 
 
 def exhausts(mats, layout):
-    """Exhaust tips for a layout: 'single', 'dual', 'quad'. Positioned in the diffuser opening."""
-    ys = {"single": [0.56], "dual": [0.56, -0.56], "quad": [0.62, 0.49, -0.49, -0.62]}[layout]
+    """Exhaust finishers integrated in the diffuser: rounded-rectangle chrome bezels with a dark double-wall pipe.
+    Layouts: 'single', 'dual', 'quad' (object names exhaust_<layout>_<i>)."""
+    ys = {"single": [0.56], "dual": [0.56, -0.56], "quad": [0.63, 0.47, -0.47, -0.63]}[layout]
+    w = 0.13 if layout == "quad" else 0.19
     parts = []
     for i, y in enumerate(ys):
-        bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=0.038, depth=0.12, location=(-2.43, y, 0.345), rotation=(0, math.pi / 2, 0))
-        t = bpy.context.active_object
-        t.name = f"exhaust_{layout}_{i}"
-        t.scale = (1, 1.35 if layout != "quad" else 1.0, 0.72)
-        sol = t.modifiers.new("S", "SOLIDIFY")
-        sol.thickness = 0.003
-        bm = bmesh.new()
-        bm.from_mesh(t.data)
-        caps = [f for f in bm.faces if abs(f.normal.x) > 0.9]
-        bmesh.ops.delete(bm, geom=caps, context="FACES")
-        bm.to_mesh(t.data)
-        bm.free()
-        t.data.materials.append(mats["exhaust"])
-        U.apply_modifiers(t)
-        U.shade_smooth(t)
-        parts.append(t)
+        bez = rounded_box(f"exhaust_{layout}_{i}", (0.06, w, 0.07), (-2.425, y, 0.343), mats["exhaust"], 0.02, 4)
+        inner = rounded_box(f"exhaust_{layout}_{i}_pipe", (0.06, w - 0.022, 0.05), (-2.432, y, 0.343), mats["exhaust_inner"], 0.016, 3)
+        parts.append(bez)
+        parts.append(inner)
     return parts
 
 
