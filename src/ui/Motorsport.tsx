@@ -14,8 +14,8 @@ import {
 import { fmtMoney, fmtTime, MONTHS } from '../sim/util';
 import { BarList, Kpi, LineChart, Meter, Modal, PageHead, Seg, Select, Slider, Src, StatLine } from './common';
 import { ImpactPreview } from './Impact';
-import { CarViewer } from '../three/CarViewer';
-import { RaceCar } from '../three/CarModel';
+import { Guard3D, RaceCarViewer } from './Lazy3D';
+import { CarPoster, posterForDiscipline } from './ds/poster';
 import { TrackMap } from '../three/TrackMap';
 
 const DEV_KEYS: (keyof DevLevels)[] = ['aero', 'engine', 'chassis', 'reliability'];
@@ -166,7 +166,7 @@ function CarDesign({ p, div }: { p: Company; div: MotorsportDivision }) {
         <div className="row"><label className="field"><span className="lab"><span>Main colour</span></span><input type="color" value={spec.color} onChange={(x) => up({ color: x.target.value })} /></label><label className="field"><span className="lab"><span>Second colour</span></span><input type="color" value={spec.color2} onChange={(x) => up({ color2: x.target.value })} /></label></div>
       </div>
       <div className="col">
-        <div className="viewer"><CarViewer><RaceCar discipline={div.discipline} year={ch.year} color={spec.color} color2={spec.color2} wing={spec.aeroBias} /></CarViewer><div className="overlay">{regs.className} · body style follows the era's regulations · original livery</div><div className="hint">drag to rotate · scroll to zoom</div></div>
+        <div className="viewer"><Guard3D poster={<CarPoster kind={posterForDiscipline(div.discipline)} color={spec.color} />}><RaceCarViewer discipline={div.discipline} year={ch.year} color={spec.color} color2={spec.color2} wing={spec.aeroBias} /></Guard3D><div className="overlay">{regs.className} · body style follows the era's regulations · original livery</div><div className="hint">drag to rotate · scroll to zoom</div></div>
         <div className="panel"><div className="grid g2">
           <div><h4>Torque (Nm)</h4><LineChart height={170} width={330} series={[{ name: 'Torque', color: '#3987e5', values: curve.map((c) => c.nm) }]} labels={curve.map((c) => String(c.rpm))} xTitle="rpm" /></div>
           <div><h4>Power (kW)</h4><LineChart height={170} width={330} series={[{ name: 'Power', color: '#d95926', values: curve.map((c) => c.kw) }]} labels={curve.map((c) => String(c.rpm))} xTitle="rpm" /></div>

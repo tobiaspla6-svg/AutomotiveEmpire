@@ -14,8 +14,8 @@ import { budgetRef } from '../sim/racing/season';
 import { computeRaceCar, defaultRaceCar } from '../sim/racing/racecar';
 import { fmtMoney, fmtNum } from '../sim/util';
 import { BarList, Kpi, Seg, Select, Slider, Src, StatLine } from './common';
-import { CarViewer } from '../three/CarViewer';
-import { RaceCar, RoadCar } from '../three/CarModel';
+import { Guard3D, RaceCarViewer, RoadCarViewer } from './Lazy3D';
+import { CarPoster, posterForBody, posterForDiscipline } from './ds/poster';
 import { REGION_IDS } from '../data/world';
 
 const DIFFS: { value: Difficulty; label: string }[] = [{ value: 'easy', label: 'Relaxed' }, { value: 'normal', label: 'Realistic' }, { value: 'hard', label: 'Ruthless' }];
@@ -80,7 +80,7 @@ export function CeoSetupScreen() {
             <ul style={{ margin: 0, paddingLeft: 18 }}>{objectives.map((o) => <li key={o.id}>{o.text}</li>)}</ul>
           </div>
           <div className="viewer" style={{ height: 250 }}>
-            <CarViewer><RoadCar spec={flagship.spec} /></CarViewer>
+            <Guard3D poster={<CarPoster kind={posterForBody(flagship.spec.body)} color={flagship.spec.color} />}><RoadCarViewer spec={flagship.spec} /></Guard3D>
             <div className="overlay"><b>{flagship.name}</b> · generated from its specification</div>
           </div>
         </div>
@@ -162,7 +162,7 @@ export function FounderSetupScreen() {
       <div className="right">
         <div><h1>{o.name || 'Your company'} <span className="muted" style={{ fontWeight: 400 }}>est. {o.year}</span></h1><p className="dim">{COUNTRY[o.country].name} · {SPECIALIZATIONS.find((s) => s.id === o.specialization)?.name}</p></div>
         <div className="grid g2">
-          <div className="viewer" style={{ height: 300 }}><CarViewer><RoadCar spec={car} /></CarViewer><div className="overlay">A period-typical starting point — you will engineer the real thing in the design studio.</div></div>
+          <div className="viewer" style={{ height: 300 }}><Guard3D poster={<CarPoster kind={posterForBody(car.body)} color={car.color} />}><RoadCarViewer spec={car} /></Guard3D><div className="overlay">A period-typical starting point — you will engineer the real thing in the design studio.</div></div>
           <div className="panel col">
             <h4>Where the capital goes</h4>
             <BarList total fmt={(v) => fmtMoney(v)} items={[{ label: 'Factory', value: costs.factory }, { label: 'Engineering team (hiring)', value: costs.eng, color: 'var(--s2)' }, { label: 'Research facilities', value: costs.research, color: 'var(--s3)' }, { label: 'Cash left to operate', value: Math.max(0, left), color: 'var(--s4)' }]} />
@@ -236,7 +236,7 @@ export function MotorsportSetupScreen() {
       <div className="right">
         <div><h1>{name} <span className="muted" style={{ fontWeight: 400 }}>{year}</span></h1><p className="dim">{regs.seriesName} (unofficial) · {regs.className}</p></div>
         <div className="grid g2">
-          <div className="viewer" style={{ height: 300 }}><CarViewer><RaceCar discipline={disc} year={year} color={color} color2={color2} wing={0.5} /></CarViewer><div className="overlay">Period-typical baseline car for these regulations</div></div>
+          <div className="viewer" style={{ height: 300 }}><Guard3D poster={<CarPoster kind={posterForDiscipline(disc)} color={color} />}><RaceCarViewer discipline={disc} year={year} color={color} color2={color2} wing={0.5} /></Guard3D><div className="overlay">Period-typical baseline car for these regulations</div></div>
           <div className="panel col"><h4>Regulations in {year} <Src k="h" /> <span className="muted">(simplified)</span></h4>
             <p>{regs.note}</p>
             <StatLine label="Minimum weight" value={`${Math.round(regs.minWeight)} kg`} />

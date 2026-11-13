@@ -27,59 +27,6 @@ import { startRestructuring } from '../sim/actions';
 const ledgerLabels = (l: MonthLedger[]) => l.map((x) => `${MONTHS[x.m - 1]} ${String(x.y).slice(2)}`);
 const yearly = (l: MonthLedger[], f: (x: MonthLedger) => number, n = 12) => l.slice(-n).reduce((a, x) => a + f(x), 0);
 
-// -------------------------------------------------------------------------------- Dashboard
-export function DashboardView() {
-  const { g, p } = useGame();
-  const setView = useStore((s) => s.setView);
-  const led = p.ledger.slice(-36);
-  const ready = p.models.filter((m) => m.status === 'ready');
-  const dev = p.models.filter((m) => m.status === 'development');
-  const prod = p.models.filter((m) => m.status === 'production');
-  const cap = p.factories.reduce((a, f) => a + f.capacity, 0);
-  const used = p.factories.reduce((a, f) => a + f.capacity * lineShareUsed(f), 0);
-  const noPrice = prod.filter((m) => m.price <= 0);
-  const short = prod.filter((m) => m.lastDemand > 0 && m.inventory < 1 && REGION_IDS.reduce((a, r) => a + m.lastSales[r], 0) < m.lastDemand * 0.9);
-  const lossy = prod.filter((m) => m.lastUnitCost > 0 && m.price * 0.88 < m.lastUnitCost);
-  return (
-    <>
-      <PageHead title={`${p.name} — ${MONTHS[g.month - 1]} ${g.year}`}>{p.board?.note ?? `Founded ${p.founded} in ${COUNTRY[p.country]?.name ?? p.country}.`}</PageHead>
-      <div className="panel grid g4">
-        <Kpi label="Revenue (12 mo)" value={fmtMoney(yearly(p.ledger, (x) => x.revenue))} />
-        <Kpi label="Net profit (12 mo)" value={fmtMoney(yearly(p.ledger, (x) => x.profit))} cls={yearly(p.ledger, (x) => x.profit) < 0 ? 'bad' : 'good'} />
-        <Kpi label="Cars sold (12 mo)" value={fmtNum(yearly(p.ledger, (x) => x.units))} />
-        <Kpi label="Plant utilisation" value={cap ? `${Math.round((used / cap) * 100)}%` : '—'} detail={`${fmtNum(cap)} units / month installed`} />
-      </div>
-      {(ready.length > 0 || noPrice.length > 0 || short.length > 0 || lossy.length > 0 || p.troubleMonths > 0 || (!p.models.length && !p.motorsport)) && (
-        <div className="panel col" style={{ gap: 6 }}>
-          <h4>Needs your attention</h4>
-          {!p.models.length && !p.motorsport && <div>• You have no vehicles. <button className="btn sm" onClick={() => setView('vehicles')}>Open the design studio</button></div>}
-          {ready.map((m) => <div key={m.id}>• <b>{m.name}</b> has finished development and needs a production line. <button className="btn sm" onClick={() => setView('factories')}>Go to factories</button></div>)}
-          {noPrice.map((m) => <div key={m.id}>• <b>{m.name}</b> has no price. <button className="btn sm" onClick={() => setView('vehicles')}>Set price</button></div>)}
-          {short.map((m) => <div key={m.id}>• <b>{m.name}</b> is sold out: demand {fmtNum(m.lastDemand)} / month exceeds supply. Add capacity or raise the price.</div>)}
-          {lossy.map((m) => <div key={m.id} className="warn">• <b>{m.name}</b> is sold below cost ({fmtMoney(m.price * 0.88)} net vs {fmtMoney(m.lastUnitCost)} to build).</div>)}
-          {p.troubleMonths > 0 && <div className="bad">• Net debt exceeds your credit limit ({p.troubleMonths} months). Cut costs, sell assets or raise prices before the creditors move in.</div>}
-        </div>
-      )}
-      <div className="grid g2">
-        <div className="panel"><h3>Revenue and net profit per month</h3><LineChart series={[{ name: 'Revenue', color: PALETTE[0], values: led.map((x) => x.revenue) }, { name: 'Net profit', color: PALETTE[1], values: led.map((x) => x.profit) }]} labels={ledgerLabels(led)} fmt={(v) => fmtMoney(v)} /></div>
-        <div className="panel"><h3>Cars sold per month</h3><LineChart series={[{ name: 'Units', color: PALETTE[2], values: led.map((x) => x.units) }]} labels={ledgerLabels(led)} fmt={fmtNum} /></div>
-      </div>
-      <div className="grid g2">
-        <div className="panel col">
-          <h3>Programmes</h3>
-          {dev.length === 0 && <p className="muted">No vehicle in development.</p>}
-          {dev.map((m) => <div key={m.id} className="col" style={{ gap: 3 }}><div className="row between"><span><b>{m.name}</b> <span className="muted">· {SEG[m.segment].name}</span></span><span className="small dim">{Math.ceil(m.devMonthsLeft)} months left</span></div><Meter value={m.devMonthsTotal - m.devMonthsLeft} max={m.devMonthsTotal} color="var(--accent)" /></div>)}
-          {dev.length > 0 && <p className="small muted">Engineers needed for full speed: {Math.round(dev.reduce((a, m) => a + devEngineersNeeded(g, p, m), 0))} · employed: {p.engineers}.</p>}
-          {p.board && <><h3 style={{ marginTop: 8 }}>Board objectives</h3>{p.board.objectives.map((o) => <div key={o.id} className="row between"><span className={o.done ? 'good' : o.failed ? 'bad' : ''}>{o.done ? '✓ ' : o.failed ? '✗ ' : '• '}{o.text}</span><span className="small muted">by {o.byYear}</span></div>)}</>}
-        </div>
-        <div className="panel col"><div className="row between"><h3>Latest news</h3><button className="btn sm ghost" onClick={() => setView('news')}>All news</button></div>
-          {g.news.slice(0, 6).map((n, i) => <div key={i} className="news-item" style={{ padding: '6px 0' }}><div className="row between"><b>{n.title}</b><span className="tiny muted">{MONTHS[n.m - 1]} {n.y}</span></div><div className="small dim">{n.body}</div></div>)}
-        </div>
-      </div>
-    </>
-  );
-}
-
 // -------------------------------------------------------------------------------- Factories
 export function FactoriesView() {
   const { g, p } = useGame();

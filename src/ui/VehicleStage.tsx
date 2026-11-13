@@ -1,13 +1,13 @@
 // A vehicle in the studio viewer with an honest summary of what the 3D model shows (Phase 4).
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import type { VehicleSpec } from '../sim/types';
 import type { RenderDescriptor } from '../sim/render';
-import { CarViewer } from '../three/CarViewer';
-import { VehicleView, useVisualPlan, type AssetStatus } from '../three/VehicleView';
-import { FINISH_NAME } from '../three/assets/looks';
-import { preload } from '../three/assets/loader';
-import { SEDAN_REF } from '../three/assets/catalog';
+import type { AssetStatus } from '../three/VehicleView';
+import { useVisualPlan } from '../three/assets/usePlan';
+import { FINISH_NAME } from '../three/assets/names';
 import type { VisualPlan } from '../three/assets/adapter';
+import { CarPoster, posterForBody } from './ds/poster';
+import { Guard3D, VehicleViewer } from './Lazy3D';
 
 const RIM_NAME = { rim_sport5: 'five-spoke', rim_turbine10: 'turbine', rim_multi15: 'multi-spoke' } as const;
 
@@ -35,13 +35,12 @@ export function VehicleStage({ desc, spec, year, title, height, autoRotate = tru
   const plan = useVisualPlan(desc, year);
   const [status, setStatus] = useState<{ s: AssetStatus; info?: string }>({ s: plan.kind === 'asset' ? 'loading' : 'procedural' });
   const onStatus = useCallback((s: AssetStatus, info?: string) => setStatus({ s, info }), []);
-  useEffect(() => { preload([SEDAN_REF.wheels.url]); }, []);
   return (
     <div className="stage-wrap">
       <div className="viewer studio" style={{ height: height ?? 420 }}>
-        <CarViewer controls autoRotate={autoRotate} distance={7.6} sceneVersion={`${status.s}|${status.info ?? ''}|${JSON.stringify(desc)}`}>
-          <VehicleView plan={plan} spec={spec} onStatus={onStatus} />
-        </CarViewer>
+        <Guard3D eager poster={<CarPoster kind={posterForBody(desc.body)} color={desc.color} label="3D" className="poster-hero" />}>
+          <VehicleViewer plan={plan} spec={spec} onStatus={onStatus} autoRotate={autoRotate} sceneVersion={`${status.s}|${status.info ?? ''}|${JSON.stringify(desc)}`} />
+        </Guard3D>
         {title && <div className="overlay">{title}</div>}
         <div className={'vstatus ' + status.s} title={status.info}>
           {status.s === 'loading' ? 'Loading 3D asset…' : status.s === 'ready' ? `Asset: ${plan.kind === 'asset' ? plan.asset.name : ''}` : status.s === 'failed' ? 'Asset failed to load — procedural preview' : 'Procedural preview'}

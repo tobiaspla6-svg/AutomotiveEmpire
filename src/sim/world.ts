@@ -10,7 +10,7 @@ import { annualProfit, annualUnits, creditLimit, engineerCost, factoryBuildCost,
 import { buildSchedule, fireHistorical, rollRandomEvent } from './events';
 import { computeMarket, modelWeights, segVolume } from './market';
 import { gauss, hashStr, makeRng } from './rng';
-import { clamp, cpi, kf, MONTHS } from './util';
+import { clamp, cpi, fmtMoney, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
 import { adoptFamilies } from './families';
 import { updateFx } from './regional';
@@ -202,7 +202,7 @@ function newYear(g: GameState) {
   if (g.mode !== 'motorsport') reviewBoard(g, p);
   const last = p.ledger.slice(-12);
   const profit = last.reduce((a, l) => a + l.profit, 0), units = last.reduce((a, l) => a + l.units, 0), rev = last.reduce((a, l) => a + l.revenue, 0);
-  news(g, 'finance', `${g.year - 1} annual report`, `Revenue $${(rev / 1e6).toFixed(1)}M, net ${profit >= 0 ? 'profit' : 'loss'} $${(Math.abs(profit) / 1e6).toFixed(1)}M${units ? `, ${Math.round(units).toLocaleString()} cars sold` : ''}. Cash $${(p.cash / 1e6).toFixed(1)}M, debt $${(p.debt / 1e6).toFixed(1)}M.`);
+  news(g, 'finance', `${g.year - 1} annual report`, `Revenue ${fmtMoney(rev)}, net ${profit >= 0 ? 'profit' : 'loss'} ${fmtMoney(Math.abs(profit))}${units ? `, ${Math.round(units).toLocaleString()} cars sold` : ''}. Cash ${fmtMoney(p.cash)}, debt ${fmtMoney(p.debt)}.`);
 }
 
 /** Advance the whole world by one month. */
