@@ -163,7 +163,18 @@ one mesh, so a car costs about 42 draws plus 4 × (rim, disc, caliper, tyre) wha
 
 **Measured in this project's container** — no GPU, Chromium software rendering (SwiftShader on 4 CPU cores):
 
-<!-- METRICS -->
+| Preset | Files downloaded (first visit) | Load + Draco decode | Build | Triangles in scene | Draws / frame | Triangles / frame | GPU geometry | GPU textures | JS heap | FPS (software) | p95 frame |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Low | LOD2 485 kB + wheels 260 kB + Draco 192 kB | 2.1 s | 28 ms | 178k | 65 | 198k | 3 MB | 23 MB | 27 MB | 12.1 | 99 ms |
+| Medium | LOD1 728 kB + wheels + Draco + HDRI 1.6 MB | 3.9 s | 36 ms | 248k | 67 | 272k | 5 MB | 24 MB | 39 MB | 3.3 | 323 ms |
+| High | LOD0 1.06 MB + wheels + Draco + HDRI | 8.1 s | 67 ms | 464k | 246 | 1.85M | 11 MB | 28 MB | 51 MB | 0.8 | 1.7 s |
+
+Viewer 652×428 px at pixel ratio 1; "Triangles in scene" includes four wheels and tyres. On High the transmission
+pass (glass and lenses) and the reflective floor each draw the scene again, which is why draws and triangles per
+frame are several times the scene's. GPU memory is estimated from buffer and texture sizes (`gl.info` and the scene
+graph); texture memory fell from ≈90 MB to ≈23–28 MB when the panel-gap/AO maps went from 4096×2048 to 2048×1024
+(the shut lines are geometry now). Measured by `p4bmetrics` (Playwright) against the production build; raw values in
+`assets-src/sedan-ref/web-metrics.json`.
 
 These figures say nothing about a real graphics card: software rendering is one to two orders of magnitude slower.
 They are useful for comparing presets and for the hardware-independent numbers (triangles, draw calls, download
@@ -209,8 +220,8 @@ headlight detail, wheel detail, interior). Cycles renders of the same views from
 1. The overall form is still conservative and slightly heavy: flanks are plain between the arches and the tail is
    tall and plain (the new rear step line barely reads). It looks like a credible game car, not a hand-sculpted
    production design.
-2. The front fender crest near the headlamp has a sharp fold where the analytic hood blends into the loft; the front
-   corner intakes read as dark blobs.
+2. The front fender crest near the headlamp has a sharp fold where the analytic hood blends into the loft, and the
+   front fender above the arch still shows slightly irregular zebra stripes.
 3. Gaps follow the seam curves but door shut lines have no inner door-frame geometry (they are 6.5 mm grooves).
 4. Interior up close is simple: no stitching, switchgear, seat belts or pedals; the dashboard top is plain.
 5. Under the HDRI's large softbox the hood can read very bright on High at some angles.
