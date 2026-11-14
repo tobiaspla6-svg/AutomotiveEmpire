@@ -9,7 +9,8 @@ import { Emblem, Icon, type IconName } from './ds/icons';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SettingsButton } from './SettingsDialog';
 import { DashboardView } from './Dashboard';
-import { CompanyView, FinanceView, MarketView, NewsView, ResearchView, SavesView } from './Views';
+import { CompanyView, NewsView, SavesView } from './Views';
+import { FinanceView, MarketView, ResearchView } from './Corporate';
 import { FactoriesView } from './Factories';
 
 // the vehicle studio and motorsport screens carry the 3D viewers: load them on first visit
