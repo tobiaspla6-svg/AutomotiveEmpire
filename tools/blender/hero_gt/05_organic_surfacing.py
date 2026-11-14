@@ -260,7 +260,14 @@ profile.rotation_euler=(Vector((0,0,.70))-profile.location).to_track_quat('-Z','
 profile.data.ortho_scale=5.5
 S.camera=cam
 
+# Hosted Blender scenes can have camera-bound timeline markers. If Shot 001
+# still points to the engine macro, frame_set(1) silently overrides scene.camera
+# and every exterior render becomes a close-up of the engine.
+for marker in S.timeline_markers:
+    if marker.frame==1: marker.camera=cam
 S.frame_set(1)
+S.camera=cam
+
 result={'phase':'5_gt_organic_surfacing',
         'body_side_vertices':sum(len(bpy.data.objects[n].data.vertices) for n in ('BODY_side_cutout_L','BODY_side_cutout_R')),
         'new_front_faces':len(surface.data.polygons),
