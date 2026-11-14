@@ -53,7 +53,7 @@ describe('getting-started steps', () => {
   });
 
   it('every step and view has text in the catalogue', () => {
-    for (const id of ['design', 'develop', 'factory', 'line', 'sell', 'profit', 'drivers', 'devBudget', 'race', 'points']) { expect(en, id).toHaveProperty(`guide.step.${id}`); expect(en, id).toHaveProperty(`guide.step.${id}.why`); }
+    for (const id of ['design', 'develop', 'factory', 'line', 'sell', 'reach', 'profit', 'drivers', 'devBudget', 'race', 'points']) { expect(en, id).toHaveProperty(`guide.step.${id}`); expect(en, id).toHaveProperty(`guide.step.${id}.why`); }
     for (const v of ['vehicles', 'factories', 'market', 'finance', 'motorsport']) expect(en).toHaveProperty(`go.${v}`);
   });
 });

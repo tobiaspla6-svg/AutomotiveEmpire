@@ -4,7 +4,7 @@ import type { Company, GameState } from './types';
 import { REGION_IDS } from '../data/world';
 import { playerTeam, teamRegs } from './racing/season';
 
-export type GuideStepId = 'design' | 'develop' | 'factory' | 'line' | 'sell' | 'profit' | 'drivers' | 'devBudget' | 'race' | 'points';
+export type GuideStepId = 'design' | 'develop' | 'factory' | 'line' | 'sell' | 'reach' | 'profit' | 'drivers' | 'devBudget' | 'race' | 'points';
 export type GuideView = 'vehicles' | 'factories' | 'market' | 'finance' | 'motorsport';
 export interface GuideStep { id: GuideStepId; done: boolean; view: GuideView }
 
@@ -35,8 +35,18 @@ export function onboardingSteps(g: GameState, p: Company): GuideStep[] {
     { id: 'factory', done: hasPlant, view: 'factories' },
     { id: 'line', done: hasLine, view: 'factories' },
     { id: 'sell', done: sold, view: 'market' },
-    { id: 'profit', done: p.ledger.some((l) => l.profit > 0), view: 'finance' },
+    // sales that use most of what the lines were tooled for: dealers, awareness and price brought demand up to the plant
+    { id: 'reach', done: g.mode !== 'founder' || reachedLine(p), view: 'market' }, // an established maker already has its network
+    // an operating profit: interest earned on the founding capital does not count as making money from cars
+    { id: 'profit', done: p.ledger.some((l) => l.units > 0 && l.profit + l.tax + l.interest - l.assetGains > 0), view: 'finance' },
   ];
+}
+
+/** Last three months' sales are at least half of the monthly capacity of the lines building the company's cars. */
+function reachedLine(p: Company): boolean {
+  const cap = p.factories.reduce((a, f) => a + f.capacity * f.lines.reduce((x, l) => x + l.share, 0), 0);
+  const last = p.ledger.slice(-3);
+  return cap > 0 && last.length === 3 && last.reduce((a, l) => a + l.units, 0) / 3 >= cap * 0.5;
 }
 
 /** The first step still to do, or null when the company is up and running. */

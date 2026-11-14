@@ -345,6 +345,7 @@ export function Studio({ init, basedOn, initName, onClose, initialMode = 'basic'
               <StatLine label={t('st.market.devPerCar')} value={m$(guide.devPerCar + guide.toolingPerCar)} title={t('st.market.devPerCarHint', { n: num(guide.lifeUnits, lang), years: Math.round(guide.lifeUnits / vol / 12) })} />
               <StatLine label={t('st.market.reference')} value={m$(segPrice(seg, g.year))} />
               <StatLine label={t('st.market.demand')} value={guide.blind ? t('st.market.noDealers') : t('st.market.perMonth', { n: num(guide.rawDemand, lang) })} />
+              {guide.breakEven > guide.value * 1.1 && <div className="warnbox" data-warn="cost-above-worth">{t('st.market.costAboveWorth', { worth: m$(guide.value), be: m$(guide.breakEven), n: num(vol, lang) })}</div>}
               {!guide.viable && <div className="warnbox">{t('st.market.notViable', { pct: Math.round((guide.breakEven / guide.recommended - 1) * 100) })}</div>}
               {guide.viable && !guide.blind && guide.rawDemand < vol * 0.6 && <div className="warnbox">{t('st.market.lowDemand')}</div>}
               {!guide.blind && guide.rawDemand > vol * 1.5 && <p className="tiny muted">{t('st.market.highDemand')}</p>}

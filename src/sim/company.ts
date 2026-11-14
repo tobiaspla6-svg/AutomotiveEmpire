@@ -121,6 +121,18 @@ export function restructuringSaving(g: GameState, c: Company): number {
   const fixed = c.factories.reduce((a, f) => a + factoryFixedCost(f, g.year), 0) * 12;
   return rev * 0.035 * RESTRUCTURE.overheadCut + fixed * RESTRUCTURE.fixedCut;
 }
+/**
+ * Head-office overhead of a manufacturer with plants (management, finance, legal, IT, purchasing), per month: $0.4M
+ * (2020 dollars) for a maker with 5,000 cars a month of capacity or more, scaling with the square root of capacity below
+ * that, never under a fifth. Phase 4E: it used to be the flat $0.4M for every maker, so a 60-car-a-month workshop carried
+ * the head office of a volume manufacturer: about 13 % of such a workshop's revenue in the 2020s, under 2 % of a
+ * 600-a-month plant's (scripts/audit-founder-strategies.ts).
+ */
+export const HEAD_OFFICE_REF_CAPACITY = 5000;
+export function headOffice(c: Company, year: number): number {
+  const cap = c.factories.reduce((a, f) => a + f.capacity + (f.expansion?.add ?? 0), 0);
+  return 0.4e6 * cpi(year) * clamp(Math.sqrt(cap / HEAD_OFFICE_REF_CAPACITY), 0.2, 1);
+}
 export const factoryBuildCost = (capacity: number, automation: number, year: number) => capacity * 12 * 4000 * (1 + automation) * cpi(year) * kf([[1950, 0.5], [1990, 0.85], [2020, 1]], year);
 export const factoryFixedCost = (f: Factory, year: number) => Math.max(f.capacity, 40) * (6 * wage(f.country, year) + 180 * cpi(year) * (1 + 1.5 * f.automation));
 export const factoryValue = (f: Factory, year: number) => factoryBuildCost(f.capacity, f.automation, year) * 0.45;
@@ -431,7 +443,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   }
 
   // ---- overheads
-  L.wages = c.engineers * engineerCost(c, g.year) + L.revenue * (c.restructuring ? 0.035 * (1 - RESTRUCTURE.overheadCut) : 0.035) + (c.factories.length ? 0.4e6 * cpi(g.year) : 0);
+  L.wages = c.engineers * engineerCost(c, g.year) + L.revenue * (c.restructuring ? 0.035 * (1 - RESTRUCTURE.overheadCut) : 0.035) + (c.factories.length ? headOffice(c, g.year) : 0);
   if (c.restructuring) c.restructuring = Math.max(0, c.restructuring - 1);
   L.marketing = c.marketingBudget;
   const reachTotal = REGION_IDS.reduce((a, r) => a + c.reach[r], 0);

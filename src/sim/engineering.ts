@@ -576,6 +576,29 @@ export function defaultVehicle(year: number, body: BodyType = 'sedan'): VehicleS
   };
 }
 
+/**
+ * The first design the studio proposes to a founder: the body and equipment that suit the company's speciality, so the
+ * starting point is a car its buyers could afford to buy and the company could afford to build (Phase 4E). It changes no
+ * rule of the game; every value can be edited before the programme is approved.
+ */
+/** Sport tyres in the starter design only once every founder can have the technology (it arrives in 1966, founders may lag four years). */
+const SPORT_TYRES_FROM = 1971;
+export function starterVehicle(year: number, specialization: string): VehicleSpec {
+  switch (specialization) {
+    case 'mass': { // affordable cars: a lean hatchback — simple interior, modest engine and wheels, everyday build quality
+      const s = defaultVehicle(year, 'hatch');
+      s.quality = 0.3; s.interior = 'basic'; s.engine.displacement = year < 1970 ? 1100 : year < 2000 ? 1300 : 1200;
+      s.wheelDia = Math.max(13, s.wheelDia - 2); s.tireWidth = Math.max(145, s.tireWidth - 20);
+      return s;
+    }
+    case 'sports': { const s = defaultVehicle(year, 'coupe'); s.drive = 'RWD'; s.engine.displacement = 2000; s.sport = 0.6; if (year >= SPORT_TYRES_FROM) s.tireCompound = 'sport'; return s; }
+    case 'luxury': { const s = defaultVehicle(year, 'sedan'); s.interior = 'premium'; s.quality = 0.6; s.engine.displacement = year < 1970 ? 2500 : 3000; s.engine.layout = 'I6'; s.drive = 'RWD'; return s; }
+    case 'offroad': { const s = defaultVehicle(year, 'suv'); s.drive = 'AWD'; s.quality = 0.4; return s; }
+    case 'ev': { const s = defaultVehicle(year, 'coupe'); s.engine.layout = 'EV'; return s; }
+    default: return defaultVehicle(year);
+  }
+}
+
 export const SCORE_KEYS: (keyof Scores)[] = ['performance', 'comfort', 'economy', 'reliability', 'safety', 'practicality', 'prestige', 'drivability'];
 export const SEGMENT_HINT: Record<SegmentId, string> = {
   budget: 'Cheap to buy and run', family: 'Space, comfort, dependability', premium: 'Comfort and status', luxury: 'Ultimate comfort and prestige',

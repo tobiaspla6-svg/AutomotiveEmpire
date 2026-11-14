@@ -1,0 +1,60 @@
+
+== MASS founder 1965  (capital $46.4M, plant 600/mo, dev 24 mo, CPI 0.12)
+  EU budget cell: 3,435,881 cars/yr; AI distribution in cell 2,696,299 (+ other 739,465); player reach EU 7155 = 0.208% of distribution
+  appeal q: player 0.214 vs AI avg 0.673 (ratio 0.32); player share 0.066% → 2268 cars/yr (line 5760/yr)
+  player: product 2.07 · priceRatio 1.69 · price 0.11 · prestige 0.93 · reliab 1.08 · sporty 1.00 · age 1.05 · aware 0.85 · home 1.12 · safety 1.00
+  top AI (Volkswagen Beetle (Type 1)): product 1.52 · priceRatio 1.20 · price 0.52 · prestige 0.97 · reliab 1.10 · sporty 1.00 · age 1.02 · aware 0.82 · home 1.12 · safety 0.60
+  brand: prestige 25 (top AI 38), reliability 62 (66), awareness EU 76 (70)
+  price: list $3166 · value $2252 · recommended $3548 · unit cost $2455 → margin/car after dealer $330
+  last 12 mo: sold 1909, revenue 5.1M, cogs 4.5, plant fixed 0.4, wages 1.9 (80 eng × $14k), marketing 1.8, dealer upkeep 0.1, depreciation 0.2, interest 1.7 → profit -2.2M; cash 34.5M
+  dealers: $217 per car/yr of reach (6.8% of list price) · fixed cost per car sold $2205
+
+== MASS founder 1990  (capital $296.3M, plant 600/mo, dev 28 mo, CPI 0.51)
+  EU budget cell: 6,539,840 cars/yr; AI distribution in cell 5,326,738 (+ other 2,609,468); player reach EU 7155 = 0.090% of distribution
+  appeal q: player 0.073 vs AI avg 1.038 (ratio 0.07); player share 0.006% → 413 cars/yr (line 5760/yr)
+  player: product 1.81 · priceRatio 1.99 · price 0.04 · prestige 0.92 · reliab 1.08 · sporty 1.00 · age 1.05 · aware 0.82 · home 1.12 · safety 1.00
+  top AI (Volkswagen Golf (Mk3)): product 1.63 · priceRatio 1.07 · price 0.80 · prestige 1.00 · reliab 1.09 · sporty 1.00 · age 1.00 · aware 0.82 · home 1.12 · safety 1.00
+  brand: prestige 23 (top AI 49), reliability 62 (65), awareness EU 70 (70)
+  price: list $16956 · value $9337 · recommended $17039 · unit cost $12447 → margin/car after dealer $2474
+  last 12 mo: sold 386, revenue 5.6M, cogs 4.9, plant fixed 2.1, wages 9.4 (80 eng × $83k), marketing 1.8, dealer upkeep 0.2, depreciation 1.2, interest 16.0 → profit 1.4M; cash 265.7M
+  dealers: $858 per car/yr of reach (5.1% of list price) · fixed cost per car sold $35174
+
+== MASS founder 2015  (capital $732.8M, plant 600/mo, dev 30 mo, CPI 0.92)
+  EU budget cell: 3,584,773 cars/yr; AI distribution in cell 4,895,074 (+ other 640,613); player reach EU 7155 = 0.129% of distribution
+  appeal q: player 0.027 vs AI avg 1.156 (ratio 0.02); player share 0.003% → 110 cars/yr (line 5760/yr)
+  player: product 1.71 · priceRatio 2.30 · price 0.02 · prestige 0.92 · reliab 1.08 · sporty 1.00 · age 1.05 · aware 0.78 · home 1.12 · safety 1.00
+  top AI (Volkswagen Golf (Mk7)): product 1.48 · priceRatio 1.08 · price 0.77 · prestige 1.01 · reliab 1.10 · sporty 1.00 · age 0.86 · aware 0.82 · home 1.12 · safety 1.00
+  brand: prestige 23 (top AI 54), reliability 63 (66), awareness EU 63 (70)
+  price: list $35990 · value $17344 · recommended $39024 · unit cost $29350 → margin/car after dealer $2322
+  last 12 mo: sold 107, revenue 3.3M, cogs 3.3, plant fixed 3.8, wages 16.5 (80 eng × $148k), marketing 1.8, dealer upkeep 0.4, depreciation 2.7, interest 8.5 → profit -17.0M; cash 539.4M
+  dealers: $1475 per car/yr of reach (4.1% of list price) · fixed cost per car sold $210206
+
+== SPORTS founder 1965  (capital $46.4M, plant 600/mo, dev 24 mo, CPI 0.12)
+  EU sports cell: 355,436 cars/yr; AI distribution in cell 347,710 (+ other 171,657); player reach EU 1610 = 0.310% of distribution
+  appeal q: player 0.725 vs AI avg 0.888 (ratio 0.82); player share 0.253% → 898 cars/yr (line 5760/yr)
+  player: product 1.20 · priceRatio 1.21 · price 0.64 · prestige 0.90 · reliab 1.04 · sporty 1.02 · age 1.05 · aware 0.86 · home 1.12 · safety 1.00
+  top AI (Ford Mustang): product 1.48 · priceRatio 1.14 · price 0.75 · prestige 0.97 · reliab 1.02 · sporty 1.06 · age 0.95 · aware 0.82 · home 1.00 · safety 1.00
+  brand: prestige 36 (top AI 45), reliability 62 (55), awareness EU 77 (70)
+  price: list $4065 · value $4030 · recommended $4634 · unit cost $2677 → margin/car after dealer $900
+  last 12 mo: sold 920, revenue 3.2M, cogs 2.4, plant fixed 0.4, wages 1.8 (80 eng × $14k), marketing 1.8, dealer upkeep 0.0, depreciation 0.2, interest 1.7 → profit -1.8M; cash 35.1M
+  dealers: $217 per car/yr of reach (5.3% of list price) · fixed cost per car sold $4451
+
+== SPORTS founder 1990  (capital $296.3M, plant 600/mo, dev 28 mo, CPI 0.51)
+  EU sports cell: 590,979 cars/yr; AI distribution in cell 155,876 (+ other 468,575); player reach EU 1610 = 0.258% of distribution
+  appeal q: player 0.482 vs AI avg 1.255 (ratio 0.38); player share 0.099% → 585 cars/yr (line 5760/yr)
+  player: product 1.20 · priceRatio 1.38 · price 0.44 · prestige 0.89 · reliab 1.04 · sporty 1.03 · age 1.05 · aware 0.82 · home 1.12 · safety 1.00
+  top AI (Ford Mustang (SN95)): product 1.74 · priceRatio 1.03 · price 0.94 · prestige 0.97 · reliab 1.03 · sporty 0.98 · age 1.11 · aware 0.82 · home 1.00 · safety 1.00
+  brand: prestige 34 (top AI 45), reliability 62 (58), awareness EU 69 (70)
+  price: list $21226 · value $16905 · recommended $21131 · unit cost $12856 → margin/car after dealer $5823
+  last 12 mo: sold 535, revenue 9.8M, cogs 7.1, plant fixed 2.1, wages 9.5 (80 eng × $83k), marketing 1.8, dealer upkeep 0.1, depreciation 1.2, interest 16.1 → profit 3.0M; cash 268.4M
+  dealers: $858 per car/yr of reach (4.0% of list price) · fixed cost per car sold $25301
+
+== SPORTS founder 2015  (capital $732.8M, plant 600/mo, dev 30 mo, CPI 0.92)
+  EU sports cell: 303,327 cars/yr; AI distribution in cell 95,169 (+ other 299,954); player reach EU 1610 = 0.407% of distribution
+  appeal q: player 0.364 vs AI avg 1.709 (ratio 0.21); player share 0.087% → 263 cars/yr (line 5760/yr)
+  player: product 1.26 · priceRatio 1.50 · price 0.33 · prestige 0.89 · reliab 1.04 · sporty 1.02 · age 1.05 · aware 0.77 · home 1.12 · safety 1.00
+  top AI (Ford Mustang (S550)): product 1.78 · priceRatio 0.94 · price 1.12 · prestige 0.97 · reliab 1.05 · sporty 1.01 · age 0.96 · aware 0.82 · home 1.00 · safety 1.00
+  brand: prestige 34 (top AI 45), reliability 63 (64), awareness EU 62 (70)
+  price: list $43993 · value $32516 · recommended $47148 · unit cost $30555 → margin/car after dealer $8159
+  last 12 mo: sold 257, revenue 9.9M, cogs 7.2, plant fixed 3.8, wages 16.7 (80 eng × $148k), marketing 1.8, dealer upkeep 0.1, depreciation 2.7, interest 8.6 → profit -14.0M; cash 545.7M
+  dealers: $1475 per car/yr of reach (3.4% of list price) · fixed cost per car sold $87151

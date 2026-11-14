@@ -9,7 +9,7 @@ import {
   capitalOptions, ENGINEER_LEVELS, FACTORY_SIZES, founderCosts, MS_BUDGETS, newCeoGame, newFounderGame, newMotorsportGame, previewCompany,
   RESEARCH_LEVELS, SPECIALIZATIONS, WORKFORCE_LEVELS, type FounderSetup,
 } from '../sim/world';
-import { LAYOUT_NAME, defaultVehicle } from '../sim/engineering';
+import { LAYOUT_NAME, starterVehicle } from '../sim/engineering';
 import { DISCIPLINES, disciplineAvailable, getRegs } from '../sim/racing/regs';
 import { budgetRef } from '../sim/racing/season';
 import { computeRaceCar, defaultRaceCar } from '../sim/racing/racecar';
@@ -144,7 +144,7 @@ export function FounderSetupScreen() {
   const set = (patch: Partial<FounderSetup>) => setO((prev) => { const n = { ...prev, ...patch }; if (patch.year !== undefined) { const i = Math.max(0, capitalOptions(prev.year).findIndex((c) => Math.abs(c - prev.capital) < 1)); n.capital = capitalOptions(n.year)[i]; if (n.specialization === 'ev' && n.year < 2005) n.specialization = 'sports'; } return n; });
   const costs = founderCosts(o);
   const left = o.capital - costs.total;
-  const car = useMemo(() => { const s = defaultVehicle(o.year, o.specialization === 'mass' ? 'hatch' : o.specialization === 'offroad' ? 'suv' : o.specialization === 'luxury' ? 'sedan' : 'coupe'); s.color = o.color; if (o.specialization === 'ev') s.engine.layout = 'EV'; return s; }, [o.year, o.specialization, o.color]);
+  const car = useMemo(() => { const s = starterVehicle(o.year, o.specialization); s.color = o.color; return s; }, [o.year, o.specialization, o.color]);
   const maxAuto = o.year < 1972 ? 0.3 : o.year < 1992 ? 0.6 : 0.8;
   return (
     <div className="setup">

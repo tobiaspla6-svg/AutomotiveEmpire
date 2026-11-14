@@ -1,0 +1,6 @@
+en: cost-above-worth warning shown: true
+en: guide design:done develop:done factory:done line:done sell:done reach:next profit:todo | insights: 80 engineers, no programme running
+en: console errors 0
+es: cost-above-worth warning shown: true
+es: guide design:done develop:done factory:done line:done sell:done reach:next profit:todo | insights: 80 ingenieros sin ningún programa en marcha
+es: console errors 0
