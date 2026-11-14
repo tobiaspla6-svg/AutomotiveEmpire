@@ -267,13 +267,16 @@ export function Campaigns2D(){
 
 export function League2D(){
   const {g,p}=useGame(),{lang}=useT(),es=lang==='es';
-  const rank=g.companies.filter(c=>c.alive).map(c=>({id:c.id,name:c.name,color:c.color,annual:annualUnits(c),me:c.id===p.id})).sort((a,b)=>b.annual-a.annual);
+  const [period,setPeriod]=useState<'monthly'|'annual'>('annual');
+  const measure=(company:typeof p)=>period==='annual'?annualUnits(company):(company.ledger[company.ledger.length-1]?.units??0);
+  const rank=g.companies.filter(c=>c.alive).map(c=>({id:c.id,name:c.name,color:c.color,annual:measure(c),me:c.id===p.id})).sort((a,b)=>b.annual-a.annual);
   const myRank=rank.findIndex(x=>x.me)+1;
   return <section className="ae2d">
     <Headline kicker={label(es,'LA LIGA DE FABRICANTES','MANUFACTURER LEAGUE')} title={label(es,'¿Quién domina las calles?','Who rules the roads?')} sub={label(es,'Clasificación de rivales de esta partida: volumen anual estimado por la simulación. No son jugadores online.','Rankings from this save: simulated annual sales. These are not real online players.')}/>
-    <div className="ae2d-league-top"><div><span>{label(es,'TU POSICIÓN','YOUR RANK')}</span><strong>#{myRank}</strong></div><div><span>{label(es,'TUS VENTAS ANUALES','YOUR ANNUAL SALES')}</span><strong>{num(annualUnits(p),lang)}</strong></div><div><span>{label(es,'RIVALES ACTIVOS','ACTIVE RIVALS')}</span><strong>{rank.length-1}</strong></div></div>
+    <div className="ae2d-period" role="group" aria-label={label(es,'Período del ranking','Ranking period')}><button className={period==='monthly'?'on':''} onClick={()=>setPeriod('monthly')}>{label(es,'Último mes','Last month')}</button><button className={period==='annual'?'on':''} onClick={()=>setPeriod('annual')}>{label(es,'Últimos 12 meses','Last 12 months')}</button></div>
+    <div className="ae2d-league-top"><div><span>{label(es,'TU POSICIÓN','YOUR RANK')}</span><strong>#{myRank}</strong></div><div><span>{period==='annual'?label(es,'TUS VENTAS ANUALES','YOUR ANNUAL SALES'):label(es,'VENTAS ÚLTIMO MES','LAST MONTH SALES')}</span><strong>{num(measure(p),lang)}</strong></div><div><span>{label(es,'RIVALES ACTIVOS','ACTIVE RIVALS')}</span><strong>{rank.length-1}</strong></div></div>
     <div className="ae2d-leaderboard" role="table" aria-label={label(es,'Clasificación de marcas','Brand rankings')}>
-      {rank.slice(0,20).map((c,i)=><div className={'ae2d-league-row'+(c.me?' me':'')} role="row" key={c.id}><span className="ae2d-league-position">#{i+1}</span><i className="ae2d-league-brand" style={{background:c.color}}/><b>{c.name}</b><span className="ae2d-league-sales">{num(c.annual,lang)} {label(es,'autos/año','cars/year')}</span>{c.me&&<Pill>{label(es,'VOS','YOU')}</Pill>}</div>)}
+      {rank.slice(0,20).map((c,i)=><div className={'ae2d-league-row'+(c.me?' me':'')} role="row" key={c.id}><span className="ae2d-league-position">#{i+1}</span><i className="ae2d-league-brand" style={{background:c.color}}/><b>{c.name}</b><span className="ae2d-league-sales">{num(c.annual,lang)} {period==='annual'?label(es,'autos/año','cars/year'):label(es,'autos/mes','cars/month')}</span>{c.me&&<Pill>{label(es,'VOS','YOU')}</Pill>}</div>)}
     </div>
     <p className="ae2d-soft">{label(es,'Las ligas semanales online y sus premios necesitarán perfiles, guardados verificados y un servidor para impedir trampas.','Online weekly leagues and prizes need profiles, verified saves and an anti-cheat backend.')}</p>
   </section>;
