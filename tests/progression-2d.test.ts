@@ -1,6 +1,7 @@
 import { describe,expect,it } from 'vitest';
 import { founder,player } from './helpers';
 import type { VehicleModel } from '../src/sim/types';
+import { prepareLoadedGame, saveDamage } from '../src/sim/migrate';
 import {
   BLUEPRINTS, RARITY, MILESTONES, availableMilestones, effectiveOdds, equipPart,
   fixedPrice, lifetimeSales, openSalesChest, previewChest, redeemPart,
@@ -80,4 +81,16 @@ describe('Phase 5 earned-only 2D progression',()=>{
     p.arcade={claimedMilestones:[],inventory:{prototype:1},equipped:{},credits:99999};
     expect(equipPart(g,'prototype')).toBe('Blueprint not available in this era.');
   });
+  it('remains compatible with older saves but rejects corrupted collectibles',()=>{
+    const g=founder({year:2000});
+    expect(saveDamage(g)).toBeNull();
+    const old=prepareLoadedGame(JSON.parse(JSON.stringify(g)));
+    expect(player(old).arcade).toBeUndefined();
+    openSalesChest(g,0);
+    const snapshot=JSON.parse(JSON.stringify(g));
+    expect(prepareLoadedGame(snapshot)).toBeTruthy();
+    snapshot.companies.find((c:{id:string})=>c.id===g.playerId).arcade.credits=Number.NaN;
+    expect(saveDamage(snapshot)).toContain('damaged collectibles');
+  });
+
 });
