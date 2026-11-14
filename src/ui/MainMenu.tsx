@@ -9,7 +9,6 @@ import { importFromFile, loadSlot, localSaves, type SaveMeta } from '../store/sa
 import { useGraphics } from '../three/quality';
 import { Emblem, Icon, type IconName } from './ds/icons';
 import { CarPoster, type PosterKind } from './ds/poster';
-import { Guard3D, ShowroomViewer } from './Lazy3D';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SettingsButton, SettingsDialog } from './SettingsDialog';
 
@@ -99,9 +98,9 @@ export function MainMenu() {
 
         <div className="menu2-right">
           <div className="showroom">
-            <Guard3D className="showroom-view" poster={<CarPoster kind={m.poster} color={m.color} label={t(mk(mode, 'car'))} className="poster-hero" />}>
-              <ShowroomViewer scene={mode} />
-            </Guard3D>
+            <div className="showroom-view ae2d-showroom-poster" data-3d="off">
+              <CarPoster kind={m.poster} color={m.color} label={t(mk(mode, 'car'))} className="poster-hero" />
+            </div>
             <div className="showroom-cap">
               <span className="eyebrow">{t('menu.mode', { n: MODES.findIndex((x) => x.id === mode) + 1 })}</span>
               <b>{t(mk(mode, 'title'))}</b>
