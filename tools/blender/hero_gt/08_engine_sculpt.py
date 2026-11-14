@@ -15,7 +15,6 @@ BLACK=bpy.data.materials['V8_polymer_dark']
 STEEL=bpy.data.materials['V8_burnished_steel']
 BOLT=bpy.data.materials['V8_titanium_fasteners']
 CARBON=bpy.data.materials['V8_carbon_intake']
-COPPER=bpy.data.materials['V8_copper_thermal']
 RUBBER=bpy.data.materials['V8_braided_lines']
 def mesh(name,pts,faces,ma,smooth=True):
     me=bpy.data.meshes.new(name+'_mesh')
