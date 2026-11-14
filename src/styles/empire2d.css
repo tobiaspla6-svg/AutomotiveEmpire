@@ -171,3 +171,17 @@
 @media (max-width:780px) {.ae2d-campus {min-height:245px;height:49vw}.ae2d-map-pin {min-width:90px;padding:7px}.ae2d-map-pin b {font-size:10px}.ae2d-pin-hq {left:23%;top:47%}.ae2d-pin-factory {left:61%;top:40%}.ae2d-pin-studio {left:85%;top:63%}.ae2d-workshop-layout,.ae2d-campaign-layout {grid-template-columns:1fr}.ae2d-assembly {grid-template-columns:repeat(3,1fr)}.ae2d-card-collection {grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:500px) {.ae2d {gap:16px}.ae2d h2 {font-size:35px}.ae2d-hub-intro {flex-direction:column;align-items:flex-start}.ae2d-rank-badge {width:100%}.ae2d-hub-actions {grid-template-columns:1fr}.ae2d-campus {height:260px}.ae2d-map-pin small {display:none}.ae2d-map-pin b {font-size:10px}.ae2d-pin-hq {left:22%;top:52%}.ae2d-pin-factory {left:60%;top:42%}.ae2d-pin-studio {left:82%;top:68%}.ae2d-steps button {font-size:10px;padding:9px 4px}.ae2d-workbench,.ae2d-workshop-preview {padding:16px}.ae2d-engine-options {grid-template-columns:repeat(2,1fr)}.ae2d-history-engines,.ae2d-pick-grid,.ae2d-card-collection {grid-template-columns:repeat(2,1fr)}.ae2d-collection-header,.ae2d-league-top {grid-template-columns:1fr}.ae2d-collection-grid,.ae2d-factory-info {grid-template-columns:repeat(2,minmax(0,1fr))}.ae2d-assembly {grid-template-columns:repeat(2,1fr)}.ae2d-league-row {flex-wrap:wrap}.ae2d-league-sales {font-size:11px}}
 @media (prefers-reduced-motion:reduce) {.ae2d * {animation:none!important;transition:none!important}}
+
+/* GPU-free first impression and an optional 3D comparison button. */
+.ae2d-showroom-poster {background:radial-gradient(circle at 55% 60%,rgba(122,180,210,.19),transparent 53%),linear-gradient(140deg,#1b324a,#0d1829);display:grid;place-items:center}
+.ae2d-showroom-poster::before {content:"";position:absolute;left:12%;right:12%;bottom:20%;height:22%;border-radius:50%;background:#12203388;filter:blur(35px)}
+.ae2d-showroom-poster .poster {position:relative;z-index:1;width:100%;height:100%;display:grid;place-items:center}
+.ae2d-showroom-poster .poster svg {width:min(86%,750px);max-height:80%}
+.ae2d-car-stage {width:100%;height:100%;display:grid;place-items:center;position:relative;background:radial-gradient(circle at 45% 50%,#344f6b,#142238 67%,#0c1523)}
+.ae2d-car-stage .poster {width:100%;height:100%;display:grid;place-items:center}
+.ae2d-car-stage .poster svg {width:min(88%,700px);max-height:85%}
+.ae2d-view-switch {position:absolute;right:14px;top:14px;border:1px solid #7b91a1;background:#24374b;color:#f6e2b9;padding:7px 11px;border-radius:9px;font-weight:800;font-size:12px;z-index:5}
+.ae2d-view-switch:hover {border-color:#f9c46a}
+.nav-group:first-child button {border:1px solid transparent}
+.nav-group:first-child button:hover {border-color:#4d6378}
+.nav-group:first-child button.on {border-color:#a78e64;background:linear-gradient(90deg,#694d2e99,#22394b50)}
