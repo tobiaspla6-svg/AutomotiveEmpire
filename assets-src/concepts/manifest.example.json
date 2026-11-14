@@ -1,0 +1,37 @@
+{
+  "_comment": "PLACEHOLDER VALUES ONLY. Not a real generation: nothing has been generated yet. Copy the shape, not the data.",
+  "schema": 1,
+  "assets": [
+    {
+      "id": "AE01-front34",
+      "kind": "vehicle-view",
+      "family": "ae01-meridian",
+      "view": "front34",
+      "file": "vehicles/ae01-meridian/front34.webp",
+      "sha256": "<sha256 of the committed file>",
+      "bytes": 0, "width": 2560, "height": 1440,
+      "original_sha256": "<sha256 of the file as downloaded>",
+      "source": { "provider": "Higgsfield", "surface": "mcp", "job_id": "<job id shown by the tool>" },
+      "model": { "name": "<model name as shown by the tool>", "version": "<version>", "mode": "image" },
+      "generated_at": "<UTC ISO date-time>",
+      "prompt_id": "P-AE01-front34",
+      "prompt_sha256": "<sha256 of prompts/P-AE01-front34.txt>",
+      "inputs": ["<ids of OUR OWN reference images uploaded as input>"],
+      "credits_spent": null,
+      "rights": {
+        "basis": "Higgsfield Terms of Service",
+        "terms_retrieved": "2026-11-14",
+        "commercial_use": "permitted per provider terms (verify at sign-up)",
+        "owner_claim": "no ownership claimed by provider",
+        "third_party_inputs": false,
+        "c2pa_present": "unknown",
+        "trademark_screen": "pending",
+        "notes": ""
+      },
+      "intended_use": ["blender-reference", "marketing"],
+      "geometry": "none",
+      "status": "approved",
+      "qa": { "checklist": "QA-VEH", "reviewed_by": "" }
+    }
+  ]
+}

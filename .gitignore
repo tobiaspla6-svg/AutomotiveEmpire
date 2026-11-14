@@ -10,3 +10,6 @@ assets-src/**/renders/detail-*
 __pycache__/
 assets-src/**/renders/probe-*
 assets-src/**/renders/wheelcheck-*
+
+# Concept-media scratch (downloads before approval)
+assets-src/concepts/_candidates/

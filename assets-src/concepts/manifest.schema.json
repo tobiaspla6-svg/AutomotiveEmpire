@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Automotive Empire concept-media manifest",
+  "type": "object",
+  "required": [
+    "schema",
+    "assets"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "sha256",
+          "source",
+          "model",
+          "generated_at",
+          "prompt_id",
+          "prompt_sha256",
+          "rights",
+          "intended_use",
+          "geometry",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "vehicle-view",
+              "background",
+              "ui-mood",
+              "motorsport",
+              "video",
+              "video-still"
+            ]
+          },
+          "view": {
+            "enum": [
+              "front34",
+              "side",
+              "front",
+              "rear",
+              "rear34"
+            ]
+          },
+          "geometry": {
+            "const": "none",
+            "description": "Concept media are 2D pictures or videos, never 3D geometry."
+          },
+          "status": {
+            "enum": [
+              "approved",
+              "superseded"
+            ]
+          },
+          "intended_use": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "marketing",
+                "store-art",
+                "blender-reference",
+                "internal-mood",
+                "trailer",
+                "ui-background"
+              ]
+            }
+          },
+          "rights": {
+            "type": "object",
+            "required": [
+              "basis",
+              "terms_retrieved",
+              "third_party_inputs",
+              "trademark_screen"
+            ]
+          },
+          "storage": {
+            "type": "object",
+            "description": "Required for videos, which are not committed to git."
+          }
+        }
+      }
+    }
+  }
+}
