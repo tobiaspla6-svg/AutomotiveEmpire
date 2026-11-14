@@ -102,6 +102,20 @@ def simplify_lod(lod):
         bpy.context.view_layer.objects.active=active
         bpy.ops.object.join()
         active.name="ENGINE_BATCH_"+mat.replace(" ","_")
+    # Engine curves make up most of low-end poly count. Once they are batched,
+    # decimate the baked static assemblies only for LOD2; preserve LOD0 source.
+    if lod==2:
+        for obj in list(bpy.data.objects):
+            if not obj.name.startswith("ENGINE_BATCH_") or obj.type!="MESH":
+                continue
+            if len(obj.data.polygons)<450:continue
+            bpy.ops.object.select_all(action="DESELECT")
+            obj.hide_set(False);obj.select_set(True)
+            bpy.context.view_layer.objects.active=obj
+            dec=obj.modifiers.new("engine_low_hardware_budget","DECIMATE")
+            dec.ratio=.43
+            dec.use_collapse_triangulate=True
+            bpy.ops.object.modifier_apply(modifier=dec.name)
     print("[AE GT-RS] LOD optimized",lod,"triangles",triangles(),flush=True)
 
 def export_glb(lod):
