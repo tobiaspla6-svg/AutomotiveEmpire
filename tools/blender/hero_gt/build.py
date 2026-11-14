@@ -21,7 +21,9 @@ DEST=ROOT/"dist"/"hero_gt"
 DEST.mkdir(parents=True,exist_ok=True)
 
 # The numbered scripts are standalone procedural design steps; all are run in one session.
-for phase in ("01_shell.py","02_v8_powertrain.py","03_finish.py","04_optimize_fit.py"):
+for phase in ("01_shell.py","02_v8_powertrain.py","03_finish.py","04_optimize_fit.py",
+              "05_organic_surfacing.py","06_sculpted_fenders.py","07_rounded_nose.py",
+              "08_engine_sculpt.py","09_fastback_and_grille.py"):
     code=(HERE/phase).read_text(encoding="utf-8")
     exec(compile(code,str(HERE/phase),"exec"),{"bpy":bpy,"__name__":"__main__"})
     print("[AE GT-RS] Built",phase,flush=True)
