@@ -28,7 +28,7 @@ export function App() {
       {confirm && (
         <div className="modal-bg" style={{ zIndex: 70 }}><div className="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-h" style={{ maxWidth: 460 }}>
           <h3 id="confirm-h">{t('confirm.title')}</h3><p className="dim">{confirm.text}</p>
-          <div className="row end"><button className="btn" onClick={() => answer(false)}>{t('confirm.cancel')}</button><button className="btn primary" autoFocus onClick={() => answer(true)}>{t('confirm.ok')}</button></div>
+          <div className="row end"><button className="btn" data-action="confirm-cancel" onClick={() => answer(false)}>{t('confirm.cancel')}</button><button className="btn primary" data-action="confirm-ok" autoFocus onClick={() => answer(true)}>{t('confirm.ok')}</button></div>
         </div></div>
       )}
       {toast && <div className={'toast' + (toast.bad ? ' bad' : '')} role="status">{toast.text}</div>}

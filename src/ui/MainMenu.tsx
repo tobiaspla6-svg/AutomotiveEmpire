@@ -83,7 +83,7 @@ export function MainMenu() {
                     <span className="small muted">{t(`mode.${last.mode}` as MessageKey)} · {monthYear(last.month, last.year, lang)} · {money(last.cash, lang)}</span>
                     <span className="tiny muted">{t('menu.savedAt', { when: dateTime(last.savedAt, lang) })}</span>
                   </div>
-                  <button className="btn primary" onClick={() => load(last.slot)}><Icon name="play" size={14} />{t('menu.resume')}</button>
+                  <button className="btn primary" data-action="resume" onClick={() => load(last.slot)}><Icon name="play" size={14} />{t('menu.resume')}</button>
                 </div>
                 {rest.length > 0 && <button className="linkbtn" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>{showAll ? t('menu.hideSaves') : t('menu.allSaves', { n: rest.length })}<Icon name={showAll ? 'up' : 'down'} size={14} /></button>}
                 {showAll && <ul className="save-list">{rest.map((s) => (

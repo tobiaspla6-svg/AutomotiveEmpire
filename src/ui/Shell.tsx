@@ -50,9 +50,9 @@ export function Shell() {
       <header className="topbar">
         <div className="who"><Emblem size={30} /><div className="who-text"><b title={p.name}>{p.name}</b><span className="eyebrow">{t(`mode.${g.mode}` as MessageKey)}</span></div></div>
         <div className="ribbon">
-          <Stat icon="clock" label={t('top.date')} value={monthYear(g.month, g.year, lang)} />
-          <Stat icon="cash" label={t('top.cash')} value={money(p.cash, lang)} tone={p.cash < 0 ? 'bad' : ''} />
-          <Stat icon="layers" label={t('top.debt')} value={money(p.debt, lang)} tone={p.troubleMonths > 0 ? 'bad' : ''} />
+          <Stat id="date" icon="clock" label={t('top.date')} value={monthYear(g.month, g.year, lang)} />
+          <Stat id="cash" icon="cash" label={t('top.cash')} value={money(p.cash, lang)} tone={p.cash < 0 ? 'bad' : ''} />
+          <Stat id="debt" icon="layers" label={t('top.debt')} value={money(p.debt, lang)} tone={p.troubleMonths > 0 ? 'bad' : ''} />
           {last && <Stat icon="gauge" label={t('top.lastMonth')} value={`${last.profit >= 0 ? '+' : ''}${money(last.profit, lang)}`} tone={last.profit >= 0 ? 'good' : 'bad'} />}
           {conf !== undefined && <Stat icon="target" label={t(ms ? 'top.owner' : 'top.board')} value={`${Math.round(conf)}%`} tone={confTone} bar={conf} />}
         </div>
@@ -61,7 +61,7 @@ export function Shell() {
           <button className="iconbtn" onClick={async () => { await save(`${p.name} ${g.year}`); notify(t('top.saved')); }} aria-label={t('top.save')} title={t('top.save')}><Icon name="save" /></button>
           <SettingsButton />
           <button className="iconbtn" data-action="help" onClick={reopenGuide} aria-label={t('guide.help')} title={t('guide.help')}><Icon name="help" /></button>
-          <button className="iconbtn" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
+          <button className="iconbtn" data-action="quit" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
         </div>
         {race ? <button className="btn primary" data-action="race-weekend" onClick={() => go('race')}><Icon name="flag" size={16} />{t('top.raceWeekend', { name: race.name })}</button>
           : <div className="row" style={{ gap: 8 }}>
@@ -120,9 +120,9 @@ export function Shell() {
   );
 }
 
-function Stat({ icon, label, value, tone = '', bar }: { icon: IconName; label: string; value: string; tone?: string; bar?: number }) {
+function Stat({ id, icon, label, value, tone = '', bar }: { id?: string; icon: IconName; label: string; value: string; tone?: string; bar?: number }) {
   return (
-    <div className="rstat"><Icon name={icon} size={16} />
+    <div className="rstat" data-stat={id}><Icon name={icon} size={16} />
       <div className="rstat-t"><span className="l">{label}</span><span className={'v ' + tone}>{value}</span>{bar !== undefined && <i className="rstat-bar"><b style={{ width: `${Math.max(0, Math.min(100, bar))}%` }} className={tone} /></i>}</div>
     </div>
   );
