@@ -1,0 +1,40 @@
+name: GT Hero Blender assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - visual-gt-hero-production
+    paths:
+      - "tools/blender/hero_gt/**"
+      - ".github/workflows/gt-hero-assets.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-gt-hero:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install headless Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender --version | head -n 3
+      - name: Generate editable Blender source, LODs and preview renders
+        run: blender -b --factory-startup --python tools/blender/hero_gt/build.py
+      - name: Validate output and file sizes
+        run: |
+          python3 tools/blender/hero_gt/check_assets.py dist/hero_gt
+      - name: Upload original GT hero model and 3 optimized GLBs
+        uses: actions/upload-artifact@v4
+        with:
+          name: automotive-empire-gt-hero-blender
+          path: |
+            dist/hero_gt/*.blend
+            dist/hero_gt/*.glb
+            dist/hero_gt/*.png
+            dist/hero_gt/report.json
+          retention-days: 14
