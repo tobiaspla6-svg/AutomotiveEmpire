@@ -36,7 +36,11 @@ npm run preview    # serve dist/ on http://localhost:4173
 ```bash
 npm test           # the full automated suite (about 2 minutes)
 npm run ci         # what CI runs: type-check, tests, production build
+npm run test:e2e   # browser tests on the production build (needs Playwright with Chromium)
 ```
+
+The interface (design system, English/Spanish, graphics on different hardware, onboarding, browser tests) is
+described in [docs/interface.md](docs/interface.md).
 
 The suite (`tests/`, Vitest, Node environment) exercises the simulation core headlessly; the
 persistence tests run the real IndexedDB save layer against `fake-indexeddb`.
@@ -461,7 +465,9 @@ and the academy are optional fields that start empty. Phase 4 added only the opt
   (remaining defects are listed in the visual review in [docs/asset-pipeline.md](docs/asset-pipeline.md));
   performance was measured only with software rendering (no GPU available), so 60 FPS on desktop GPUs is a target
   to confirm with the in-app FPS test (procedure in the same document).
-- The interface is English only and designed for desktop.
+- The interface is in English and Spanish and designed for desktop (it reflows down to tablet width). Text the
+  simulation writes as sentences (news, board objectives, decisions, the race log, engineering warnings) and proper
+  names are not translated; see [docs/interface.md](docs/interface.md).
 
 ### Not implemented yet
 

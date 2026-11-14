@@ -2,10 +2,10 @@
 //
 // If a GLB asset fits the descriptor it is loaded (cached), stretched and styled; until it is ready, or if it fails,
 // the procedural model from the specification is shown instead, so a view is never empty.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { VehicleSpec } from '../sim/types';
 import type { RenderDescriptor } from '../sim/render';
-import { planVehicle, type AssetPlan, type VisualPlan } from './assets/adapter';
+import type { AssetPlan, VisualPlan } from './assets/adapter';
 import { buildCar, disposeCar, structureKey, styleCar, type CarInstance } from './assets/instance';
 import { loadGLB, loadJSON } from './assets/loader';
 import type { TireProfile } from './assets/tire';
@@ -13,18 +13,13 @@ import { RoadCar } from './CarModel';
 import { ViewerBoundary } from './CarViewer';
 import { useQuality } from './quality';
 
-/** The visual plan for a descriptor (memoised on its content). */
-export function useVisualPlan(desc: RenderDescriptor, year?: number): VisualPlan {
-  const key = JSON.stringify(desc) + '|' + (year ?? '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => planVehicle(desc, year), [key]);
-}
+export { useVisualPlan } from './assets/usePlan';
 
 export type AssetStatus = 'loading' | 'ready' | 'failed' | 'procedural';
 
-function AssetCar({ plan, fallback, onStatus }: { plan: AssetPlan; fallback: React.ReactNode; onStatus?: (s: AssetStatus, info?: string) => void }) {
+function AssetCar({ plan, fallback, onStatus, lodOverride }: { plan: AssetPlan; fallback: React.ReactNode; onStatus?: (s: AssetStatus, info?: string) => void; lodOverride?: number }) {
   const [, Q] = useQuality();
-  const lod = Math.min(Q.lod, plan.asset.lods.length - 1);
+  const lod = Math.min(lodOverride ?? Q.lod, plan.asset.lods.length - 1);
   const skey = structureKey(plan, lod) + '|' + Q.tireSegments + '|' + Q.transmission;
   const [inst, setInst] = useState<CarInstance | null>(null);
   const [failed, setFailed] = useState(false);
@@ -39,7 +34,7 @@ function AssetCar({ plan, fallback, onStatus }: { plan: AssetPlan; fallback: Rea
       .then(([car, wheels, tire]) => {
         if (!alive) return;
         const t1 = performance.now();
-        const built = buildCar(planRef.current, car, wheels, tire, Q.tireSegments, Q.transmission);
+        const built = buildCar(planRef.current, car, wheels, tire, Q.tireSegments, Q.transmission, lod);
         const t2 = performance.now();
         (globalThis as { __aeAssetTiming?: unknown }).__aeAssetTiming = { loadMs: Math.round(t1 - t0), buildMs: Math.round(t2 - t1), lod, triangles: built.stats.triangles, meshes: built.stats.meshes };
         const old = current.current;
@@ -63,13 +58,13 @@ function AssetCar({ plan, fallback, onStatus }: { plan: AssetPlan; fallback: Rea
 }
 
 /** A car from its descriptor: the GLB asset when one fits, otherwise (and while loading) the procedural model. */
-export function VehicleView({ plan, spec, onStatus }: { plan: VisualPlan; spec: VehicleSpec; onStatus?: (s: AssetStatus, info?: string) => void }) {
+export function VehicleView({ plan, spec, onStatus, lodOverride }: { plan: VisualPlan; spec: VehicleSpec; onStatus?: (s: AssetStatus, info?: string) => void; lodOverride?: number }) {
   const proc = <RoadCar spec={spec} />;
   useEffect(() => { if (plan.kind === 'procedural') onStatus?.('procedural', plan.reason); }, [plan, onStatus]);
   if (plan.kind === 'procedural') return proc;
   return (
     <ViewerBoundary fallback={proc} onError={(e) => onStatus?.('failed', e.message)}>
-      <AssetCar plan={plan} fallback={proc} onStatus={onStatus} />
+      <AssetCar plan={plan} fallback={proc} onStatus={onStatus} lodOverride={lodOverride} />
     </ViewerBoundary>
   );
 }

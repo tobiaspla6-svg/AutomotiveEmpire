@@ -1,0 +1,116 @@
+// Texto de la interfaz en español. Debe incluir todas las claves de en.ts (el compilador lo exige).
+import type { MessageKey } from './en';
+
+import { pick } from './parts/pairs';
+import { STUDIO } from './parts/studio';
+import { FACTORY } from './parts/factory';
+import { MOTORSPORT } from './parts/motorsport';
+import { CORPORATE } from './parts/corporate';
+import { SETUP } from './parts/setup';
+import { RANGE } from './parts/range';
+
+export const es: Record<MessageKey, string> = {
+  ...pick(STUDIO, 1), ...pick(FACTORY, 1), ...pick(MOTORSPORT, 1), ...pick(CORPORATE, 1), ...pick(SETUP, 1), ...pick(RANGE, 1),
+  // ---- común
+  'common.close': 'Cerrar', 'common.done': 'Listo', 'common.open': 'Abrir', 'common.loading': 'Cargando…',
+  'mode.ceo': 'CEO histórico', 'mode.founder': 'Fundador de marca', 'mode.motorsport': 'Director de motorsport',
+  'diff.easy': 'fácil', 'diff.normal': 'normal', 'diff.hard': 'difícil',
+  'tag.historical': 'histórico', 'tag.approx': 'aprox.', 'tag.estimate': 'estimado',
+
+  'confirm.title': 'Confirma, por favor', 'confirm.cancel': 'Cancelar', 'confirm.ok': 'Confirmar',
+  // ---- menú principal
+  'menu.tagline': 'Diseña los coches. Dirige la empresa. Gana las carreras.', 'menu.era': '1950 – hoy',
+  'menu.modes': 'Modos de juego', 'menu.mode': 'Modo {n}',
+  'menu.continue': 'Continuar', 'menu.import': 'Importar partida…', 'menu.noSaves': 'Aún no hay partidas guardadas. El juego se guarda solo en este navegador al final de cada mes.',
+  'menu.savedAt': 'Guardada {when}', 'menu.resume': 'Reanudar', 'menu.hideSaves': 'Ocultar otras partidas', 'menu.allSaves': 'Todas las partidas ({n} más)',
+  'menu.load': 'Cargar', 'menu.delete': 'Borrar partida', 'menu.save.confirmDelete': '¿Borrar la partida «{name}»? No se puede deshacer.',
+  'menu.graphics': 'Gráficos: {q}',
+  'menu.legal': 'Simulación no oficial. Los nombres de los fabricantes se usan de forma descriptiva, como contexto histórico; no se incluyen logotipos, libreas ni activos con licencia. Los hechos históricos se distinguen de los datos estimados del juego:',
+  'menu.legal2': 'Los circuitos, pilotos, patrocinadores y equipos independientes son ficticios.',
+  'menu.ceo.title': 'CEO histórico de una marca', 'menu.ceo.sub': 'Toma el mando de un fabricante real, en cualquier año desde 1950.',
+  'menu.ceo.car': 'Un gran turismo V12 de 1966, un coche de la época en la que puedes empezar', 'menu.ceo.cta': 'Elegir fabricante',
+  'menu.ceo.f1': '18 fabricantes reales con sus fábricas, modelos y consejos propios', 'menu.ceo.f2': 'Renueva la gama, abre fábricas en el extranjero, compra rivales', 'menu.ceo.f3': 'Sigue la historia… o cámbiala',
+  'menu.founder.title': 'Fundador de una marca de coches', 'menu.founder.sub': 'Crea una marca nueva desde el tablero de dibujo y con tu capital inicial.',
+  'menu.founder.car': 'La berlina de referencia de 2024, diseñada y construida en el juego', 'menu.founder.cta': 'Fundar una empresa',
+  'menu.founder.f1': 'Diseña coches desde el diámetro del cilindro', 'menu.founder.f2': 'Elige fábricas, proveedores y concesionarios', 'menu.founder.f3': 'Constrúyelo, ponle precio, véndelo… y a correr',
+  'menu.motorsport.title': 'Director de motorsport profesional', 'menu.motorsport.sub': 'Dirige un equipo oficial o independiente durante campeonatos completos.',
+  'menu.motorsport.car': 'Un monoplaza moderno con los colores del equipo', 'menu.motorsport.cta': 'Crear un equipo',
+  'menu.motorsport.f1': 'Gran Premio, Hypercar, LMDh, GT y turismos', 'menu.motorsport.f2': 'Diseña según el reglamento de la época, ficha pilotos, desarrolla', 'menu.motorsport.f3': 'Decide la estrategia en una carrera en directo con física real',
+
+  // ---- ajustes, gráficos, prueba de fotogramas
+  'settings.title': 'Ajustes', 'settings.language': 'Idioma', 'settings.language.note': 'Cambia la interfaz. Los datos históricos y los nombres de empresas y modelos no cambian.',
+  'settings.graphics': 'Gráficos', 'settings.graphics.blurb': 'Controla cómo se dibujan los coches en 3D. El juego completo funciona sin 3D.',
+  'gfx.auto': 'Automático', 'gfx.auto.desc': 'Se elige según tu equipo. Nunca Alto.',
+  'gfx.low': 'Bajo', 'gfx.low.desc': 'Iluminación sencilla y modelo ligero. Para gráficos integrados y portátiles antiguos.',
+  'gfx.medium': 'Medio', 'gfx.medium.desc': 'Iluminación de estudio y sombras suaves.',
+  'gfx.high': 'Alto', 'gfx.high.desc': 'Reflejos en cristales, suelo reflectante y máximo detalle. Requiere una tarjeta gráfica dedicada.',
+  'gfx.off': 'Desactivado', 'gfx.off.desc': 'Ilustraciones en lugar de 3D. Para equipos lentos o sin WebGL.',
+  'gfx.detected': 'Detectado: {gpu}', 'gfx.none': 'sin WebGL',
+  'gfx.nowebgl': 'Este navegador no tiene WebGL, así que las vistas 3D muestran ilustraciones. El juego no se ve afectado.',
+  'gfx.software': 'Se detectó renderizado por software (sin aceleración gráfica). El 3D irá lento; se recomienda Bajo o Desactivado.',
+  'gfx.failed': 'Una vista 3D falló antes en esta sesión, por eso se muestran ilustraciones.', 'gfx.retry': 'Probar 3D de nuevo',
+  'fps.title': 'Prueba de fotogramas', 'fps.blurb': 'Dibuja el coche de referencia durante 5 segundos con el ajuste actual y mide los fotogramas por segundo.',
+  'fps.noview': 'Berlina de referencia', 'fps.run': 'Iniciar prueba', 'fps.running': 'Midiendo…', 'fps.at': 'Mide el ajuste {q}', 'fps.off': 'Activa los gráficos para hacer la prueba.',
+  'fps.result': 'El 95 % de los fotogramas en menos de {ms} ms · {calls} llamadas de dibujo · {tris} k triángulos por fotograma',
+  'fps.verdict.up': 'Fluido: puedes probar el ajuste superior.', 'fps.verdict.ok': 'Bien para este ajuste.', 'fps.verdict.down': 'Demasiado lento para este ajuste: elige uno inferior.',
+  'fps.software': 'Medido con renderizado por software: estas cifras no dicen nada sobre una tarjeta gráfica.',
+  'fps.howto.title': 'Compruébalo en tu propio ordenador',
+  'fps.howto.1': 'Usa Chrome, Edge o Firefox con la aceleración por hardware activada (en Chrome, abre chrome://gpu y busca «WebGL: Hardware accelerated»).',
+  'fps.howto.2': 'Cierra otras pestañas pesadas y mantén esta ventana al frente: los navegadores ralentizan las pestañas en segundo plano.',
+  'fps.howto.3': 'Haz la prueba con cada ajuste. 55 FPS o más con el 95 % de los fotogramas por debajo de 20 ms indica que ese ajuste es fluido (objetivo de 60 FPS).',
+  'fps.howto.4': 'Prueba también la medición del estudio de vehículos a pantalla completa: es la vista más pesada del juego.',
+
+  // ---- navegación y barra superior
+  'nav.label': 'Secciones',
+  'nav.group.command': 'Mando', 'nav.group.engineering': 'Ingeniería', 'nav.group.operations': 'Operaciones', 'nav.group.corporate': 'Corporativo', 'nav.group.racing': 'Competición', 'nav.group.system': 'Mundo y sistema',
+  'nav.dashboard': 'Panel', 'nav.vehicles': 'Vehículos', 'nav.factories': 'Fábricas', 'nav.market': 'Mercado y ventas', 'nav.research': 'Investigación', 'nav.finance': 'Finanzas', 'nav.company': 'Empresa y consejo',
+  'nav.motorsport': 'Motorsport', 'nav.teamHq': 'Sede del equipo', 'nav.news': 'Noticias y mundo', 'nav.saves': 'Guardar / cargar', 'nav.attention': 'Requiere tu atención',
+  'nav.timeline.historical': 'Cronología histórica', 'nav.timeline.alt': 'Historia alternativa',
+  'top.date': 'Fecha', 'top.cash': 'Caja', 'top.debt': 'Deuda', 'top.lastMonth': 'Último mes', 'top.board': 'Confianza del consejo', 'top.owner': 'Confianza del propietario',
+  'top.save': 'Guardar partida', 'top.saved': 'Partida guardada.', 'top.menu': 'Menú principal', 'top.raceWeekend': 'Fin de semana de carrera: {name}',
+  'top.plus3': '+3 meses', 'top.plus3.hint': 'Avanzar tres meses (se detiene en las decisiones)', 'top.next': 'Mes siguiente', 'top.next.hint': 'Avanzar un mes (barra espaciadora)', 'top.working': 'Procesando…',
+  'decision.required': 'Decisión necesaria', 'over.title': 'Tu mandato ha terminado', 'over.led': 'Dirigiste {name} de {from} a {to}.', 'over.books': 'Revisar las cuentas',
+  'stage.body': 'Carrocería', 'stage.paint': 'Pintura', 'stage.powertrain': 'Tren motriz', 'stage.assembly': 'Montaje final', 'stage.inspection': 'Inspección',
+
+  // ---- panel
+  'dash.eyebrow': 'Centro de mando', 'dash.founded': 'Fundada en {year} en {country}.',
+  'dash.performance': 'Rendimiento', 'dash.noHistory': 'El historial se forma con el paso de los meses', 'dash.noHistory.sub': 'Avanza unos meses para ver las tendencias de ingresos, beneficio, caja y ventas.',
+  'chart.revenue': 'Ingresos por mes', 'chart.profit': 'Beneficio por mes', 'chart.cash': 'Caja y deuda', 'chart.units': 'Coches vendidos por mes', 'chart.margin': 'Márgenes',
+  'tab.revenue': 'Ingresos', 'tab.profit': 'Beneficio', 'tab.cash': 'Caja', 'tab.units': 'Ventas', 'tab.margin': 'Márgenes',
+  'series.revenue': 'Ingresos', 'series.operating': 'Beneficio operativo', 'series.net': 'Beneficio neto', 'series.cash': 'Caja', 'series.debt': 'Deuda', 'series.units': 'Coches vendidos', 'series.capacity': 'Capacidad de fábrica', 'series.opMargin': 'Margen operativo', 'series.netMargin': 'Margen neto',
+  'kpi.12m': 'Últimos 12 meses',
+  'kpi.cash': 'Caja', 'kpi.cash.sub': 'Deuda {debt} · margen de crédito {headroom}', 'kpi.cash.hint': 'Efectivo disponible y cuánto más podrías pedir prestado antes del límite de crédito. La variación es de los últimos 3 meses.',
+  'kpi.revenue': 'Ingresos',
+  'kpi.operating': 'Beneficio operativo', 'kpi.operating.sub': '{margin} de los ingresos', 'kpi.operating.hint': 'Beneficio antes de intereses, impuestos y venta de activos, últimos 12 meses. La variación es frente a los 12 meses anteriores.',
+  'kpi.units': 'Coches vendidos', 'kpi.units.sub': 'Fábricas al {util}',
+  'kpi.share': 'Cuota de mercado mundial', 'kpi.share.sub': 'Puesto {rank} de {total} marcas', 'kpi.share.hint': 'Tus coches vendidos en 12 meses como parte de todo el mercado mundial del automóvil.',
+  'kpi.valuation': 'Valor de la empresa', 'kpi.valuation.sub': '{x}× los ingresos anuales', 'kpi.valuation.sub.new': 'Beneficios, marca y caja menos deuda', 'kpi.valuation.hint': 'Valor estimado de la empresa: capacidad de beneficio y fuerza de marca, más caja menos deuda.',
+  'dash.briefing': 'Informe ejecutivo', 'dash.briefing.n.one': '{count} asunto requiere tu atención', 'dash.briefing.n.other': '{count} asuntos requieren tu atención', 'dash.clear': 'Todo en orden',
+  'dash.clear.title': 'Nada requiere tu atención', 'dash.clear.sub': 'Las fábricas están equilibradas, los precios cubren los costes y las finanzas están sanas. Buen momento para invertir en crecer.', 'dash.briefing.more': '+ {n} más por orden de importancia',
+  'dash.briefing.opps.one': '{count} oportunidad de actuación', 'dash.briefing.opps.other': '{count} oportunidades de actuación',
+  'stat.rev12': 'Ingresos, 12 meses', 'stat.revMonth': 'Media mensual', 'stat.net12': 'Beneficio neto, 12 meses', 'stat.opMargin': 'Margen operativo', 'stat.netMargin': 'Margen neto', 'stat.perCar': 'Ingresos por coche', 'stat.netDebt': 'Deuda neta', 'stat.interest': 'Tipo de interés', 'stat.headroom': 'Margen de crédito', 'stat.perMonth': 'Coches al mes', 'stat.util': 'Utilización de fábricas', 'stat.capacity': 'Capacidad utilizable',
+  'dash.production': 'Operaciones', 'dash.production.title': 'Producción y capacidad', 'dash.noFactory': 'Aún no hay fábrica', 'dash.noFactory.sub': 'Construye una planta para empezar a fabricar coches.',
+  'dash.utilisation': 'Utilización', 'dash.perMonth': '{n} coches / mes', 'dash.bottleneck': 'cuello de botella', 'dash.more': '+ {n} fábricas más',
+  'dash.market': 'Mercado', 'dash.market.title': 'Posición entre las marcas', 'dash.regions': 'Tus ventas por región (coches al año)',
+  'dash.programmes': 'Cartera', 'dash.programmes.title': 'Programas y objetivos', 'dash.noDev': 'Ningún vehículo en desarrollo.', 'dash.monthsLeft.one': 'queda {count} mes', 'dash.monthsLeft.other': 'quedan {count} meses',
+  'dash.engineers': 'Ingenieros necesarios a pleno ritmo: {need} · contratados: {have}.', 'dash.owner': 'Expectativas del propietario', 'dash.objectives': 'Objetivos del consejo', 'dash.by': 'para {year}',
+  'dash.world': 'Mundo', 'dash.news': 'Últimas noticias', 'dash.allNews': 'Todas las noticias', 'dash.conditions': 'Condiciones', 'dash.conditions.title': 'Condiciones del mundo', 'dash.noConditions': 'Ahora no hay condiciones especiales.',
+
+  // ---- avisos ejecutivos
+  'insight.overLimit.title': 'La deuda supera tu límite de crédito', 'insight.overLimit.why': 'La deuda neta de {debt} lleva {months} meses por encima del límite de {limit}. Los acreedores actuarán si continúa: recorta costes, vende activos o sube precios.',
+  'insight.cashRunway.title': 'Caja para unos {months} meses', 'insight.cashRunway.why': 'La empresa gasta {burn} al mes más de lo que ingresa. Frena la inversión o consigue liquidez antes de quedarte sin caja.',
+  'insight.noVehicles.title': 'Aún no tienes vehículos', 'insight.noVehicles.why': 'Sin un coche no hay nada que vender. Abre el estudio de diseño y desarrolla tu primer modelo.',
+  'insight.readyNoLine.title': '{name} está listo para producir', 'insight.readyNoLine.why': 'El desarrollo ha terminado pero ninguna fábrica lo construye. Añade una línea de producción para empezar a ganar dinero.',
+  'insight.noPrice.title': '{name} no tiene precio', 'insight.noPrice.why': 'Un coche sin precio no se puede vender. Fija uno en la pantalla de vehículos.',
+  'insight.belowCost.title': '{name} se vende por debajo del coste', 'insight.belowCost.why': 'Cada coche aporta {net} tras el margen del concesionario, pero cuesta {cost} fabricarlo. Sube el precio o reduce costes.',
+  'insight.bottleneck.title': '{name}: {stage} limita la producción', 'insight.bottleneck.why': 'Esa fase solo procesa {cap} coches al mes aunque la fábrica está dimensionada para {nominal}. Amplíala para liberar capacidad.',
+  'insight.idleCapacity.title': 'Las fábricas solo se usan al {util} %', 'insight.idleCapacity.why': 'La capacidad ociosa sigue generando costes fijos. Añade un modelo, aumenta el volumen o plantéate vender una planta.',
+  'insight.soldOut.title': '{name} está agotado', 'insight.soldOut.why': 'Los compradores quieren {demand} al mes pero solo se venden {sold}. Añade capacidad o sube el precio.',
+  'insight.supplyDisruption.title': 'Interrupción de suministro', 'insight.supplyDisruption.why': '{suppliers} proveedor(es) entregan con retraso hasta {months} meses más; el mes pasado se perdió el {loss} % de la producción prevista. Usa stock de seguridad o un segundo proveedor.',
+  'insight.engineersShort.title': 'El desarrollo tiene poco personal', 'insight.engineersShort.why': 'Tus programas necesitan unos {need} ingenieros a pleno ritmo y tienes {have}. Contrata más o acepta retrasos.',
+  'insight.boardDeadline.title': 'Objetivo del consejo en riesgo', 'insight.boardDeadline.why': '«{text}» vence en {year} y va al {pct} %.',
+  'insight.boardConfidence.title': 'La confianza del consejo es baja ({confidence} %)', 'insight.boardConfidence.why': 'Por debajo del 20 % el consejo puede destituirte. Cumple sus objetivos y vuelve a beneficios.',
+  'insight.ageingRange.title': '{name} tiene {years} años', 'insight.ageingRange.why': 'Los compradores prefieren diseños más nuevos. Planifica un rediseño o una nueva generación.',
+  'insight.costlyDebt.title': 'Amortiza deuda cara', 'insight.costlyDebt.why': 'Tienes {cash} en caja frente a {debt} de deuda al {rate} % de interés. Amortizar parte de ella mejora el beneficio.',
+  'go.vehicles': 'Abrir vehículos', 'go.factories': 'Abrir fábricas', 'go.market': 'Abrir mercado', 'go.finance': 'Abrir finanzas', 'go.research': 'Abrir investigación', 'go.company': 'Abrir consejo', 'go.motorsport': 'Abrir motorsport',
+};

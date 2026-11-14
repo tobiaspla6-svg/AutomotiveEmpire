@@ -1,75 +1,129 @@
-import { useEffect } from 'react';
+// Game shell (Phase 4C): status ribbon, grouped navigation, time controls. Screens render inside <main>.
+import { lazy, Suspense, useEffect } from 'react';
 import { useGame, useStore } from '../store/game';
-import { dateLabel } from '../sim/world';
+import { useT, type MessageKey } from '../i18n';
+import { monthYear, money } from '../i18n/format';
 import { pendingRound } from '../sim/racing/season';
-import { fmtMoney } from '../sim/util';
 import { Modal } from './common';
-import { CompanyView, DashboardView, FactoriesView, FinanceView, MarketView, NewsView, ResearchView, SavesView } from './Views';
-import { VehiclesView } from './Vehicles';
-import { MotorsportView } from './Motorsport';
+import { Emblem, Icon, type IconName } from './ds/icons';
+import { LanguageSwitch } from './LanguageSwitch';
+import { SettingsButton } from './SettingsDialog';
+import { WelcomeDialog, reopenGuide } from './Guide';
+import { DashboardView } from './Dashboard';
+import { CompanyView, NewsView, SavesView } from './Views';
+import { FinanceView, MarketView, ResearchView } from './Corporate';
+import { FactoriesView } from './Factories';
+
+// the vehicle studio and motorsport screens carry the 3D viewers: load them on first visit
+const VehiclesView = lazy(() => import('./Vehicles').then((m) => ({ default: m.VehiclesView })));
+const MotorsportView = lazy(() => import('./Motorsport').then((m) => ({ default: m.MotorsportView })));
+
+type NavItem = { id: string; icon: IconName; label: MessageKey; dot?: boolean };
+type NavGroup = { id: MessageKey; items: NavItem[] };
 
 export function Shell() {
   const { g, p } = useGame();
+  const { t, lang } = useT();
   const view = useStore((s) => s.view), setView = useStore((s) => s.setView), advance = useStore((s) => s.advance), go = useStore((s) => s.go), busy = useStore((s) => s.busy), decide = useStore((s) => s.decide), quit = useStore((s) => s.quit), save = useStore((s) => s.save), notify = useStore((s) => s.notify);
   const race = pendingRound(g, p);
   const last = p.ledger[p.ledger.length - 1];
   const ms = g.mode === 'motorsport';
   const ready = p.models.filter((m) => m.status === 'ready').length;
-  const nav: [string, string, boolean?][] = ms
-    ? [['motorsport', 'Team headquarters', !!race], ['finance', 'Finance'], ['news', 'News & world'], ['saves', 'Save / load']]
-    : [['dashboard', 'Dashboard'], ['vehicles', 'Vehicles', ready > 0], ['factories', 'Factories', ready > 0], ['market', 'Market & sales'], ['research', 'Research'], ['finance', 'Finance'], ['motorsport', 'Motorsport', !!race], ['company', 'Company & board'], ['news', 'News & world'], ['saves', 'Save / load']];
+  const groups: NavGroup[] = ms
+    ? [{ id: 'nav.group.racing', items: [{ id: 'motorsport', icon: 'flag', label: 'nav.teamHq', dot: !!race }] }, { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'news', icon: 'news', label: 'nav.news' }] }, { id: 'nav.group.system', items: [{ id: 'saves', icon: 'save', label: 'nav.saves' }] }]
+    : [
+      { id: 'nav.group.command', items: [{ id: 'dashboard', icon: 'dashboard', label: 'nav.dashboard' }] },
+      { id: 'nav.group.engineering', items: [{ id: 'vehicles', icon: 'vehicle', label: 'nav.vehicles', dot: ready > 0 }, { id: 'research', icon: 'research', label: 'nav.research' }] },
+      { id: 'nav.group.operations', items: [{ id: 'factories', icon: 'factory', label: 'nav.factories', dot: ready > 0 }, { id: 'market', icon: 'market', label: 'nav.market' }] },
+      { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'company', icon: 'company', label: 'nav.company' }, { id: 'motorsport', icon: 'flag', label: 'nav.motorsport', dot: !!race }] },
+      { id: 'nav.group.system', items: [{ id: 'news', icon: 'news', label: 'nav.news' }, { id: 'saves', icon: 'save', label: 'nav.saves' }] },
+    ];
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLButtonElement)) { e.preventDefault(); if (!race) advance(1); } };
+    const onKey = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); if (!race) advance(1); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [advance, race]);
+  const conf = p.board?.confidence;
+  const confTone = conf === undefined ? '' : conf < 25 ? 'bad' : conf < 45 ? 'warn' : 'good';
   return (
     <div className="shell">
       <header className="topbar">
-        <div className="who"><i className="badge" style={{ background: `linear-gradient(135deg, ${p.color} 55%, ${p.color2} 55%)` }} /><b>{p.name}</b></div>
-        <div className="stat"><span className="l">Date</span><span className="v">{dateLabel(g)}</span></div>
-        <div className="stat"><span className="l">Cash</span><span className="v">{fmtMoney(p.cash)}</span></div>
-        <div className="stat"><span className="l">Debt</span><span className={'v' + (p.troubleMonths > 0 ? ' bad' : '')}>{fmtMoney(p.debt)}</span></div>
-        {last && <div className="stat"><span className="l">Last month</span><span className={'v ' + (last.profit >= 0 ? 'good' : 'bad')}>{last.profit >= 0 ? '+' : ''}{fmtMoney(last.profit)}</span></div>}
-        {p.board && <div className="stat"><span className="l">{ms ? 'Owner confidence' : 'Board confidence'}</span><span className={'v ' + (p.board.confidence < 25 ? 'bad' : p.board.confidence < 45 ? 'warn' : '')}>{Math.round(p.board.confidence)}%</span></div>}
+        <div className="who"><Emblem size={30} /><div className="who-text"><b title={p.name}>{p.name}</b><span className="eyebrow">{t(`mode.${g.mode}` as MessageKey)}</span></div></div>
+        <div className="ribbon">
+          <Stat id="date" icon="clock" label={t('top.date')} value={monthYear(g.month, g.year, lang)} />
+          <Stat id="cash" icon="cash" label={t('top.cash')} value={money(p.cash, lang)} tone={p.cash < 0 ? 'bad' : ''} />
+          <Stat id="debt" icon="layers" label={t('top.debt')} value={money(p.debt, lang)} tone={p.troubleMonths > 0 ? 'bad' : ''} />
+          {last && <Stat icon="gauge" label={t('top.lastMonth')} value={`${last.profit >= 0 ? '+' : ''}${money(last.profit, lang)}`} tone={last.profit >= 0 ? 'good' : 'bad'} />}
+          {conf !== undefined && <Stat icon="target" label={t(ms ? 'top.owner' : 'top.board')} value={`${Math.round(conf)}%`} tone={confTone} bar={conf} />}
+        </div>
         <div className="grow" />
-        <button className="btn sm ghost" onClick={async () => { await save(`${p.name} ${g.year}`); notify('Game saved.'); }}>Save</button>
-        <button className="btn sm ghost" onClick={() => { void save('autosave'); quit(); }}>Main menu</button>
-        {race ? <button className="btn primary" onClick={() => go('race')}>Race weekend: {race.name} →</button>
-          : <><button className="btn" disabled={busy || !!g.gameOver} onClick={() => advance(3)} title="Advance three months (stops for decisions)">+3 months</button>
-            <button className="btn primary" disabled={busy || !!g.gameOver} onClick={() => advance(1)} title="Space bar">{busy ? 'Working…' : 'Next month →'}</button></>}
+        <div className="row topbar-actions" style={{ gap: 4 }}>
+          <button className="iconbtn" onClick={async () => { await save(`${p.name} ${g.year}`); notify(t('top.saved')); }} aria-label={t('top.save')} title={t('top.save')}><Icon name="save" /></button>
+          <SettingsButton />
+          <button className="iconbtn" data-action="help" onClick={reopenGuide} aria-label={t('guide.help')} title={t('guide.help')}><Icon name="help" /></button>
+          <button className="iconbtn" data-action="quit" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
+        </div>
+        {race ? <button className="btn primary" data-action="race-weekend" onClick={() => go('race')}><Icon name="flag" size={16} />{t('top.raceWeekend', { name: race.name })}</button>
+          : <div className="row" style={{ gap: 8 }}>
+            <button className="btn" disabled={busy || !!g.gameOver} onClick={() => advance(3)} title={t('top.plus3.hint')}><Icon name="fast" size={15} />{t('top.plus3')}</button>
+            <button className="btn primary" data-action="next-month" disabled={busy || !!g.gameOver} onClick={() => advance(1)} title={t('top.next.hint')}>{busy ? t('top.working') : t('top.next')}<Icon name="play" size={14} /></button>
+          </div>}
       </header>
-      <nav className="nav" aria-label="Sections">
-        {nav.map(([id, label, dot]) => <button key={id} className={view === id ? 'on' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>{label}{dot && <i className="dot" />}</button>)}
-        <div className="sep" />
-        <div className="small muted" style={{ padding: '4px 11px' }}>{g.mode === 'ceo' ? 'Historical CEO' : g.mode === 'founder' ? 'Company Founder' : 'Motorsport Director'} · {g.historyMode === 'historical' ? 'historical timeline' : 'alternative history'} · {g.difficulty}</div>
-        {g.macro.modifiers.length > 0 && <div className="small" style={{ padding: '4px 11px' }}><span className="muted">World conditions</span>{g.macro.modifiers.slice(0, 6).map((m) => <div key={m.id} className="dim" title={`${m.monthsLeft} months left`}>• {m.label} <span className="muted">({m.monthsLeft} mo)</span></div>)}</div>}
+
+      <nav className="nav" aria-label={t('nav.label')}>
+        {groups.map((grp) => (
+          <div key={grp.id} className="nav-group">
+            <span className="nav-eyebrow">{t(grp.id)}</span>
+            {grp.items.map((it) => (
+              <button key={it.id} data-view={it.id} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
+                <Icon name={it.icon} size={18} /><span className="nav-label">{t(it.label)}</span>{it.dot && <i className="dot" title={t('nav.attention')} />}
+              </button>
+            ))}
+          </div>
+        ))}
+        <div className="grow" />
+        <div className="nav-foot">
+          <LanguageSwitch compact />
+          <span className="tiny muted">{t(g.historyMode === 'historical' ? 'nav.timeline.historical' : 'nav.timeline.alt')} · {t(`diff.${g.difficulty}` as MessageKey)}</span>
+        </div>
       </nav>
-      <main className="main">
-        {view === 'dashboard' && <DashboardView />}
-        {view === 'vehicles' && <VehiclesView />}
-        {view === 'factories' && <FactoriesView />}
-        {view === 'market' && <MarketView />}
-        {view === 'research' && <ResearchView />}
-        {view === 'finance' && <FinanceView />}
-        {view === 'motorsport' && <MotorsportView />}
-        {view === 'company' && <CompanyView />}
-        {view === 'news' && <NewsView />}
-        {view === 'saves' && <SavesView />}
+
+      <main className="main" id="main">
+        <Suspense fallback={<div className="screen-loading" role="status">{t('common.loading')}</div>}>
+          {view === 'dashboard' && <DashboardView />}
+          {view === 'vehicles' && <VehiclesView />}
+          {view === 'factories' && <FactoriesView />}
+          {view === 'market' && <MarketView />}
+          {view === 'research' && <ResearchView />}
+          {view === 'finance' && <FinanceView />}
+          {view === 'motorsport' && <MotorsportView />}
+          {view === 'company' && <CompanyView />}
+          {view === 'news' && <NewsView />}
+          {view === 'saves' && <SavesView />}
+        </Suspense>
       </main>
+      {!g.decision && !g.gameOver && <WelcomeDialog />}
       {g.decision && !g.gameOver && (
         <Modal>
-          <h4>Decision required · {dateLabel(g)}</h4><h2>{g.decision.title}</h2><p className="dim">{g.decision.body}</p>
+          <span className="eyebrow">{t('decision.required')} · {monthYear(g.month, g.year, lang)}</span><h2>{g.decision.title}</h2><p className="dim">{g.decision.body}</p>
           <div className="col">{g.decision.options.map((o, i) => <button key={i} className="card" onClick={() => decide(i)}><b>{o.label}</b><span className="small dim" style={{ whiteSpace: 'normal' }}>{o.detail}</span></button>)}</div>
         </Modal>
       )}
       {g.gameOver && (
         <Modal>
-          <h4>{dateLabel(g)}</h4><h2>Your tenure is over</h2><p>{g.gameOver.reason}</p>
-          <p className="dim">You led {p.name} from {g.startYear} to {g.year}.</p>
-          <div className="row end"><button className="btn" onClick={() => setView('finance')}>Review the books</button><button className="btn primary" onClick={quit}>Main menu</button></div>
+          <span className="eyebrow">{monthYear(g.month, g.year, lang)}</span><h2>{t('over.title')}</h2><p>{g.gameOver.reason}</p>
+          <p className="dim">{t('over.led', { name: p.name, from: g.startYear, to: g.year })}</p>
+          <div className="row end"><button className="btn" onClick={() => setView('finance')}>{t('over.books')}</button><button className="btn primary" onClick={quit}>{t('top.menu')}</button></div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+function Stat({ id, icon, label, value, tone = '', bar }: { id?: string; icon: IconName; label: string; value: string; tone?: string; bar?: number }) {
+  return (
+    <div className="rstat" data-stat={id}><Icon name={icon} size={16} />
+      <div className="rstat-t"><span className="l">{label}</span><span className={'v ' + tone}>{value}</span>{bar !== undefined && <i className="rstat-bar"><b style={{ width: `${Math.max(0, Math.min(100, bar))}%` }} className={tone} /></i>}</div>
     </div>
   );
 }

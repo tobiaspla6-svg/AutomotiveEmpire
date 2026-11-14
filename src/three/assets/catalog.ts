@@ -74,8 +74,8 @@ export const SEDAN_REF: VehicleAsset = {
   enginePositions: ['front'],
   lods: [
     { url: at('sedan-ref/sedan.lod0.glb'), tris: 315480, bytes: 1061072 },
-    { url: at('sedan-ref/sedan.lod1.glb'), tris: 109130, bytes: 728056 },
-    { url: at('sedan-ref/sedan.lod2.glb'), tris: 49350, bytes: 485492 },
+    { url: at('sedan-ref/sedan.lod1.glb'), tris: 109130, bytes: 720388 },
+    { url: at('sedan-ref/sedan.lod2.glb'), tris: 49350, bytes: 485384 },
   ],
   wheels: { url: at('sedan-ref/wheels.glb'), bytes: 259000, rims: ['rim_sport5', 'rim_turbine10', 'rim_multi15'], tireProfile: at('sedan-ref/tire_profile.json') },
   native: {

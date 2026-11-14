@@ -88,7 +88,7 @@ export function transmissiveMaterial(name: string): THREE.MeshPhysicalMaterial {
   return m;
 }
 
-export function buildCar(plan: AssetPlan, car: GLTF, wheels: GLTF, tire: TireProfile, tireSegments = 96, transmission = false): CarInstance {
+export function buildCar(plan: AssetPlan, car: GLTF, wheels: GLTF, tire: TireProfile, tireSegments = 96, transmission = false, lod = 0): CarInstance {
   const root = new THREE.Group();
   root.name = plan.asset.id;
   const geometries: THREE.BufferGeometry[] = [];
@@ -99,7 +99,7 @@ export function buildCar(plan: AssetPlan, car: GLTF, wheels: GLTF, tire: TirePro
     if (!OVERRIDE.includes(m.name) && !glassy) return m;
     let o = materials.get(m.name);
     if (!o) {
-      o = glassy ? transmissiveMaterial(m.name) : m.name === 'paint' || m.name === 'paint_body' ? makePaint(m, plan.paint.color, plan.paint.finish) : m.clone();
+      o = glassy ? transmissiveMaterial(m.name) : m.name === 'paint' || m.name === 'paint_body' ? makePaint(m, plan.paint.color, plan.paint.finish, lod === 0) : m.clone();
       materials.set(m.name, o);
     }
     return o;
