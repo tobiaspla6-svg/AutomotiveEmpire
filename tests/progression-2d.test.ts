@@ -67,10 +67,11 @@ describe('Phase 5 earned-only 2D progression',()=>{
     const found=BLUEPRINTS.find(x=>x.id===id)!;
     expect(p.arcade!.equipped[found.slot]).toBe(id);
     expect(redeemPart(g,id)).toBe('Blueprint already owned.');
+    const target=BLUEPRINTS.find(x=>x.rarity==='rare'&&x.firstYear<=g.year&&!p.arcade!.inventory[x.id])!;
     p.arcade!.credits=fixedPrice('rare');
-    expect(redeemPart(g,'five-spoke')).toBeNull();
+    expect(redeemPart(g,target.id)).toBeNull();
     expect(p.arcade!.credits).toBe(0);
-    expect(p.arcade!.inventory['five-spoke']).toBe(1);
+    expect(p.arcade!.inventory[target.id]).toBe(1);
   });
 
   it('never makes future technology or paid random drops available in old eras',()=>{
