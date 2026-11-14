@@ -247,6 +247,19 @@ S.world.node_tree.nodes['Background'].inputs['Strength'].default_value=.62
 for name,power in [('LGT_key',3200),('LGT_fill',2300),('LGT_rim',1650)]:
     if name in bpy.data.objects:bpy.data.objects[name].data.energy=power
 
+
+# Choose the full-car delivery camera explicitly. Otherwise headless renders fall
+# back to the prior engine macro camera and misleadingly crop the entire design.
+cam=bpy.data.objects['CAM_front34']
+cam.location=(6.7,-8.7,2.05)
+cam.rotation_euler=(Vector((0,0,.68))-cam.location).to_track_quat('-Z','Y').to_euler()
+cam.data.lens=54
+profile=bpy.data.objects['CAM_profile']
+profile.location=(0,-10.2,1.70)
+profile.rotation_euler=(Vector((0,0,.70))-profile.location).to_track_quat('-Z','Y').to_euler()
+profile.data.ortho_scale=5.5
+S.camera=cam
+
 S.frame_set(1)
 result={'phase':'5_gt_organic_surfacing',
         'body_side_vertices':sum(len(bpy.data.objects[n].data.vertices) for n in ('BODY_side_cutout_L','BODY_side_cutout_R')),
