@@ -115,8 +115,10 @@ export function newFounderGame(o: FounderSetup): GameState {
   if (sp === 'mass') tech.manufacturing += 2;
   if (sp === 'ev') { tech.engine += 3; tech.electronics += 3; }
   const reach = zeroRegions(), awareness = zeroRegions();
-  reach[region] = (sp === 'mass' ? 4000 : 900) * (o.capital / capitalOptions(o.year)[1]) ** 0.5;
-  for (const r of REGION_IDS) awareness[r] = r === region ? 18 : 4;
+  // on the hard difficulty a newcomer starts less known and with fewer dealers willing to sign (Phase 4E)
+  const hard = o.difficulty === 'hard';
+  reach[region] = (sp === 'mass' ? 4000 : 900) * (o.capital / capitalOptions(o.year)[1]) ** 0.5 * (hard ? 0.85 : 1);
+  for (const r of REGION_IDS) awareness[r] = r === region ? (hard ? 12 : 18) : (hard ? 3 : 4);
   const c: Company = {
     id: 'player', name: o.name, country: o.country, homeRegion: region, color: o.color, color2: '#f2f2f2', founded: o.year, isPlayer: true, dataId: null,
     cash: o.capital - costs.total, debt: 0, interestRate: 0.06, reach, awareness,

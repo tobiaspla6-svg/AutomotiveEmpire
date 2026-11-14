@@ -6,7 +6,7 @@ import { useGame, useStore } from '../store/game';
 import { useT, type MessageKey } from '../i18n';
 import { useTerm } from '../i18n/terms';
 import { money, num } from '../i18n/format';
-import { BODY, LAYOUT_NAME, SCORE_KEYS, defaultVehicle } from '../sim/engineering';
+import { BODY, LAYOUT_NAME, SCORE_KEYS, defaultVehicle, starterVehicle } from '../sim/engineering';
 import { SEG, REGION_IDS } from '../data/world';
 import { cancelDevelopment, retireModel, setPrice } from '../sim/actions';
 import { devEngineersNeeded, estimateUnitCost } from '../sim/company';
@@ -36,7 +36,8 @@ export function VehiclesView() {
   if (editing) return <Studio init={editing.spec} basedOn={editing.basedOn} initName={editing.name} onClose={() => setEditing(null)} />;
   const models = p.models.filter((m) => m.status !== 'retired');
   const shown = models.find((m) => m.id === inspect) ?? models[0];
-  const open = () => setEditing({ spec: { ...defaultVehicle(g.year), color: p.color }, name: '' });
+  // a founder starts from a design that suits the company's speciality (any value can be changed in the studio)
+  const open = () => setEditing({ spec: { ...(g.mode === 'founder' ? starterVehicle(g.year, p.specialization) : defaultVehicle(g.year)), color: p.color }, name: '' });
   return (
     <>
       <PageHead title={t('veh.title')} right={<button className="btn primary" data-action="new-vehicle" onClick={open}><Icon name="wrench" size={16} />{t('veh.new')}</button>}>{t('veh.sub')}</PageHead>

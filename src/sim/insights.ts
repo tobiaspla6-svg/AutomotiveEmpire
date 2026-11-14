@@ -3,12 +3,12 @@
 // matters and a button that takes the player to the right screen. Read-only: it never changes the game.
 import type { Company, GameState, Objective, StageId, VehicleModel } from './types';
 import { REGION_IDS } from '../data/world';
-import { annualProfit, annualRevenue, creditLimit, devEngineersNeeded, lineShareUsed } from './company';
+import { annualProfit, annualRevenue, creditLimit, devEngineersNeeded, engineerCost, lineShareUsed } from './company';
 import { bottleneck, stagesOf } from './supply';
 
 export type Severity = 'critical' | 'warning' | 'opportunity' | 'info';
 export type InsightKind =
-  | 'overLimit' | 'cashRunway' | 'noVehicles' | 'readyNoLine' | 'noPrice' | 'belowCost' | 'bottleneck' | 'idleCapacity' | 'lowSales'
+  | 'overLimit' | 'cashRunway' | 'noVehicles' | 'readyNoLine' | 'noPrice' | 'belowCost' | 'bottleneck' | 'idleCapacity' | 'lowSales' | 'idleEngineers'
   | 'soldOut' | 'supplyDisruption' | 'engineersShort' | 'boardDeadline' | 'boardConfidence' | 'ageingRange' | 'costlyDebt';
 export type InsightView = 'vehicles' | 'factories' | 'market' | 'finance' | 'research' | 'company' | 'motorsport';
 
@@ -91,6 +91,13 @@ export function companyInsights(g: GameState, c: Company): Insight[] {
 
   const dis = c.supply ? Object.entries(c.supply.disrupted).filter(([, mo]) => mo > 0) : [];
   if (dis.length) add({ id: 'supply', severity: 'warning', kind: 'supplyDisruption', args: { suppliers: dis.length, months: Math.max(...dis.map(([, mo]) => mo)), loss: Math.round((c.supply?.lastLoss ?? 0) * 100) }, view: 'factories' });
+
+  // an engineering team kept on with nothing to engineer: a large fixed cost a small maker often overlooks
+  const busy = dev.length > 0 || c.models.some((m) => m.facelift) || (c.engines ?? []).some((f) => f.status === 'development') || (c.platforms ?? []).some((x) => x.status === 'development');
+  if (!busy && c.engineers > 25 && !ms && c.ledger.length >= 3) {
+    const cost = c.engineers * engineerCost(c, g.year) * 12;
+    if (cost > annualRevenue(c) * 0.08) add({ id: 'idleEng', severity: 'info', kind: 'idleEngineers', args: { have: c.engineers, cost: Math.round(cost) }, view: 'research' });
+  }
 
   if (dev.length) {
     const need = dev.reduce((a, m) => a + devEngineersNeeded(g, c, m), 0);

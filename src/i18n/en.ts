@@ -106,6 +106,7 @@ export const en = {
   'insight.bottleneck.title': '{name}: {stage} limits output', 'insight.bottleneck.why': 'That stage handles only {cap} cars a month although the plant is rated for {nominal}. Expand it to unlock capacity.',
   'insight.idleCapacity.title': 'Plants are only {util}% used', 'insight.idleCapacity.why': 'Idle capacity still carries fixed costs. Add a model, raise volume, or consider selling a plant.',
   'insight.lowSales.title': '{name} sells far below its line', 'insight.lowSales.why': 'Only {sold} a month are sold against a line tooled for {cap}. Demand is the limit, not the plant: check the price against the recommended one, widen the dealer network or raise marketing.',
+  'insight.idleEngineers.title': '{have} engineers, no programme running', 'insight.idleEngineers.why': "They cost {cost} a year. Keep them for the next car, or reduce the team in Research (severance is three months' pay each).",
   'insight.soldOut.title': '{name} is sold out', 'insight.soldOut.why': 'Buyers want {demand} a month but only {sold} are being sold. Add capacity or raise the price.',
   'insight.supplyDisruption.title': 'Supplier disruption', 'insight.supplyDisruption.why': '{suppliers} supplier(s) are delivering late for up to {months} more months; {loss}% of planned output was lost last month. Use safety stock or a second source.',
   'insight.engineersShort.title': 'Development is understaffed', 'insight.engineersShort.why': 'Your programmes need about {need} engineers for full speed and you employ {have}. Hire more or accept delays.',

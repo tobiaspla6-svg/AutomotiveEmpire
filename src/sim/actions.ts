@@ -522,7 +522,9 @@ export function setInspection(g: GameState, factoryId: string, level: number): s
   return null;
 }
 
-export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35);
+/** Entry barriers on the hard difficulty (Phase 4E): dealers ask more of a maker they do not know. Normal and easy unchanged. */
+export const HARD_DEALER_COST = 1.2;
+export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35) * (g.difficulty === 'hard' ? HARD_DEALER_COST : 1);
 export function investDealers(g: GameState, region: RegionId, amount: number): string | null {
   const c = player(g);
   if (!finite(amount) || amount <= 0) return 'Enter an amount.';
