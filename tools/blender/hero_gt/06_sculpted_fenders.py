@@ -148,6 +148,6 @@ for marker in S.timeline_markers:
     if marker.frame==1:marker.camera=cam
 S.frame_set(1);S.camera=cam
 result={'phase':'6_gt_body_organic_bridges',
-        'new_panels':[n for n in bpy.data.objects if n.startswith('SURF_front_sculpted_fender')],
+        'new_panels':[n for n in bpy.data.objects.keys() if n.startswith('SURF_front_sculpted_fender')],
         'old_large_wing_removed':not any(n.startswith('AERO_rear_wing') for n in bpy.data.objects.keys()),
         'camera':S.camera.name,'object_count':len(bpy.data.objects)}
