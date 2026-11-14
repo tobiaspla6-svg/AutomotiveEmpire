@@ -89,3 +89,22 @@ describe('objectiveRatio', () => {
 });
 
 void (null as unknown as GameState);
+
+describe('lowSales insight (Phase 4D)', () => {
+  it('flags a car that sells a small fraction of the line it was tooled for, and not one that fills its line', () => {
+    const g = founder({ year: 2005 });
+    const p = player(g);
+    expect(A.startDevelopment(g, 'Slow', defaultVehicle(2005, 'coupe'), 'sports')).toBeNull();
+    const m = p.models[0];
+    let i = 0; while (m.status === 'development' && i++ < 80) step(g);
+    expect(A.addLine(g, p.factories[0].id, m.id, 2000)).toBeNull(); // tooled for far more than a new maker's dealers can sell
+    step(g, 8);
+    const low = companyInsights(g, p).find((x) => x.kind === 'lowSales');
+    expect(low, 'a 2,000-a-month line').toBeDefined();
+    expect(low!.view).toBe('market');
+    expect(Number(low!.args.sold)).toBeLessThan(Number(low!.args.cap) * 0.25);
+    // once the car sells what the line can build, the warning goes away
+    m.salesHistory = m.salesHistory.map(() => 1900);
+    expect(kinds(companyInsights(g, p))).not.toContain('lowSales');
+  });
+});

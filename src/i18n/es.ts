@@ -13,6 +13,7 @@ export const es: Record<MessageKey, string> = {
   ...pick(STUDIO, 1), ...pick(FACTORY, 1), ...pick(MOTORSPORT, 1), ...pick(CORPORATE, 1), ...pick(SETUP, 1), ...pick(RANGE, 1),
   // ---- común
   'common.close': 'Cerrar', 'common.done': 'Listo', 'common.open': 'Abrir', 'common.loading': 'Cargando…',
+  'crash.title': 'Algo ha salido mal', 'crash.body': 'No se ha podido mostrar la pantalla. No has perdido la partida: vuelve al menú principal y carga un guardado. Si vuelve a pasar con el mismo guardado, ese guardado está dañado.', 'crash.menu': 'Volver al menú principal', 'crash.reload': 'Recargar la página',
   'mode.ceo': 'CEO histórico', 'mode.founder': 'Fundador de marca', 'mode.motorsport': 'Director de motorsport',
   'diff.easy': 'fácil', 'diff.normal': 'normal', 'diff.hard': 'difícil',
   'tag.historical': 'histórico', 'tag.approx': 'aprox.', 'tag.estimate': 'estimado',
@@ -105,6 +106,7 @@ export const es: Record<MessageKey, string> = {
   'insight.belowCost.title': '{name} se vende por debajo del coste', 'insight.belowCost.why': 'Cada coche aporta {net} tras el margen del concesionario, pero cuesta {cost} fabricarlo. Sube el precio o reduce costes.',
   'insight.bottleneck.title': '{name}: {stage} limita la producción', 'insight.bottleneck.why': 'Esa fase solo procesa {cap} coches al mes aunque la fábrica está dimensionada para {nominal}. Amplíala para liberar capacidad.',
   'insight.idleCapacity.title': 'Las fábricas solo se usan al {util} %', 'insight.idleCapacity.why': 'La capacidad ociosa sigue generando costes fijos. Añade un modelo, aumenta el volumen o plantéate vender una planta.',
+  'insight.lowSales.title': '{name} vende muy por debajo de su línea', 'insight.lowSales.why': 'Solo se venden {sold} al mes frente a una línea preparada para {cap}. El límite es la demanda, no la planta: compara el precio con el recomendado, amplía la red de concesionarios o aumenta el marketing.',
   'insight.soldOut.title': '{name} está agotado', 'insight.soldOut.why': 'Los compradores quieren {demand} al mes pero solo se venden {sold}. Añade capacidad o sube el precio.',
   'insight.supplyDisruption.title': 'Interrupción de suministro', 'insight.supplyDisruption.why': '{suppliers} proveedor(es) entregan con retraso hasta {months} meses más; el mes pasado se perdió el {loss} % de la producción prevista. Usa stock de seguridad o un segundo proveedor.',
   'insight.engineersShort.title': 'El desarrollo tiene poco personal', 'insight.engineersShort.why': 'Tus programas necesitan unos {need} ingenieros a pleno ritmo y tienes {have}. Contrata más o acepta retrasos.',

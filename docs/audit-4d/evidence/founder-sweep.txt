@@ -1,0 +1,36 @@
+1965 cap0 mass normal: start 13M devMonths 24 → GAMEOVER y6 cash 0M debt 6M firstProfitYr - units/yr 68/99/145/155 
+1965 cap0 mass hard: start 13M devMonths 24 → GAMEOVER y6 cash 0M debt 5M firstProfitYr - units/yr 68/97/134/158 
+1965 cap0 sports normal: start 13M devMonths 24 → GAMEOVER y6 cash 0M debt 6M firstProfitYr - units/yr 97/175/198/218 
+1965 cap0 sports hard: start 13M devMonths 24 → GAMEOVER y6 cash 0M debt 5M firstProfitYr - units/yr 98/174/179/208 
+1965 cap1 mass normal: start 43M devMonths 24 → alive cash 18M debt 0M firstProfitYr - units/yr 1376/1910/2568/2890/2540/2326/2314/1642/1660/1820 
+1965 cap1 mass hard: start 43M devMonths 24 → alive cash 20M debt 0M firstProfitYr - units/yr 1378/1886/2453/2848/2442/2221/2284/1798/1650/1794 
+1965 cap1 sports normal: start 43M devMonths 24 → alive cash 19M debt 0M firstProfitYr - units/yr 533/919/995/1158/1030/883/864/724/435/629 
+1965 cap1 sports hard: start 43M devMonths 24 → alive cash 19M debt 0M firstProfitYr - units/yr 533/922/919/1041/928/802/830/763/422/635 
+1965 cap2 mass normal: start 141M devMonths 24 → alive cash 207M debt 0M firstProfitYr 1.9166666666666665 units/yr 2430/3368/4478/5064/4434/4053/4029/2858/2895/3074 
+1965 cap2 mass hard: start 141M devMonths 24 → alive cash 209M debt 0M firstProfitYr 1.9166666666666665 units/yr 2434/3327/4133/4994/4082/3876/3982/3132/2876/3127 
+1965 cap2 sports normal: start 141M devMonths 24 → alive cash 208M debt 0M firstProfitYr 1.9166666666666665 units/yr 876/1515/1646/1916/1705/1463/1432/1201/723/1048 
+1965 cap2 sports hard: start 141M devMonths 24 → alive cash 208M debt 0M firstProfitYr 1.9166666666666665 units/yr 877/1518/1517/1721/1535/1328/1375/1265/701/1057 
+1990 cap0 mass normal: start 85M devMonths 28 → GAMEOVER y9 cash 0M debt 24M firstProfitYr - units/yr 10/16/20/24/25/25/21 
+1990 cap0 mass hard: start 85M devMonths 28 → GAMEOVER y9 cash 0M debt 21M firstProfitYr - units/yr 10/16/20/24/25/25/23 
+1990 cap0 sports normal: start 85M devMonths 28 → GAMEOVER y10 cash 0M debt 25M firstProfitYr - units/yr 66/93/117/133/132/124/118 
+1990 cap0 sports hard: start 85M devMonths 28 → GAMEOVER y9 cash 0M debt 21M firstProfitYr - units/yr 71/100/125/141/139/131/133 
+1990 cap1 mass normal: start 274M devMonths 28 → alive cash 260M debt 0M firstProfitYr 1.9166666666666665 units/yr 253/386/481/554/546/539/455/374/389/383 
+1990 cap1 mass hard: start 274M devMonths 28 → alive cash 259M debt 0M firstProfitYr 1.9166666666666665 units/yr 253/383/479/550/543/545/492/438/402/400 
+1990 cap1 sports normal: start 274M devMonths 28 → alive cash 286M debt 0M firstProfitYr 1.9166666666666665 units/yr 393/535/651/714/690/640/598/506/617/612 
+1990 cap1 sports hard: start 274M devMonths 28 → alive cash 289M debt 0M firstProfitYr 1.9166666666666665 units/yr 426/579/698/760/733/678/681/605/663/677 
+1990 cap2 mass normal: start 904M devMonths 28 → alive cash 1313M debt 0M firstProfitYr 1.9166666666666665 units/yr 447/679/841/965/949/935/788/648/677/666 
+1990 cap2 mass hard: start 904M devMonths 28 → alive cash 1313M debt 0M firstProfitYr 1.9166666666666665 units/yr 447/674/837/960/944/946/853/760/698/695 
+1990 cap2 sports normal: start 904M devMonths 28 → alive cash 1354M debt 0M firstProfitYr 1.9166666666666665 units/yr 692/936/1131/1234/1188/1101/1029/871/1063/1054 
+1990 cap2 sports hard: start 904M devMonths 28 → alive cash 1358M debt 0M firstProfitYr 1.9166666666666665 units/yr 751/1011/1211/1311/1261/1164/1170/1040/1140/1164 
+2015 cap0 mass normal: start 211M devMonths 30 → GAMEOVER y10 cash 0M debt 47M firstProfitYr - units/yr 5/6/8/12/13/14/13 
+2015 cap0 mass hard: start 211M devMonths 30 → GAMEOVER y9 cash 0M debt 39M firstProfitYr - units/yr 2/2/3/4/5/5/5 
+2015 cap0 sports normal: start 211M devMonths 30 → GAMEOVER y10 cash 0M debt 46M firstProfitYr - units/yr 35/37/47/67/67/66/66/69 
+2015 cap0 sports hard: start 211M devMonths 30 → GAMEOVER y10 cash 0M debt 38M firstProfitYr - units/yr 22/23/32/43/46/44/44 
+2015 cap1 mass normal: start 684M devMonths 30 → alive cash 494M debt 0M firstProfitYr - units/yr 91/106/147/208/223/242/225/208/195/183 
+2015 cap1 mass hard: start 684M devMonths 30 → alive cash 488M debt 0M firstProfitYr - units/yr 46/54/75/109/115/121/116/106/98/94 
+2015 cap1 sports normal: start 684M devMonths 30 → alive cash 540M debt 0M firstProfitYr 6.916666666666667 units/yr 255/259/317/437/429/416/405/419/405/394 
+2015 cap1 sports hard: start 684M devMonths 30 → alive cash 539M debt 0M firstProfitYr 6.916666666666667 units/yr 196/194/257/342/346/326/326/319/308/315 
+2015 cap2 mass normal: start 2242M devMonths 30 → alive cash 2611M debt 0M firstProfitYr 1.9166666666666665 units/yr 161/187/258/365/391/422/392/364/340/320 
+2015 cap2 mass hard: start 2242M devMonths 30 → alive cash 2606M debt 0M firstProfitYr 1.9166666666666665 units/yr 81/96/132/191/197/208/203/191/176/167 
+2015 cap2 sports normal: start 2242M devMonths 30 → alive cash 2673M debt 0M firstProfitYr 1.9166666666666665 units/yr 450/453/552/758/742/717/699/722/699/680 
+2015 cap2 sports hard: start 2242M devMonths 30 → alive cash 2671M debt 0M firstProfitYr 1.9166666666666665 units/yr 346/339/448/595/601/563/564/552/533/545 

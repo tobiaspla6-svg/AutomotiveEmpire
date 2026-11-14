@@ -6,7 +6,7 @@ import { hasTech, missingTechs, TECH_BY_ID } from '../data/tech';
 import { creditLimit, refreshStats, engineerCost, factoryBuildCost, factoryValue, lineShareUsed, makeModel, news, RESTRUCTURE, restructuringSaving, toolingCost, uid, unitCost, valuation } from './company';
 import { priceGuide } from './pricing';
 import { CYL, defaultVehicle } from './engineering';
-import { aggregateTrims, faceliftCost, FACELIFT_AFTER, makeTrim, refreshTrim, trimView } from './trims';
+import { aggregateTrims, faceliftCost, FACELIFT_AFTER, makeTrim, refreshTrim, trimView, TRIM_PRESETS } from './trims';
 import { annualSupply } from './market';
 import { fxNow } from './regional';
 import { emptySupply, inHouseCost, quote, STAGE_WEIGHT, supplierCapacity } from './supply';
@@ -109,6 +109,7 @@ export function addTrim(g: GameState, modelId: string, level: TrimLevel, price?:
   const c = player(g);
   const m = c.models.find((x) => x.id === modelId);
   if (!m) return 'Unknown model.';
+  if (!(level in TRIM_PRESETS)) return 'Unknown trim level.';
   if (m.status === 'retired' || m.status === 'design') return 'Trims can be added to cars in development or on sale.';
   m.trims ??= [];
   if (m.trims.length >= 7) return 'A model can have at most seven trims.';

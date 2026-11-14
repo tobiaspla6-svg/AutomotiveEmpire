@@ -1,0 +1,135 @@
+{
+ "results": [
+  {
+   "name": "found a founder company",
+   "ok": true,
+   "note": "$163.5M"
+  },
+  {
+   "name": "studio: design a car, start development",
+   "ok": true,
+   "note": "Audit GT Gen 1 · designed 2005 Development · 39 mo left Family / Mid-size 112 kW 9.3 s $34"
+  },
+  {
+   "name": "advance until the car is ready",
+   "ok": true,
+   "note": "30 months, Jul 2007, cash $100.7M"
+  },
+  {
+   "name": "factory: assign a production line",
+   "ok": true,
+   "note": "Aurelia Motors Works Italy · Europe · since 2005 Production line Expand +50% ($950k) Automate +15% ($415k) Sell 0% UTILI"
+  },
+  {
+   "name": "vehicles: set a price",
+   "ok": true,
+   "note": "42750 → 38475"
+  },
+  {
+   "name": "sell for 12 months: sales and cash move",
+   "ok": true,
+   "note": "cash $97.8M → $89.7M, date Jul 2008"
+  },
+  {
+   "name": "finance: borrow and repay",
+   "ok": true,
+   "note": "$0 → $5.0M → $0"
+  },
+  {
+   "name": "research screen renders and a budget slider moves state",
+   "ok": true,
+   "note": "0 → 319888.8; monthly research text: "
+  },
+  {
+   "name": "market screen",
+   "ok": true,
+   "note": "ok"
+  },
+  {
+   "name": "motorsport: found a team and run a season",
+   "ok": true,
+   "note": "Oct 2009"
+  },
+  {
+   "name": "company/news/saves screens",
+   "ok": true,
+   "note": "ok"
+  },
+  {
+   "name": "save → reload page → resume: same state",
+   "ok": true,
+   "note": "{\"date\":\"Oct 2009\",\"cash\":\"$68.6M\",\"debt\":\"$0\"}"
+  },
+  {
+   "name": "after reload the game keeps running",
+   "ok": true,
+   "note": "Jan 2010"
+  },
+  {
+   "name": "found a founder company",
+   "ok": true,
+   "note": "163,5 M $"
+  },
+  {
+   "name": "studio: design a car, start development",
+   "ok": true,
+   "note": "Audit GT Gen. 1 · diseñado en 2005 Desarrollo · faltan 39 meses Familiar / medio 112 kW 9."
+  },
+  {
+   "name": "advance until the car is ready",
+   "ok": true,
+   "note": "30 months, jul 2007, cash 100,7 M $"
+  },
+  {
+   "name": "factory: assign a production line",
+   "ok": true,
+   "note": "Aurelia Motors Works Italia · Europa · desde 2005 Línea de producción Ampliar +50% (950 k $) Automatizar +15% (415 k $) "
+  },
+  {
+   "name": "vehicles: set a price",
+   "ok": true,
+   "note": "42750 → 38475"
+  },
+  {
+   "name": "sell for 12 months: sales and cash move",
+   "ok": true,
+   "note": "cash 97,8 M $ → 88,9 M $, date jul 2008"
+  },
+  {
+   "name": "finance: borrow and repay",
+   "ok": true,
+   "note": "0 $ → 5,0 M $ → 0 $"
+  },
+  {
+   "name": "research screen renders and a budget slider moves state",
+   "ok": true,
+   "note": "0 → 319888.8; monthly research text: "
+  },
+  {
+   "name": "market screen",
+   "ok": true,
+   "note": "ok"
+  },
+  {
+   "name": "motorsport: found a team and run a season",
+   "ok": true,
+   "note": "oct 2009"
+  },
+  {
+   "name": "company/news/saves screens",
+   "ok": true,
+   "note": "ok"
+  },
+  {
+   "name": "save → reload page → resume: same state",
+   "ok": true,
+   "note": "{\"date\":\"oct 2009\",\"cash\":\"68,7 M $\",\"debt\":\"0 $\"}"
+  },
+  {
+   "name": "after reload the game keeps running",
+   "ok": true,
+   "note": "ene 2010"
+  }
+ ],
+ "errors": []
+}

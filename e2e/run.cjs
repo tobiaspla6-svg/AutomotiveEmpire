@@ -238,6 +238,66 @@ test('onboarding: the welcome appears once and the checklist leads to the next s
   noErrors(errors); await ctx.close();
 });
 
+
+/** Rewrite the autosave in IndexedDB with `mutate` (a function body over `g`, the stored game) to simulate damage. */
+async function damageAutosave(page, body) {
+  await page.evaluate(async (src) => {
+    const db = await new Promise((res, rej) => { const r = indexedDB.open('automotive-empire', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    const rec = await new Promise((res, rej) => { const r = db.transaction('saves').objectStore('saves').get('autosave'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    new Function('g', src)(rec.game);
+    await new Promise((res, rej) => { const t = db.transaction('saves', 'readwrite'); t.objectStore('saves').put(rec); t.oncomplete = res; t.onerror = () => rej(t.error); });
+    db.close();
+  }, body);
+}
+test('damaged saves: refused with a message instead of a blank screen', async (browser) => {
+  for (const [name, body] of [['news missing', 'delete g.news;'], ['technology missing', "g.companies.find((c) => c.id === g.playerId).tech = undefined;"], ['vehicle without stats', "g.companies.find((c) => c.id === g.playerId).models[0].stats = undefined;"], ['no finances', "g.companies.find((c) => c.id === g.playerId).cash = null;"]]) {
+    const { ctx, page, errors } = await open(browser);
+    await startCeo(page); await nextMonth(page);
+    await page.locator('[data-action="quit"]').click(); await page.locator('.menu2').waitFor();
+    await damageAutosave(page, body);
+    await page.reload(); await page.locator('.menu2').waitFor();
+    await page.locator('[data-action="resume"]').click();
+    await page.locator('.toast', { hasText: 'damaged' }).waitFor();
+    eq(await page.locator('.menu2').count(), 1, `${name}: the menu is still there`);
+    eq(await page.locator('.shell').count(), 0, `${name}: the damaged game was not opened`);
+    assert(errors.length === 0, `${name}: console errors ${errors.slice(0, 2).join(' | ')}`);
+    await ctx.close();
+  }
+});
+
+test('crash guard: a screen that cannot render shows a way back, not a blank page', async (browser) => {
+  const { ctx, page } = await open(browser);
+  await startCeo(page); await nextMonth(page);
+  await page.locator('[data-action="quit"]').click(); await page.locator('.menu2').waitFor();
+  // a truncated racing division passes the structural check (it is optional) but cannot be drawn
+  await damageAutosave(page, "const p = g.companies.find((c) => c.id === g.playerId); p.motorsport = { discipline: 'f1' };");
+  await page.reload(); await page.locator('.menu2').waitFor();
+  await page.locator('[data-action="resume"]').click();
+  await page.locator('[data-action="crash-menu"]').waitFor();
+  assert((await page.locator('[role="alert"]').innerText()).includes('Something went wrong'), 'recovery message shown');
+  await page.locator('[data-action="crash-menu"]').click();
+  await page.locator('.menu2').waitFor();
+  await ctx.close();
+});
+
+test('game over: the books can be read after the dialog, and the way back to the menu stays available', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await startCeo(page); await nextMonth(page);
+  await page.locator('[data-action="quit"]').click(); await page.locator('.menu2').waitFor();
+  await damageAutosave(page, "g.gameOver = { reason: 'The board has lost confidence in your leadership and dismissed you.' };");
+  await page.reload(); await page.locator('.menu2').waitFor();
+  await page.locator('[data-action="resume"]').click(); await page.locator('.shell').waitFor();
+  eq(await page.locator('.modal').count(), 1, 'the game-over dialog is shown');
+  assert(await page.locator('[data-action="next-month"]').isDisabled(), 'time cannot advance after game over');
+  await page.locator('[data-action="over-books"]').click();
+  eq(await page.locator('.modal').count(), 0, 'the dialog gets out of the way so the books can be read');
+  eq(await page.locator('.nav [aria-current="page"]').getAttribute('data-view'), 'finance', 'the finance screen is open');
+  await nav(page, 'company'); await nav(page, 'finance');
+  await page.locator('[data-action="over-menu"]').click();
+  await page.locator('.menu2').waitFor();
+  noErrors(errors); await ctx.close();
+});
+
 // ---------------------------------------------------------------------------------------------------- runner
 (async () => {
   const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore' });
