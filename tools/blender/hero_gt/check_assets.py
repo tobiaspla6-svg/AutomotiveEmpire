@@ -22,6 +22,12 @@ for lod in range(3):
     doc=json.loads(raw[20:20+n])
     names={node.get("name","") for node in doc.get("nodes",[])}
     assert any("HOOD" in name for name in names),"Missing opening-hood geometry"
+    if lod==0:
+        assert any("SURF_front_curved_nose" in name for name in names),"Missing resculpted front end"
+        assert any("SURF_front_sculpted_fender_" in name for name in names),"Missing curved fenders"
+        assert any("SURF_grille_forged_vertical_" in name for name in names),"Missing physical grille slats"
+        assert any("TURBO_spiral_cast_volute_" in name for name in names),"Missing new turbocharger casting"
+        assert any("TURBO_ten_blade_impeller_" in name for name in names),"Missing compressor impellers"
     assert any(name.startswith("ENGINE_") for name in names),"Missing engine geometry"
     assert "animations" in doc and len(doc["animations"])>0,"Opening-hood animation not exported"
     assert len(raw)<budgets[lod],f"LOD{lod} too heavy: {len(raw)}"
