@@ -1,13 +1,16 @@
 PROMPT ID: P-AE01-front34
 ATTEMPT CAP: 4
-REFERENCES TO ATTACH (through Higgsfield's upload window; the chat itself cannot pass images):
-  none — first view of the set. Optionally upload assets-src/sedan-ref/references/side.png (our own blueprint) as a proportions-only reference, with the sentence: The second uploaded image is a technical line drawing of the same car: use it ONLY for proportions (wheelbase, overhangs, roof height, belt line); do not copy its line style, background or colours.
-ASPECT RATIO: 3:2 or 16:9   MIN LONG SIDE: 2048 px
+MODEL: Nano Banana Pro (id `nano_banana_pro`, Google) — resolution 2k, aspect ratio 3:2, one image per request
+REFERENCES TO ATTACH (through Higgsfield's upload window; the chat itself cannot pass images), in this order:
+  1. assets-src/sedan-ref/renders/after-front34.png  (our own Blender render of the real model, 1280x720)
+  2. assets-src/sedan-ref/references/side.png        (our own parametric blueprint, 1232x418)
+ASPECT RATIO: 3:2   MIN LONG SIDE: 2048 px
 
 ----- PROMPT (paste exactly) -----
 Original modern four-door executive saloon, 4.83 m long, 1.89 m wide, 1.45 m high, wheelbase 2.90 m, long hood and short front overhang (0.89 m), longer rear overhang (1.04 m), cab-rearward glasshouse with a gently curved roof and a raked rear window ending on a short trunk lid, crisp shoulder crease running from the headlamps to the tail lamps, sculpted lower doors with gloss-black sills, slim LED headlamps with three projector modules, wide trapezoidal grille with a fine diamond mesh and one horizontal chrome blade, vertical corner intakes, full-width slim LED tail lamps with three horizontal light bars, rectangular exhaust finishers in a gloss-black diffuser, 19-inch ten-spoke turbine alloy wheels, chrome window surround, deep blue metallic paint.
 studio photograph on a seamless dark graphite floor and backdrop, soft overhead softbox plus two long strip lights, low contrast reflections, sharp focus, no people, no text, no watermark, no badges, no logos, no licence plate, no brand names, no recognisable production car, original design
 front three-quarter view from the driver's side at eye level, 35 mm lens, whole car in frame, wheels visible
+The first reference image is an unfinished 3D render of the exact car to be photographed: keep its design, proportions, wheelbase, headlamp and grille shapes, glasshouse, shoulder crease and wheels exactly; replace the flat render look with a realistic studio photograph with deep blue metallic paint, believable glass, tyres and reflections. The second reference image is a technical line drawing of the same car: use it ONLY for proportions (wheelbase, overhangs, roof height, belt line); do not copy its line style, background or colours.
 
 ----- NEGATIVE (negative-prompt field, or append "Avoid: ...") -----
 badge, emblem, logo, brand lettering, licence plate text, real manufacturer styling cues, extra wheels, mismatched wheels, asymmetric lamps, duplicated door handles, warped proportions, melted details, fisheye distortion, cropped wheels, motion blur, people, reflections of cameras or photographers
