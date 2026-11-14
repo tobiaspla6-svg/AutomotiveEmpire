@@ -7,7 +7,7 @@ import { money, num, monthYear } from '../i18n/format';
 import { starterVehicle, defaultVehicle } from '../sim/engineering';
 import { annualUnits } from '../sim/company';
 import { startDevelopment, setEngineers, setMarketing, investDealers } from '../sim/actions';
-import { BLUEPRINTS, MILESTONES, RARITY, availableMilestones, equipPart, fixedPrice, lifetimeSales, openSalesChest, redeemPart, type ChestResult } from '../sim/progression';
+import { BLUEPRINTS, MILESTONES, RARITY, effectiveOdds, availableMilestones, equipPart, fixedPrice, lifetimeSales, openSalesChest, redeemPart, type ChestResult } from '../sim/progression';
 import { posterForBody, CarPoster } from './ds/poster';
 import { CampusArt2D, ChestArt2D, EngineArt2D } from './EmpireArt2D';
 
@@ -185,11 +185,12 @@ export function Collection2D(){
   const {g,p}=useGame(), {lang}=useT(), es=lang==='es';
   const act=useStore(s=>s.act),save=useStore(s=>s.save);
   const [reward,setReward]=useState<ChestResult|null>(null);
+  const odds=effectiveOdds(g.year);
   const sales=lifetimeSales(p),inventory=p.arcade?.inventory??{},credits=p.arcade?.credits??0;
   const open=(m:number)=>{
-    let found:ChestResult|null=null;
-    const ok=act(gg=>{const r=openSalesChest(gg,m);if(typeof r==='string')return r;found=r;return null;});
-    if(ok&&found){setReward(found);void save('autosave');}
+    const captured:{value?:ChestResult}={};
+    const ok=act(gg=>{const r=openSalesChest(gg,m);if(typeof r==='string')return r;captured.value=r;return null;});
+    if(ok&&captured.value){setReward(captured.value);void save('autosave');}
   };
   return <section className="ae2d ae2d-collection">
     <Headline kicker={label(es,'GARAJE DE RECOMPENSAS','REWARDS GARAGE')} title={label(es,'Coleccioná. Desbloqueá. Exhibí.','Collect. Unlock. Showcase.')} sub={label(es,'Conseguí cofres por tus ventas reales. Las piezas son cosméticas y no alteran la economía.','Earn chests from actual sales. These cosmetic parts do not alter your simulation.')}/>
@@ -200,7 +201,7 @@ export function Collection2D(){
         return <button className={'ae2d-chest-tile '+(owned?'claimed':unlocked?'ready':'locked')} key={m} disabled={!unlocked||owned} onClick={()=>open(m)}><ChestArt2D opened={owned}/><b>{m===0?label(es,'Cofre inicial','Starter chest'):num(m,lang)+' '+label(es,'ventas','sales')}</b><span>{owned?label(es,'Abierto','Opened'):unlocked?label(es,'Abrir cofre','Open chest'):label(es,'Bloqueado','Locked')}</span></button>;
       })}
     </div>
-    <div className="ae2d-chance"><b>{label(es,'Probabilidades de cofres gratuitos','Free chest probabilities')}</b><div>{(Object.keys(RARITY) as (keyof typeof RARITY)[]).map(r=><span key={r} style={{color:RARITY[r].color}}>{label(es,RARITY[r].es,RARITY[r].en)} {RARITY[r].probability}%</span>)}</div></div>
+    <div className="ae2d-chance"><b>{label(es,'Probabilidades de cofres gratuitos','Free chest probabilities')}</b><div>{(Object.keys(RARITY) as (keyof typeof RARITY)[]).map(r=><span key={r} style={{color:RARITY[r].color}}>{label(es,RARITY[r].es,RARITY[r].en)} {odds[r]}%</span>)}</div></div>
     <h3 className="ae2d-section-title">{label(es,'Inventario y tienda con créditos ganados','Inventory and earned-credit shop')}</h3>
     <div className="ae2d-card-collection">{BLUEPRINTS.filter(b=>b.firstYear<=g.year).map(b=>{
       const own=inventory[b.id]||0,rarity=RARITY[b.rarity],equipped=p.arcade?.equipped[b.slot]===b.id;
