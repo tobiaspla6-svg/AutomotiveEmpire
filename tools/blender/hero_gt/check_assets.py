@@ -27,6 +27,25 @@ for lod in range(3):
     assert len(raw)<budgets[lod],f"LOD{lod} too heavy: {len(raw)}"
     print(f.name,"bytes",len(raw),"triangles",by_lod[lod],"materials",len(doc.get("materials",[])),
           "meshes",len(doc.get("meshes",[])),"nodes",len(names),"animations",len(doc.get("animations",[])))
+# Verify independently streamable body and powertrain, with matching LOD dimensions.
+for lod in range(3):
+    for role in ("BODY", "ENGINE"):
+        file=out/f"AE_GTRS_{role}_LOD{lod}.glb"
+        assert file.is_file(), "Missing streamable asset "+str(file)
+        binary=file.read_bytes()
+        magic,version,total=struct.unpack_from("<4sII",binary,0)
+        assert magic==b"glTF" and version==2 and total==len(binary), "Invalid split GLB"
+        json_len,typ=struct.unpack_from("<I4s",binary,12)
+        assert typ==b"JSON"
+        desc=json.loads(binary[20:20+json_len])
+        node_names={n.get("name","") for n in desc.get("nodes",[])}
+        if role=="BODY":
+            assert any("HOOD" in n for n in node_names), "Body missing bonnet"
+            assert len(desc.get("animations",[]))>0, "Body must include articulated bonnet"
+        else:
+            assert any(n.startswith("ENGINE_") for n in node_names), "Engine lacks geometry"
+        assert len(binary)<budgets[lod],f"Split {role} LOD{lod} too large"
+        print(f"{role} LOD{lod}",len(binary),"bytes",len(node_names),"nodes")
 for n in ("review_front.png","review_profile.png","review_engine.png"):
     f=out/n;assert f.is_file() and f.stat().st_size>2000, "Missing review "+n
 print("GT asset packaging PASS")
