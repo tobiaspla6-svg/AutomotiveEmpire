@@ -14,6 +14,7 @@ import { CompanyView, NewsView, SavesView } from './Views';
 import { FinanceView, MarketView, ResearchView } from './Corporate';
 import { FactoriesView } from './Factories';
 import { EmpireHub2D, Workshop2D, Collection2D, FactoryFloor2D, Campaigns2D, League2D } from './Empire2D';
+import { SkillTree2D } from './SkillTree2D';
 
 // the vehicle studio and motorsport screens carry the 3D viewers: load them on first visit
 const VehiclesView = lazy(() => import('./Vehicles').then((m) => ({ default: m.VehiclesView })));
@@ -37,6 +38,7 @@ export function Shell() {
         { id: 'hq2d', icon: 'home', label: 'nav.dashboard', custom: lang === 'es' ? 'Mi imperio' : 'My empire' },
         { id: 'workshop2d', icon: 'wrench', label: 'nav.vehicles', custom: lang === 'es' ? 'Taller 2D' : '2D workshop' },
         { id: 'factory2d', icon: 'factory', label: 'nav.factories', custom: lang === 'es' ? 'Planta 2D' : '2D factory' },
+        { id: 'skills2d', icon: 'bolt', label: 'nav.research', custom: lang === 'es' ? 'Habilidades' : 'Tech tree' },
         { id: 'collection2d', icon: 'box', label: 'nav.company', custom: lang === 'es' ? 'Cofres y piezas' : 'Chests & parts' },
         { id: 'campaign2d', icon: 'market', label: 'nav.market', custom: lang === 'es' ? 'Publicidad' : 'Campaigns' },
         { id: 'league2d', icon: 'trophy', label: 'nav.company', custom: lang === 'es' ? 'Liga de marcas' : 'Brands league' },
@@ -102,6 +104,7 @@ export function Shell() {
           {view === 'hq2d' && <EmpireHub2D />}
           {view === 'workshop2d' && <Workshop2D />}
           {view === 'factory2d' && <FactoryFloor2D />}
+          {view === 'skills2d' && <SkillTree2D />}
           {view === 'collection2d' && <Collection2D />}
           {view === 'campaign2d' && <Campaigns2D />}
           {view === 'league2d' && <League2D />}
