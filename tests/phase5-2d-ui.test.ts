@@ -1,5 +1,5 @@
 // Phase 5 UI acceptance at SSR level: actual React game views; no browser/WebGL required.
-import { createElement } from 'react';
+import { createElement, type ComponentType } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeAll,describe,expect,it } from 'vitest';
 import { setLang } from '../src/i18n';
@@ -9,7 +9,7 @@ import { SkillTree2D } from '../src/ui/SkillTree2D';
 import { founder } from './helpers';
 
 const live=()=>Object.assign(useStore.getInitialState(),useStore.getState());
-const render=(c:()=>React.ReactNode)=>{live();return renderToString(createElement(c));};
+const render=(c:ComponentType)=>{live();return renderToString(createElement(c));};
 
 beforeAll(()=>{
  const mem=new Map<string,string>();
@@ -48,7 +48,7 @@ describe('Phase 5 game-first 2D screens',()=>{
  it('showcases era-locked free chests and real technical unlocks',()=>{
    setLang('en');useStore.getState().start(founder({year:1950}));
    const c=render(Collection2D);
-   expect(c).toContain('49.9'); // all unavailable tiers migrate to common; visible odds remain era-correct below
+   expect(c).not.toContain('49.9%'); // rarity weights unavailable in 1950 transfer to common
    expect(c).toContain('100'); // effective odds of common at 1950
    expect(c).toContain('Starter chest');
    const tech=render(SkillTree2D);
