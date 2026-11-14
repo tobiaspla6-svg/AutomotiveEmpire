@@ -4,6 +4,7 @@
 import { memo } from 'react';
 
 import type { BodyType, Discipline } from '../../sim/types';
+import type { ArcadeProgress } from '../../sim/progression';
 
 export type PosterKind = 'sedan' | 'coupe' | 'hatch' | 'suv' | 'pickup' | 'formula' | 'prototype';
 const SHAPE: Record<PosterKind, { body: string; glass: string; wheels: [number, number]; r: number }> = {
@@ -16,7 +17,7 @@ const SHAPE: Record<PosterKind, { body: string; glass: string; wheels: [number, 
   prototype: { body: 'M10 124c0-8 6-12 16-14l66-10c14-12 32-20 52-20h60c18 0 32 6 44 18l56 14c8 2 12 6 12 12v8c0 4-3 6-7 6H17c-4 0-7-2-7-6z', glass: 'M128 84c14-10 28-14 46-14h40c10 0 22 4 30 12l-6 10H120z', wheels: [86, 288], r: 21 },
 };
 
-export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7c93', label, className }: { kind?: PosterKind; color?: string; label?: string; className?: string }) {
+export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7c93', label, className, equipped }: { kind?: PosterKind; color?: string; label?: string; className?: string; equipped?: ArcadeProgress['equipped'] }) {
   const s = SHAPE[kind];
   return (
     <div className={'poster ' + (className ?? '')} role="img" aria-label={label ?? kind}>
@@ -29,7 +30,18 @@ export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7
         <path d={s.body} fill={`url(#pb-${kind})`} stroke="rgba(255,255,255,0.22)" strokeWidth="1.2" />
         <path d={s.glass} fill="#0b0d11" opacity="0.82" transform={kind === 'sedan' || kind === 'formula' ? undefined : 'translate(0 9)'} />
         <path d={s.body} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="6" strokeLinejoin="round" style={{ mixBlendMode: 'overlay' }} />
-        {s.wheels.map((x) => <g key={x}><circle cx={x} cy={128} r={s.r} fill="#0a0b0d" stroke="#262a31" strokeWidth="3" /><circle cx={x} cy={128} r={s.r * 0.55} fill="#8e96a5" opacity="0.85" /><circle cx={x} cy={128} r={s.r * 0.2} fill="#1b1e24" /></g>)}
+        {equipped?.body && <path d="M65 100L158 100" stroke="rgba(255,216,146,.9)" strokeWidth="3" strokeLinecap="round" />}
+        {equipped?.chassis && <path d="M48 139H289" stroke="#c6e6e1" strokeWidth="3" strokeLinecap="round" opacity=".75" />}
+        {equipped?.engine && <path d="M248 103l8-10 7 8 8-10" fill="none" stroke="#f3d9a1" strokeWidth="3" />}
+        {s.wheels.map((x) => <g key={x}>
+          <circle cx={x} cy={128} r={s.r} fill="#0a0b0d" stroke="#262a31" strokeWidth="3" />
+          <circle cx={x} cy={128} r={s.r * 0.61} fill={equipped?.wheels?'#bdc9d3':'#8e96a5'} opacity=".95"/>
+          {equipped?.wheels && Array.from({length:equipped.wheels==='five-spoke'?5:equipped.wheels==='forged'?10:6},(_,i,n)=>(
+            <path key={i} d={`M ${x} 128 L ${x+Math.cos(i*2*Math.PI/n)*(s.r*.53)} ${128+Math.sin(i*2*Math.PI/n)*(s.r*.53)}`}
+              stroke="#29374a" strokeWidth={equipped.wheels==='forged'?1.7:3} strokeLinecap="round" />
+          ))}
+          <circle cx={x} cy={128} r={s.r * 0.2} fill="#1b1e24" />
+        </g>)}
       </svg>
       {label && !className?.includes('poster-hero') && <span className="poster-l">{label}</span>}
     </div>
