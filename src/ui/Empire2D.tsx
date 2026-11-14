@@ -65,7 +65,7 @@ export function EmpireHub2D() {
     <div className="ae2d-hub-actions">
       <article className="ae2d-feature ae2d-feature-gold">
         <span className="ae2d-kicker">{label(es,'ESTUDIO DE DISEÑO','DESIGN STUDIO')}</span>
-        <div className="ae2d-feature-hero"><CarPoster kind={active[0]?posterForBody(active[0].spec.body):'coupe'} color={active[0]?.spec.color||p.color} /></div>
+        <div className="ae2d-feature-hero"><CarPoster kind={active[0]?posterForBody(active[0].spec.body):'coupe'} color={active[0]?.spec.color||p.color} equipped={p.arcade?.equipped} /></div>
         <h3>{active.length?active[0].name:label(es,'Tu primer auto empieza acá','Your first car starts here')}</h3>
         <p>{label(es,'Elegí motor, chasis, carrocería y detalles; después aprobá el desarrollo real.','Choose an engine, chassis, body and finish, then approve real development.')}</p>
         <PortalButton view="workshop2d">{label(es,'Diseñar auto','Design a car')}</PortalButton>
@@ -172,7 +172,7 @@ export function Workshop2D() {
       </div>
       <aside className="ae2d-workshop-preview">
         <span className="ae2d-kicker">{label(es,'VISTA PREVIA 2D','2D PREVIEW')}</span>
-        {stage==='engine'?<EngineArt2D layout={spec.engine.layout}/>:<CarPoster kind={posterForBody(spec.body)} color={spec.color}/>}
+        {stage==='engine'?<EngineArt2D layout={spec.engine.layout}/>:<CarPoster kind={posterForBody(spec.body)} color={spec.color} equipped={p.arcade?.equipped}/>}
         <div className="ae2d-preview-title">{name||label(es,'Proyecto sin nombre','Unnamed project')}</div>
         <div className="ae2d-spec-bars"><span>{label(es,'Era','Era')} <b>{g.year}</b></span><span>{label(es,'Diseño','Design')} <b>{stageIndex+1} / 5</b></span></div>
         <div className="ae2d-stage-footer"><button disabled={stageIndex===0} onClick={()=>setStage(STEPS[stageIndex-1])}>{label(es,'Anterior','Previous')}</button><button disabled={stageIndex===STEPS.length-1} onClick={()=>setStage(STEPS[stageIndex+1])}>{label(es,'Continuar','Continue')} →</button></div>
@@ -194,6 +194,7 @@ export function Collection2D(){
   };
   return <section className="ae2d ae2d-collection">
     <Headline kicker={label(es,'GARAJE DE RECOMPENSAS','REWARDS GARAGE')} title={label(es,'Coleccioná. Desbloqueá. Exhibí.','Collect. Unlock. Showcase.')} sub={label(es,'Conseguí cofres por tus ventas reales. Las piezas son cosméticas y no alteran la economía.','Earn chests from actual sales. These cosmetic parts do not alter your simulation.')}/>
+    <div className="ae2d-collection-showcase"><div><span className="ae2d-kicker">{label(es,'AUTO PERSONALIZADO CON TUS PIEZAS','CUSTOMIZED CAR WITH YOUR PARTS')}</span><CarPoster kind="coupe" color={p.color} equipped={p.arcade?.equipped}/></div><p>{label(es,'Las piezas equipadas ya aparecen en la ilustración 2D. Son estéticas: los motores, el rendimiento y el dinero de la partida siguen independientes.','Equipped blueprints now visibly customize your 2D car. They do not alter simulation horsepower or finances.')}</p></div>
     <div className="ae2d-collection-header"><div><strong>{num(sales,lang)}</strong><span>{label(es,'AUTOS VENDIDOS','CARS SOLD')}</span></div><div><strong>{num(credits,lang)}</strong><span>{label(es,'CRÉDITOS GANADOS','EARNED CREDITS')}</span></div><div><strong>{Object.keys(inventory).length}</strong><span>{label(es,'PIEZAS ÚNICAS','UNIQUE PARTS')}</span></div></div>
     <div className="ae2d-collection-grid">
       {MILESTONES.map(m=>{
