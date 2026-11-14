@@ -227,3 +227,21 @@
 .ae2d-skill-budget input {width:100%;accent-color:#f7cc89}
 @media(max-width:1000px) {.ae2d-skill-branches {grid-template-columns:repeat(3,1fr)}.ae2d-skill-layout {grid-template-columns:1fr}}
 @media(max-width:570px) {.ae2d-skill-branches {grid-template-columns:repeat(2,1fr)}.ae2d-skill-track,.ae2d-skill-fund {padding:17px}}
+
+/* Equippable 2D collection preview and selectable live production stages. */
+.ae2d-collection-showcase {display:flex;gap:20px;align-items:center;justify-content:space-between;background:radial-gradient(ellipse at 45% 55%,#344c64,#14243b);border:1px solid #627894;border-radius:17px;padding:18px 25px}
+.ae2d-collection-showcase>div {min-width:0;flex:1}
+.ae2d-collection-showcase .poster {height:130px}
+.ae2d-collection-showcase .poster svg {max-height:130px;width:min(100%,370px)}
+.ae2d-collection-showcase p {max-width:39ch;min-width:180px;font-size:12px}
+.ae2d-factory-select {display:flex;align-items:center;gap:12px;color:#c4d5de;font-weight:700;font-size:13px}
+.ae2d-factory-select select {background:#1a3048;color:#f0f6f8;border:1px solid #5a7a92;border-radius:9px;padding:9px 13px;max-width:440px}
+button.ae2d-assembly-step {background:none;border:1px solid transparent;border-radius:13px;color:#f0eff1;cursor:pointer;padding:7px 4px}
+button.ae2d-assembly-step:hover {background:#35516d}
+button.ae2d-assembly-step.on {border-color:#f9ce80;background:#33465c}
+button.ae2d-assembly-step.on .ae2d-assembly-machine {box-shadow:0 0 27px #efd39b37}
+.ae2d-stage-detail {display:flex;align-items:center;justify-content:space-between;gap:18px;background:#192e44;border:1px solid #526a7d;border-radius:14px;padding:18px 21px}
+.ae2d-stage-detail>div:nth-child(2) {display:flex;flex-direction:column;gap:4px;text-align:center}
+.ae2d-stage-detail>div:nth-child(2)>span,.ae2d-stage-detail>div:nth-child(2)>small {font-size:10px;color:#b5c7d5}
+.ae2d-stage-detail strong {font:750 34px var(--font-display,'Barlow Condensed');color:#f5d59f}
+@media(max-width:780px) {.ae2d-collection-showcase,.ae2d-stage-detail {flex-wrap:wrap}.ae2d-collection-showcase p {max-width:none}}
