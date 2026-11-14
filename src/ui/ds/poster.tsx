@@ -38,7 +38,7 @@ export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7
           <circle cx={x} cy={128} r={s.r} fill="#0a0b0d" stroke="#262a31" strokeWidth="3" />
           <circle cx={x} cy={128} r={s.r * 0.61} fill={equipped?.wheels?'#bdc9d3':'#8e96a5'} opacity=".95"/>
           {equipped?.wheels && Array.from({length:spokeCount},(_,i)=>(
-            <path key={i} d={`M ${x} 128 L ${x+Math.cos(i*2*Math.PI/spokeCount)*(s.r*.53)} ${128+Math.sin(i*2*Math.PI/n)*(s.r*.53)}`}
+            <path key={i} d={`M ${x} 128 L ${x+Math.cos(i*2*Math.PI/spokeCount)*(s.r*.53)} ${128+Math.sin(i*2*Math.PI/spokeCount)*(s.r*.53)}`}
               stroke="#29374a" strokeWidth={equipped.wheels==='forged'?1.7:3} strokeLinecap="round" />
           ))}
           <circle cx={x} cy={128} r={s.r * 0.2} fill="#1b1e24" />
