@@ -115,6 +115,33 @@ def export_glb(lod):
     print("[AE GT-RS] GLB",filename.name,filename.stat().st_size,"bytes",flush=True)
     return {"lod":lod,"triangles":triangles(),"objects":count,"bytes":filename.stat().st_size}
 
+
+def export_split(lod,role):
+    """Use the exact same world coordinates for body and engine.
+
+    BODY glb is loaded first; ENGINE glb is streamed only when bonnet opens.
+    """
+    assert role in {"BODY","ENGINE"}
+    bpy.ops.object.select_all(action="DESELECT")
+    picked=0
+    for o in bpy.data.objects:
+        if o.type not in {"MESH","CURVE","EMPTY"}:continue
+        if o.name.startswith(("STUDIO_","LGT_","CAM_")) or o.hide_render:continue
+        engine=o.name.startswith(("ENGINE_","TURBO_","ACCESSORY_","BAY_"))
+        if (role=="ENGINE")!=engine:continue
+        o.hide_set(False);o.select_set(True);picked+=1
+    path=DEST/f"AE_GTRS_{role}_LOD{lod}.glb"
+    args=dict(filepath=str(path),export_format="GLB",
+         use_selection=True,export_yup=True,export_materials="EXPORT",
+         export_animations=(role=="BODY"),export_extras=True,
+         export_cameras=False,export_lights=False)
+    try:
+        bpy.ops.export_scene.gltf(**args,export_draco_mesh_compression_enable=True,
+                                   export_draco_mesh_compression_level=6)
+    except TypeError:
+        bpy.ops.export_scene.gltf(**args)
+    return {"role":role,"lod":lod,"bytes":path.stat().st_size,"selected_objects":picked}
+
 def review_render(camera,frame,name):
     scene.frame_set(frame)
     scene.camera=bpy.data.objects[camera]
@@ -140,10 +167,12 @@ report={"artist":"Automotive Empire original GT-RS","source":"Procedural native 
         "vehicle_m":[4.6,1.98,1.34],"engine":"4.0L V8 twin turbo",
         "animation":{"hood_closed":1,"hood_open":40},
         "source_blend_size":SOURCE.stat().st_size,
-        "lods":[]}
+        "lods":[],"split_assets":[] }
 for lod in (0,1,2):
     bpy.ops.wm.open_mainfile(filepath=str(SOURCE))
     simplify_lod(lod)
     report["lods"].append(export_glb(lod))
+    report["split_assets"].append(export_split(lod,"BODY"))
+    report["split_assets"].append(export_split(lod,"ENGINE"))
 (DEST/"report.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
 print("[AE GT-RS] COMPLETE",json.dumps(report),flush=True)
