@@ -78,6 +78,6 @@ describe('Phase 5 earned-only 2D progression',()=>{
     const g=founder({year:1970}),p=player(g);
     expect(redeemPart(g,'prototype')).toBe('Blueprint not invented in this era.');
     p.arcade={claimedMilestones:[],inventory:{prototype:1},equipped:{},credits:99999};
-    expect(equipPart(g,'prototype')).toBe('Not available in this era.');
+    expect(equipPart(g,'prototype')).toBe('Blueprint not available in this era.');
   });
 });
