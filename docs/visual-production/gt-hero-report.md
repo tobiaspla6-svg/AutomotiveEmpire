@@ -35,10 +35,12 @@ The bonnet opens between frames **1 and 40** to 54 degrees. Every piece is still
 | LOD2 evaluated triangles (dry run, after engine batch reduction) | **64,397** |
 | Experimental BODY-only GLB | **1,429,228 bytes** |
 | Experimental ENGINE-only GLB | **1,305,356 bytes** |
+| Tested LOD1 BODY / ENGINE GLB | **424,368 / 143,856 bytes** |
+| Tested LOD2 BODY / ENGINE GLB | **363,848 / 102,532 bytes** |
 | Tested body animations | **1 track, bonnet node present** |
 | Engine versus closed hood vertex penetrations | **0** (post-correction sample) |
 
-**Caveats:** The raw 68,912 triangles count excludes curves and evaluated modifiers; the later evaluated LOD counts include them. The final packaged artifacts are still subject to build verification. Zero intersections is a targeted per-vertex hood-envelope check, **not** a full vehicle collision-detection or manufacturability certification.
+LOD1 and LOD2 byte sizes use compressed transient export tests, while the experimental LOD0 split file was uncompressed. Their absolute sizes should not be compared as if they had identical encoding settings.\n\n**Caveats:** The raw 68,912 triangles count excludes curves and evaluated modifiers; the later evaluated LOD counts include them. The final packaged artifacts are still subject to build verification. Zero intersections is a targeted per-vertex hood-envelope check, **not** a full vehicle collision-detection or manufacturability certification.
 
 ## Rebuild and export
 
