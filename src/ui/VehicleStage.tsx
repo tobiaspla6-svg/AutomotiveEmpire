@@ -36,18 +36,20 @@ export function VehicleStage({ desc, spec, year, title, height, autoRotate = tru
   const { t } = useT();
   const term = useTerm();
   const gfx = useGraphics();
+  const [show3D, setShow3D] = useState(false); // The 2D edition opens instantly; old 3D remains opt-in.
   const plan = useVisualPlan(desc, year);
   const [status, setStatus] = useState<{ s: AssetStatus; info?: string }>({ s: plan.kind === 'asset' ? 'loading' : 'procedural' });
   const onStatus = useCallback((s: AssetStatus, info?: string) => setStatus({ s, info }), []);
   return (
     <div className="stage-wrap">
       <div className="viewer studio" style={{ height: height ?? 420 }}>
-        <Guard3D eager poster={<CarPoster kind={posterForBody(desc.body)} color={desc.color} label={t('stage.poster')} className="poster-hero" />}>
+        {show3D ? <Guard3D eager poster={<CarPoster kind={posterForBody(desc.body)} color={desc.color} label={t('stage.poster')} className="poster-hero" />}>
           <VehicleViewer plan={plan} spec={spec} onStatus={onStatus} autoRotate={autoRotate} sceneVersion={`${status.s}|${status.info ?? ''}|${JSON.stringify(desc)}`} />
-        </Guard3D>
+        </Guard3D> : <div className="ae2d-car-stage"><CarPoster kind={posterForBody(desc.body)} color={desc.color} label={t('stage.poster')} className="poster-hero" /></div>}
+        <button type="button" className="ae2d-view-switch" onClick={() => setShow3D((v) => !v)}>{show3D ? '2D' : '3D'}</button>
         {title && <div className="overlay">{title}</div>}
-        <div className={'vstatus ' + (gfx.enabled ? status.s : 'off')} title={status.info}>
-          {!gfx.enabled ? t('stage.poster') : status.s === 'loading' ? t('stage.loading') : status.s === 'ready' ? t('stage.asset', { name: plan.kind === 'asset' ? plan.asset.name : '' }) : status.s === 'failed' ? t('stage.failed') : t('stage.procedural')}
+        <div className={'vstatus ' + (show3D && gfx.enabled ? status.s : 'off')} title={status.info}>
+          {!show3D || !gfx.enabled ? t('stage.poster') : status.s === 'loading' ? t('stage.loading') : status.s === 'ready' ? t('stage.asset', { name: plan.kind === 'asset' ? plan.asset.name : '' }) : status.s === 'failed' ? t('stage.failed') : t('stage.procedural')}
         </div>
       </div>
       <div className="stage-notes">
