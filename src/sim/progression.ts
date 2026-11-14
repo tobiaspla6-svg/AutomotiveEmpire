@@ -43,6 +43,16 @@ export const BLUEPRINTS: readonly Blueprint[] = [
   {id:'hyperbody',es:'Hiperdeportivo',en:'Hypercar silhouette',slot:'body',rarity:'mythic',firstYear:2010},
   {id:'prototype',es:'Prototipo experimental',en:'Experimental prototype',slot:'engine',rarity:'relic',firstYear:2020},
 ];
+/** Actual free-chest odds depend on which eras have eligible blueprints. */
+export function effectiveOdds(year: number): Record<PartRarity,number> {
+  const out = Object.fromEntries((Object.keys(RARITY) as PartRarity[]).map(r => [r,RARITY[r].probability])) as Record<PartRarity,number>;
+  for(const r of Object.keys(RARITY) as PartRarity[]) {
+    if(r!=='common'&&!BLUEPRINTS.some(x=>x.firstYear<=year&&x.rarity===r)){
+      out.common+=out[r];out[r]=0;
+    }
+  }
+  return out;
+}
 export const emptyArcade = (): ArcadeProgress => ({claimedMilestones:[],inventory:{},equipped:{},credits:0});
 export function lifetimeSales(c: Company) {
   return Math.max(0,Math.floor(c.models.reduce((sum,m)=>sum+Math.max(0,Number.isFinite(m.cumulativeUnits)?m.cumulativeUnits:0),0)));
@@ -79,7 +89,7 @@ export function openSalesChest(g:GameState,milestone:number):ChestResult|string 
   if(c.arcade?.claimedMilestones.includes(milestone))return 'Chest already opened.';
   const part=previewChest(g,milestone), a=c.arcade??=emptyArcade();
   const duplicate=!!a.inventory[part.id];
-  const creditsAdded=duplicate?{common:15,rare:35,epic:75,legendary:160,mythic:350,relic:1000}[part.rarity]:0;
+  const creditsAdded=40+(duplicate?{common:15,rare:35,epic:75,legendary:160,mythic:350,relic:1000}[part.rarity]:0);
   a.inventory[part.id]=(a.inventory[part.id]??0)+1;
   a.claimedMilestones.push(milestone);a.credits+=creditsAdded;
   return {part,duplicate,creditsAdded,milestone};
@@ -92,6 +102,7 @@ export function redeemPart(g:GameState,id:string):string|null {
   if(!part)return 'Unknown blueprint.';
   if(g.year<part.firstYear)return 'Blueprint not invented in this era.';
   const a=player(g).arcade??=emptyArcade(),price=fixedPrice(part.rarity);
+  if(a.inventory[id])return 'Blueprint already owned.';
   if(a.credits<price)return 'Not enough earned credits.';
   a.credits-=price;a.inventory[id]=(a.inventory[id]??0)+1;
   return null;
