@@ -189,3 +189,41 @@
 .ae2d-period {display:flex;gap:6px;align-items:center;align-self:flex-start;padding:5px;border-radius:10px;background:#16283a;border:1px solid #476079}
 .ae2d-period button {border:0;background:transparent;color:#bdcfdd;border-radius:7px;padding:9px 14px;font-size:12px;font-weight:800}
 .ae2d-period button.on {color:#1e2d3c;background:#f7d49b}
+
+/* Playful research unlock tree: mirrors actual technology year progression. */
+.ae2d-skill-branches {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.ae2d-skill-branch {min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:9px;border:1px solid #455f75;background:#20334a;border-radius:14px;padding:17px;color:#e7ecf2;text-align:left}
+.ae2d-skill-branch>span {font:700 35px/.9 var(--font-display,'Barlow Condensed');color:#eac67f}
+.ae2d-skill-branch>b {font-size:14px}
+.ae2d-skill-branch>small {font-size:11px;color:#a8bfce}
+.ae2d-skill-branch i {display:block;background:#0d1b2a;height:6px;border-radius:6px;width:100%;overflow:hidden}
+.ae2d-skill-branch em {display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#86d2da,#ffce84);transition:width .4s}
+.ae2d-skill-branch.on {background:linear-gradient(155deg,#395570,#1c3046);border:2px solid #edc785;padding:16px}
+.ae2d-skill-layout {display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px;align-items:start}
+.ae2d-skill-track,.ae2d-skill-fund {background:linear-gradient(155deg,#22364b,#152539);border:1px solid #49627d;border-radius:17px;padding:25px}
+.ae2d-skill-track-head {display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:28px}
+.ae2d-skill-track-head h3 {font-size:32px;margin-bottom:6px}
+.ae2d-skill-year {background:#112137;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:5px;min-width:95px;text-align:right;border:1px solid #3a536d}
+.ae2d-skill-year small {color:#a8bace;font-size:9px;letter-spacing:.08em}
+.ae2d-skill-year strong {font:700 27px var(--font-display,'Barlow Condensed');color:#f7d08f}
+.ae2d-skill-timeline {display:flex;flex-direction:column;gap:0;position:relative}
+.ae2d-skill-timeline::before {content:"";position:absolute;left:20px;top:0;bottom:0;width:3px;background:#415e7c}
+.ae2d-skill-node {display:flex;gap:16px;align-items:flex-start;position:relative;padding:9px 0;min-height:72px}
+.ae2d-skill-node-icon {flex:none;position:relative;z-index:1;display:grid;place-items:center;width:43px;height:43px;border-radius:50%;background:#192c42;border:2px solid #536a80;color:#90a7b9;font-size:19px;font-style:normal}
+.ae2d-skill-node.done .ae2d-skill-node-icon {background:#20564c;border-color:#82e3c1;color:#dcffe9}
+.ae2d-skill-node.next .ae2d-skill-node-icon {background:#665339;border-color:#f0cf8e;color:#ffe5aa}
+.ae2d-skill-node>div {display:flex;flex-direction:column;gap:5px;padding-top:5px}
+.ae2d-skill-node b {font-size:14px}
+.ae2d-skill-node small {font-size:11px;color:#9cb6c9}
+.ae2d-skill-node p {font-size:11px}
+.ae2d-skill-node.locked {opacity:.58}
+.ae2d-skill-fund {display:flex;flex-direction:column;gap:14px}
+.ae2d-skill-fund h3 {font-size:30px;line-height:1.05}
+.ae2d-skill-metric {display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #38526d;padding:8px 0;gap:15px}
+.ae2d-skill-metric span {font-size:12px;color:#b5c5d1}
+.ae2d-skill-metric strong {font-size:20px;color:#f1d19a}
+.ae2d-skill-budget {display:flex;flex-direction:column;gap:10px;font-size:12px;font-weight:750;color:#a8bfd1;padding-top:10px}
+.ae2d-skill-budget strong {font:750 33px var(--font-display,'Barlow Condensed');color:white}
+.ae2d-skill-budget input {width:100%;accent-color:#f7cc89}
+@media(max-width:1000px) {.ae2d-skill-branches {grid-template-columns:repeat(3,1fr)}.ae2d-skill-layout {grid-template-columns:1fr}}
+@media(max-width:570px) {.ae2d-skill-branches {grid-template-columns:repeat(2,1fr)}.ae2d-skill-track,.ae2d-skill-fund {padding:17px}}
