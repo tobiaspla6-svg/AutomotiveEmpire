@@ -173,3 +173,17 @@ describe('facelifts and generations', () => {
     expect(n.engineFamilyId).toBe(m.engineFamilyId);
   });
 });
+
+describe('addTrim input checks (Phase 4D)', () => {
+  it('refuses an unknown trim level instead of throwing', async () => {
+    const { founder, step } = await import('./helpers');
+    const A = await import('../src/sim/actions');
+    const { defaultVehicle } = await import('../src/sim/engineering');
+    const { player } = await import('../src/sim/world');
+    const g = founder({ year: 2005 }); const p = player(g);
+    expect(A.startDevelopment(g, 'T', defaultVehicle(2005, 'hatch'), 'budget')).toBeNull();
+    step(g, 1);
+    expect(() => A.addTrim(g, p.models[0].id, 'base' as never)).not.toThrow();
+    expect(A.addTrim(g, p.models[0].id, 'base' as never)).toBe('Unknown trim level.');
+  });
+});

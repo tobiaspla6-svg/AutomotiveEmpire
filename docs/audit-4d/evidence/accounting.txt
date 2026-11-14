@@ -1,0 +1,2 @@
+ceo bmw 1990 months 239 equity≠profit 0 worst 0.00M cashflow≠Δcash 0
+founder 2005 months 239 equity≠profit 0 worst 0.00M cashflow≠Δcash 0

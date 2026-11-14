@@ -1,0 +1,392 @@
+{
+ "report": [
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "dashboard",
+   "text": "World market share0.00%Rank 4 of 17 makers",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "vehicles",
+   "text": "Use recommended price",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "vehicles",
+   "text": "Retire",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "vehicles",
+   "text": "New generation",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Automate +15% ($579.4M)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Body shop103k0% used",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Remove",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Production line",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Sell",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Paint shop103k0% used",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Remove",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Estimate impact",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Automate +15% ($260.7M)",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Powertrain47k0% used",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Final assembly47k0% used",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Expand the paint shop by 12k ($119.2M, 6 months)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Show the production flow and lines",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "factories",
+   "text": "Automate +15% ($260.7M)",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "finance",
+   "text": "Cash",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "finance",
+   "text": "Borrow",
+   "action": "borrow",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "finance",
+   "text": "Repay",
+   "action": "repay",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "en",
+   "view": "motorsport",
+   "text": "Headquarters",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "dashboard",
+   "text": "Cuota de mercado mundial0,00%Puesto 4 de 17 marcas",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "vehicles",
+   "text": "Usar el precio recomendado",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "vehicles",
+   "text": "Retirar",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "vehicles",
+   "text": "Nueva generación",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Automatizar +15% (579,4 M $)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Carrocería103 k0% en uso",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Línea de producción",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Vender",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Pintura103 k0% en uso",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Estimar impacto",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Automatizar +15% (260,7 M $)",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Tren motriz47 k0% en uso",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Montaje final47 k0% en uso",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Ampliar pintura en 12 k (119,2 M $, 6 meses)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Estimar impacto",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Vender",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Automatizar +15% (260,7 M $)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "factories",
+   "text": "Vender",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "finance",
+   "text": "Caja",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "finance",
+   "text": "Pedir préstamo",
+   "action": "borrow",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "finance",
+   "text": "Amortizar",
+   "action": "repay",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "ceo",
+   "lang": "es",
+   "view": "motorsport",
+   "text": "Sede",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "dashboard",
+   "text": "World market share0.00%Rank 18 of 18 makers",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "vehicles",
+   "text": "Cancel",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "vehicles",
+   "text": "+ Engine family",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "factories",
+   "text": "Automate +15% ($392k)",
+   "result": "opens-confirm (ok)"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "factories",
+   "text": "Body shop600% used",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "finance",
+   "text": "Cash",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  },
+  {
+   "mode": "founder",
+   "lang": "en",
+   "view": "finance",
+   "text": "Repay all possible",
+   "action": "",
+   "result": "NO-OBSERVABLE-CHANGE"
+  }
+ ],
+ "errs": []
+}

@@ -1,0 +1,68 @@
+== 1. Found a company
+  cash 1241.13M plants 1 (cap 5000) engineers 220
+== 2. Design several cars
+  Aurelia Citi: approved
+  Aurelia Sport: approved
+  Aurelia Duke: approved
+  ✓ DESIGN-EMPTYNAME refused (Give the model a name.)
+  ✓ DESIGN-HUGEENGINE refused (Cylinders are too large (over 1,000 cc each).)
+  ✓ DESIGN-NAN refused (Displacement must stay between 1120 and 1750 cc on this block.)
+  cash after approvals 1241.13M models Aurelia Citi:development/39, Aurelia Sport:development/39, Aurelia Duke:development/31
+  after 1 month cash 1238.25M dev spent 1.22M 1.35M 1.04M
+== 3. Develop (cheapest first)
+  months 29, cash 1144.54M debt 0.00M models Aurelia Citi:ready, Aurelia Sport:ready, Aurelia Duke:ready gameOver=no
+== 4. Premature / exploit probes before production
+  ✓ LINE-OVERCAP refused (Only 5000 units / month of free capacity in this plant.)
+  ✓ LINE-NEG refused (Choose a line capacity.)
+  ✓ PRICE-ZERO refused (Enter a price above zero.)
+  ✓ PRICE-NAN refused (Enter a price above zero.)
+  ✓ LOAN-NEG refused (Enter an amount to borrow.)
+  ✓ LOAN-HUGE refused (Lenders will extend at most $67.8M more.)
+  ✓ REPAY-NEG refused (Enter an amount to repay.)
+  ✓ FACTORY-TINY refused (Minimum capacity is 20 units per month.)
+  ✓ FACTORY-AUTO refused (Your manufacturing technology allows at most 80% automation.)
+== 5. Lines, prices, trims, suppliers
+  line Aurelia Citi 1666/mo: ok; price 20550
+   trim: ok  region price: ok  cap: ok
+  line Aurelia Sport 1666/mo: ok; price 26460
+   trim: ok  region price: ok  cap: ok
+  line Aurelia Duke 1666/mo: ok; price 25860
+   trim: ok  region price: ok  cap: ok
+  contract metals Ruhrwerk Stahl: ok
+  contract electronics Volta Elektrik: ok
+  contract tires Alpenreifen: ok
+  contract seats Komfortsitz: ok
+  contract glass Lumière Verre: ok
+  contract interior Milano Tessuti: ok
+  contract transmissions Zahnradwerke: ok
+  contract semiconductors Silicon Mesa Devices: ok
+  marketing ok dealers ok
+== 6. Run 3 years, report every 6 months
+  1/2003 cash 914.55M debt 0.00M units/mo 104 rev 2.59M profit -2.87M | Aurelia Citi s12=67 inv=433 $21531 uc=15767 | Aurelia Sport s12=331 inv=169 $27490 uc=18211 | Aurelia Duke s12=55 inv=444 $26898 uc=17125
+  7/2003 cash 913.50M debt 0.00M units/mo 154 rev 3.75M profit -2.63M | Aurelia Citi s12=193 inv=307 $20992 uc=15767 | Aurelia Sport s12=927 inv=53 $26802 uc=17458 | Aurelia Duke s12=153 inv=346 $26225 uc=17125
+  1/2004 cash 911.60M debt 0.00M units/mo 131 rev 3.18M profit -2.76M | Aurelia Citi s12=267 inv=166 $21517 uc=15767 | Aurelia Sport s12=1146 inv=0 $27473 uc=17315 | Aurelia Duke s12=214 inv=231 $26881 uc=17125
+  7/2004 cash 908.52M debt 0.00M units/mo 197 rev 4.86M profit -2.44M | Aurelia Citi s12=320 inv=32 $20992 uc=16095 | Aurelia Sport s12=1363 inv=99 $26802 uc=17313 | Aurelia Duke s12=287 inv=60 $26225 uc=17125
+  1/2005 cash 903.30M debt 0.00M units/mo 218 rev 5.40M profit -2.70M | Aurelia Citi s12=316 inv=21 $21505 uc=17701 | Aurelia Sport s12=1755 inv=101 $27456 uc=18961 | Aurelia Duke s12=355 inv=20 $26865 uc=19242
+  7/2005 cash 894.26M debt 0.00M units/mo 240 rev 5.88M profit -2.84M | Aurelia Citi s12=342 inv=22 $20992 uc=17647 | Aurelia Sport s12=1968 inv=109 $26802 uc=18926 | Aurelia Duke s12=365 inv=19 $26225 uc=19207
+== 7. Research / finance / loans
+  tech before {"engine":2001.4166666666667,"chassis":2001.4166666666667,"aero":2001.4166666666667,"electronics":2001.4166666666667,"manufacturing":2001.4166666666667} 
+  tech after  {"engine":2005.8003677632219,"chassis":2005.4475537636959,"aero":2005.7764451252592,"electronics":2005.7465555171818,"manufacturing":2005.4475537636959}
+  loan ok Δcash 5.00M Δdebt 5.00M
+  repay ok
+  ✓ borrow/repay loop is cash-neutral
+== 8. Factory second plant + build/sell arbitrage
+  build ok cost 4.61M
+  immediate sell ok cash back 0.00M
+  net round-trip loss 4.61M
+  build north null
+  ✓ LINE-CONSTRUCTION refused (The factory is still under construction.)
+  plant capacity after 16 mo 200
+== 9. Rivals
+  17 rivals alive; sample: Ferrari 663/mo, Porsche 11037/mo, BMW 105417/mo
+== 10. Years of play (autopilot, reacting to the market)
+  2/2011 cash 0.00M debt 299.12M gameOver=Aurelia Motors could not pay its creditors and has been declared insolvent. models Aurelia Citi:production, Aurelia Sport:production, Aurelia Duke:production
+== 11. Save / load round trip
+  ✓ JSON round trip identical
+  ✓ reloaded game continues identically for 12 months
+
+ISSUES: 0

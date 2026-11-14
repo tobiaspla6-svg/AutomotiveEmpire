@@ -47,3 +47,7 @@
   .nav-group { flex-direction: row; margin: 0; } .nav-eyebrow, .nav-foot, .nav .grow { display: none; } .nav-group button { padding: 7px 10px; white-space: nowrap; } .nav-group button.on::before { display: none; }
   .main { padding: 14px 14px 36px; }
 }
+
+/* after a game over, with the dialog dismissed to read the books */
+.over-strip { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 14px; max-width: min(92vw, 760px); padding: 10px 14px; border-radius: 12px; background: var(--surface-2, #1b1e24); border: 1px solid var(--bad, #c0524a); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); font-size: 13px; }
+.over-strip b { color: var(--bad, #e07a70); }

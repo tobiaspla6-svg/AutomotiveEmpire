@@ -1,0 +1,8 @@
+== CEO toyota 2000
+  2/2001 gameOver=Toyota could not pay its creditors and has been declared insolvent.
+== CEO ferrari 1985
+  12/1986 gameOver=Ferrari could not pay its creditors and has been declared insolvent.
+== CEO tesla 2018
+  11/2018 gameOver=Tesla could not pay its creditors and has been declared insolvent.
+
+ops 425; distinct issues 0

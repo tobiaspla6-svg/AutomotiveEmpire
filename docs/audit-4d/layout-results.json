@@ -1,0 +1,962 @@
+[
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "en",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1920,
+  "h": 1080,
+  "lang": "es",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "en",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1440,
+  "h": 900,
+  "lang": "es",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "en",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1366,
+  "h": 768,
+  "lang": "es",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "en",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1280,
+  "h": 720,
+  "lang": "es",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "en",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "menu",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "dashboard",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "vehicles",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "research",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "factories",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "market",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "finance",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "company",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "motorsport",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "news",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "saves",
+  "over": 0,
+  "clipped": []
+ },
+ {
+  "w": 1024,
+  "h": 768,
+  "lang": "es",
+  "view": "studio",
+  "over": 0,
+  "clipped": []
+ }
+]

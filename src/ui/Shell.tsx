@@ -1,5 +1,5 @@
 // Game shell (Phase 4C): status ribbon, grouped navigation, time controls. Screens render inside <main>.
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useGame, useStore } from '../store/game';
 import { useT, type MessageKey } from '../i18n';
 import { monthYear, money } from '../i18n/format';
@@ -43,6 +43,7 @@ export function Shell() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [advance, race]);
+  const [reviewing, setReviewing] = useState(false); // after a game over: look through the books with the dialog out of the way
   const conf = p.board?.confidence;
   const confTone = conf === undefined ? '' : conf < 25 ? 'bad' : conf < 45 ? 'warn' : 'good';
   return (
@@ -109,11 +110,14 @@ export function Shell() {
           <div className="col">{g.decision.options.map((o, i) => <button key={i} className="card" onClick={() => decide(i)}><b>{o.label}</b><span className="small dim" style={{ whiteSpace: 'normal' }}>{o.detail}</span></button>)}</div>
         </Modal>
       )}
-      {g.gameOver && (
+      {g.gameOver && reviewing && (
+        <div className="over-strip" role="status"><span><b>{t('over.title')}</b> · {g.gameOver.reason}</span><button className="btn sm primary" data-action="over-menu" onClick={quit}>{t('top.menu')}</button></div>
+      )}
+      {g.gameOver && !reviewing && (
         <Modal>
           <span className="eyebrow">{monthYear(g.month, g.year, lang)}</span><h2>{t('over.title')}</h2><p>{g.gameOver.reason}</p>
           <p className="dim">{t('over.led', { name: p.name, from: g.startYear, to: g.year })}</p>
-          <div className="row end"><button className="btn" onClick={() => setView('finance')}>{t('over.books')}</button><button className="btn primary" onClick={quit}>{t('top.menu')}</button></div>
+          <div className="row end"><button className="btn" data-action="over-books" onClick={() => { setView('finance'); setReviewing(true); }}>{t('over.books')}</button><button className="btn primary" onClick={quit}>{t('top.menu')}</button></div>
         </Modal>
       )}
     </div>

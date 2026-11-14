@@ -8,7 +8,7 @@ import { bottleneck, stagesOf } from './supply';
 
 export type Severity = 'critical' | 'warning' | 'opportunity' | 'info';
 export type InsightKind =
-  | 'overLimit' | 'cashRunway' | 'noVehicles' | 'readyNoLine' | 'noPrice' | 'belowCost' | 'bottleneck' | 'idleCapacity'
+  | 'overLimit' | 'cashRunway' | 'noVehicles' | 'readyNoLine' | 'noPrice' | 'belowCost' | 'bottleneck' | 'idleCapacity' | 'lowSales'
   | 'soldOut' | 'supplyDisruption' | 'engineersShort' | 'boardDeadline' | 'boardConfidence' | 'ageingRange' | 'costlyDebt';
 export type InsightView = 'vehicles' | 'factories' | 'market' | 'finance' | 'research' | 'company' | 'motorsport';
 
@@ -77,6 +77,12 @@ export function companyInsights(g: GameState, c: Company): Insight[] {
   const cap = c.factories.reduce((a, f) => a + f.capacity, 0);
   const used = c.factories.reduce((a, f) => a + f.capacity * lineShareUsed(f), 0);
   if (cap > 0 && prod.length && used / cap < 0.5 && c.ledger.length >= 3) add({ id: 'idle', severity: 'warning', kind: 'idleCapacity', args: { util: Math.round((used / cap) * 100) }, view: 'factories' });
+
+  // a line was tooled for a volume the model does not come close to selling: the plant is not the problem, demand is
+  const lineCap = (m: VehicleModel) => c.factories.reduce((a, f) => a + (f.lines.find((l) => l.modelId === m.id)?.share ?? 0) * f.capacity, 0);
+  const weak = prod.filter((m) => m.salesHistory.length >= 6 && lineCap(m) >= 20 && m.salesHistory.slice(-3).reduce((a, x) => a + x, 0) / 3 < lineCap(m) * 0.25)
+    .sort((a, b) => (lineCap(b) - b.salesHistory.slice(-3).reduce((x, y) => x + y, 0) / 3) - (lineCap(a) - a.salesHistory.slice(-3).reduce((x, y) => x + y, 0) / 3))[0];
+  if (weak) add({ id: `lowSales:${weak.id}`, severity: 'warning', kind: 'lowSales', args: { name: weak.name, sold: Math.round(weak.salesHistory.slice(-3).reduce((a, x) => a + x, 0) / 3), cap: Math.round(lineCap(weak)) }, view: 'market' });
 
   for (const m of prod) {
     const s = sold(m);

@@ -3,6 +3,7 @@ import { useStore } from './store/game';
 import { useT } from './i18n';
 import { MainMenu } from './ui/MainMenu';
 import { Shell } from './ui/Shell';
+import { CrashGuard } from './ui/CrashGuard';
 
 // setup screens and the live race load on demand: the menu and the management screens need none of their code
 const CeoSetupScreen = lazy(() => import('./ui/Setup').then((m) => ({ default: m.CeoSetupScreen })));
@@ -16,7 +17,7 @@ export function App() {
   const confirm = useStore((s) => s.confirm), answer = useStore((s) => s.answer);
   const { t } = useT();
   return (
-    <>
+    <CrashGuard>
       {screen === 'menu' && <MainMenu />}
       <Suspense fallback={<div className="screen-loading" role="status">{t('common.loading')}</div>}>
         {screen === 'setup-ceo' && <CeoSetupScreen />}
@@ -32,6 +33,6 @@ export function App() {
         </div></div>
       )}
       {toast && <div className={'toast' + (toast.bad ? ' bad' : '')} role="status">{toast.text}</div>}
-    </>
+    </CrashGuard>
   );
 }
