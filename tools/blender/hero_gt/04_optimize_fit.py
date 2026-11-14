@@ -15,6 +15,9 @@ for name in ('ENGINE_billet_throttle_body','ENGINE_electronic_throttle_butterfly
 for name in ('BAY_radiator_frame','BAY_chassis_brace'):
  ob=bpy.data.objects.get(name)
  if ob:ob.location.z-=.055
+# Radiator's outer upper corners also need a second 6 cm clearance margin.
+# This prevents two vertices penetrating the bonnet at x=2.13, y=+/-0.75.
+bpy.data.objects['BAY_radiator_frame'].location.z -= .06
 # Tiny lettering used >8k triangles. Replace with a lightweight two-letter monogram:
 badge=bpy.data.objects.get('BADGE_ae_gtrs')
 if badge:bpy.data.objects.remove(badge,do_unlink=True)
