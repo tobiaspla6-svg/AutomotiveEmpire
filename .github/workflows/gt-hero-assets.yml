@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - visual-gt-hero-production
+      - visual-gt-hero-surfacing-v2
     paths:
       - "tools/blender/hero_gt/**"
       - ".github/workflows/gt-hero-assets.yml"
