@@ -20,6 +20,7 @@ import {
 import { fmtTime } from '../sim/util';
 import { LineChart, Meter, Modal, PageHead, Select, Slider, Src, StatLine } from './common';
 import { ImpactPreview } from './Impact';
+import { GettingStarted } from './Guide';
 import { Guard3D, RaceCarViewer } from './Lazy3D';
 import { CarPoster, posterForDiscipline } from './ds/poster';
 import { Icon } from './ds/icons';
@@ -67,6 +68,7 @@ export function MotorsportView() {
         </div>
         <Tabs label={t('ms.title')} value={tab} onChange={setTab} options={[{ id: 'hq', label: t('ms.tab.hq') }, { id: 'car', label: t('ms.tab.car') }, { id: 'team', label: t('ms.tab.team') }, { id: 'season', label: t('ms.tab.season') }]} />
       </header>
+      {tab === 'hq' && g.mode === 'motorsport' && <GettingStarted />}
       {tab === 'hq' && <Headquarters p={p} div={div} goTab={setTab} />}
       {tab === 'car' && <CarDesign p={p} div={div} />}
       {tab === 'team' && <Team p={p} div={div} />}

@@ -8,6 +8,7 @@ import { Modal } from './common';
 import { Emblem, Icon, type IconName } from './ds/icons';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SettingsButton } from './SettingsDialog';
+import { WelcomeDialog, reopenGuide } from './Guide';
 import { DashboardView } from './Dashboard';
 import { CompanyView, NewsView, SavesView } from './Views';
 import { FinanceView, MarketView, ResearchView } from './Corporate';
@@ -59,6 +60,7 @@ export function Shell() {
         <div className="row topbar-actions" style={{ gap: 4 }}>
           <button className="iconbtn" onClick={async () => { await save(`${p.name} ${g.year}`); notify(t('top.saved')); }} aria-label={t('top.save')} title={t('top.save')}><Icon name="save" /></button>
           <SettingsButton />
+          <button className="iconbtn" data-action="help" onClick={reopenGuide} aria-label={t('guide.help')} title={t('guide.help')}><Icon name="help" /></button>
           <button className="iconbtn" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
         </div>
         {race ? <button className="btn primary" data-action="race-weekend" onClick={() => go('race')}><Icon name="flag" size={16} />{t('top.raceWeekend', { name: race.name })}</button>
@@ -100,6 +102,7 @@ export function Shell() {
           {view === 'saves' && <SavesView />}
         </Suspense>
       </main>
+      {!g.decision && !g.gameOver && <WelcomeDialog />}
       {g.decision && !g.gameOver && (
         <Modal>
           <span className="eyebrow">{t('decision.required')} · {monthYear(g.month, g.year, lang)}</span><h2>{g.decision.title}</h2><p className="dim">{g.decision.body}</p>

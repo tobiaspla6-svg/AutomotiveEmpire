@@ -22,3 +22,15 @@ table.statement td, table.statement th { padding: 5px 8px; } table.statement tr.
 .tech-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .tech-list .eyebrow { flex: 0 0 100%; }
 .tech-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; padding: 3px 9px; border-radius: 999px; border: 1px solid #2c5a45; background: var(--good-bg); color: var(--ink2); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tech-chip svg { color: var(--good); flex: none; }
 .tech-chip.todo { border-color: var(--line2); background: var(--bg2); } .tech-chip i { font-style: normal; color: var(--accent2); font-weight: 600; }
+/* ---------- onboarding */
+.guide { border-color: var(--accent-dim); background: linear-gradient(90deg, rgba(201, 163, 92, 0.09), rgba(201, 163, 92, 0) 55%), var(--panel); }
+.guide-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.guide-steps li { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg2); min-width: 0; color: var(--ink3); }
+.guide-steps li.done { color: var(--ink2); } .guide-steps li.done .gs-n { background: var(--good-bg); color: var(--good); border-color: #2c5a45; }
+.guide-steps li.next { grid-column: 1 / -1; order: -1; color: var(--ink); border-color: var(--accent-dim); padding: 11px 13px; }
+.guide-steps li.next .gs-n { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.gs-n { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: 13px; border: 1px solid var(--line2); }
+.gs-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; } .gs-t b { font-weight: 600; font-size: 13px; }
+.guide-tips { list-style: none; margin: 4px 0 6px; padding: 0; display: flex; flex-direction: column; gap: 10px; } .guide-tips li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 11px; align-items: start; } .guide-tips svg { color: var(--accent2); margin-top: 2px; } .guide-tips div { display: flex; flex-direction: column; gap: 1px; }
+@media (max-width: 700px) { .guide-body { grid-template-columns: minmax(0, 1fr); } }

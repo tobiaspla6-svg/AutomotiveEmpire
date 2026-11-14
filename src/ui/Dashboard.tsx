@@ -2,6 +2,8 @@
 // number is read from the simulation (ledger, market, factories); the insights list is computed by sim/insights.ts.
 import { memo, useMemo, useState } from 'react';
 import { useGame, useStore } from '../store/game';
+import { GettingStarted } from './Guide';
+import { term } from '../i18n/terms';
 import { useT, type Lang, type MessageKey } from '../i18n';
 import { delta as fmtDelta, money, monthShort, num, pct } from '../i18n/format';
 import { REGION_IDS, REGION_NAME, SEGMENTS } from '../data/world';
@@ -39,7 +41,7 @@ export function DashboardView() {
   const urgent = insights.filter((i) => i.severity === 'critical' || i.severity === 'warning').length;
   const led36 = p.ledger.slice(-36);
   const labels = led36.map((x) => `${monthShort(x.m, lang)} ${String(x.y).slice(2)}`);
-  const sub = p.board?.note ?? t('dash.founded', { year: p.founded, country: COUNTRY[p.country]?.name ?? p.country });
+  const sub = p.board?.note ?? t('dash.founded', { year: p.founded, country: term(COUNTRY[p.country]?.name ?? p.country, lang) });
 
   return (
     <div className="dash">
@@ -51,6 +53,7 @@ export function DashboardView() {
         </div>
       </header>
 
+      <GettingStarted />
       <div className="kpi-band">
         <KpiTile icon="cash" label={t('kpi.cash')} value={money(p.cash, lang)} tone={p.cash < 0 ? 'bad' : 'neutral'} sparkColor="var(--s1)" spark={p.ledger.slice(-24).map((x) => x.cash)}
           delta={d.cashDelta !== null ? <DeltaBadge value={d.cashDelta} text={fmtDelta(d.cashDelta, lang)} /> : undefined}

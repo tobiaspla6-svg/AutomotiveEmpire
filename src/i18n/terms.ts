@@ -22,6 +22,15 @@ const ES: Record<string, string> = {
   // platform classes and engine bays
   'Car (hatch, saloon, estate, coupé, crossover)': 'Turismo (compacto, berlina, familiar, cupé, crossover)', 'Sports (coupé, roadster, supercar)': 'Deportivo (cupé, roadster, superdeportivo)', 'Body-on-frame (pickup, SUV)': 'Chasis independiente (pickup, SUV)',
   'up to four cylinders': 'hasta cuatro cilindros', 'up to a V6 / flat-six': 'hasta un V6 / bóxer 6', 'any engine': 'cualquier motor',
+  // company founding options
+  'Sports cars': 'Deportivos', 'Luxury & grand touring': 'Lujo y gran turismo', 'Affordable cars': 'Coches asequibles', 'Utility & off-road': 'Utilitarios y todoterreno', 'Electric vehicles': 'Vehículos eléctricos',
+  '+2 tech-years in chassis and aerodynamics, a sporty brand image.': '+2 años tecnológicos en chasis y aerodinámica, e imagen de marca deportiva.', 'Higher starting prestige and a craft workforce.': 'Más prestigio inicial y una plantilla artesana.',
+  '+2 tech-years in manufacturing and a wider starting dealer network.': '+2 años tecnológicos en fabricación y una red de concesionarios inicial más amplia.', 'A reputation for toughness: reliability bonus.': 'Fama de dureza: ventaja en fiabilidad.',
+  '+3 tech-years in powertrain and electronics (from 2005).': '+3 años tecnológicos en motores y electrónica (desde 2005).',
+  'None — contract a plant later': 'Ninguna: contratar una planta más adelante', 'Workshop (60 cars / month)': 'Taller (60 coches / mes)', 'Small plant (600 / month)': 'Planta pequeña (600 / mes)', 'Volume plant (5,000 / month)': 'Planta de volumen (5.000 / mes)',
+  'Skeleton crew (25)': 'Equipo mínimo (25)', 'Design office (80)': 'Oficina de diseño (80)', 'Engineering centre (220)': 'Centro de ingeniería (220)',
+  'Supplier technology (4 years behind)': 'Tecnología de proveedor (4 años por detrás)', 'Up to date (1 year behind)': 'Al día (1 año por detrás)', 'Advanced laboratory (1 year ahead)': 'Laboratorio avanzado (1 año por delante)',
+  'Craftsmen (hand-built)': 'Artesanos (a mano)', 'Conventional line': 'Línea convencional', 'Automated line': 'Línea automatizada', Privateer: 'Privado', Midfield: 'Media parrilla', 'Front-runner': 'Puntero',
   // technology areas
   'Chassis & materials': 'Chasis y materiales', Aerodynamics: 'Aerodinámica', 'Electronics & safety': 'Electrónica y seguridad', Manufacturing: 'Fabricación',
   // racing categories
