@@ -7,6 +7,7 @@ import { defaultVehicle } from '../sim/engineering';
 import { specDescriptor } from '../sim/render';
 import { CarViewer, type BenchResult } from './CarViewer';
 import { RaceCar, RoadCar } from './CarModel';
+import { EngineInspection } from './EngineInspection';
 import { VehicleView, useVisualPlan, type AssetStatus } from './VehicleView';
 import type { VisualPlan } from './assets/adapter';
 import { preload } from './assets/loader';
@@ -41,6 +42,13 @@ export function FpsTestViewer({ trigger, onResult }: { trigger: number; onResult
   const modern = useMemo(() => { const s = defaultVehicle(2024, 'sedan'); s.color = '#233f6f'; s.tireWidth = 245; s.wheelDia = 19; s.finish = 'metallic'; s.wheelStyle = 'turbine'; return s; }, []);
   const plan = useVisualPlan(specDescriptor(modern), 2024);
   return <CarViewer distance={8.3} autoRotate target={[0, 0.58, 0]} benchTrigger={trigger} onBench={onResult}><VehicleView plan={plan} spec={modern} /></CarViewer>;
+}
+
+/** A standalone, configurable powertrain exhibit. Not a fake 'open bonnet' on the sealed GLB body. */
+export function EngineInspectionViewer({ spec }: { spec: VehicleSpec }) {
+  return <CarViewer controls autoRotate={false} distance={4.6} target={[0, 0.55, 0]} initialView="front34" sceneVersion={JSON.stringify(spec.engine)}>
+    <EngineInspection engine={spec.engine} />
+  </CarViewer>;
 }
 
 /** The studio viewer used by the vehicle screens: toolbar, cameras, quality menu and the asset-or-procedural car. */

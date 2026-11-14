@@ -13,6 +13,7 @@ export const RaceCarViewer = lazy(() => import('../three/views').then((m) => ({ 
 export const ShowroomViewer = lazy(() => import('../three/views').then((m) => ({ default: m.ShowroomViewer })));
 export const FpsTestViewer = lazy(() => import('../three/views').then((m) => ({ default: m.FpsTestViewer })));
 export const VehicleViewer = lazy(() => import('../three/views').then((m) => ({ default: m.VehicleViewer })));
+export const EngineInspectionViewer = lazy(() => import('../three/views').then((m) => ({ default: m.EngineInspectionViewer })));
 
 class Boundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
