@@ -8,13 +8,13 @@ import type { ArcadeProgress } from '../../sim/progression';
 
 export type PosterKind = 'sedan' | 'coupe' | 'hatch' | 'suv' | 'pickup' | 'formula' | 'prototype';
 const SHAPE: Record<PosterKind, { body: string; glass: string; wheels: [number, number]; r: number }> = {
-  sedan: { body: 'M20 118c0-8 4-14 14-17l34-10c12-12 26-22 44-24h58c20 0 34 8 46 22l40 10c10 3 14 10 14 19v10c0 4-3 7-7 7H27c-4 0-7-3-7-7z', glass: 'M110 90l12-16c6-3 14-4 24-4h28c12 0 22 6 30 20z', wheels: [82, 262], r: 19 },
-  coupe: { body: 'M18 118c0-9 5-15 15-18l40-9c13-14 28-25 48-27h46c18 0 32 8 44 22l40 11c10 3 15 9 15 18v10c0 4-3 7-7 7H25c-4 0-7-3-7-7z', glass: 'M118 72c12-9 24-14 40-14h28c12 0 24 7 34 18l-6 8H108z', wheels: [82, 262], r: 19 },
-  hatch: { body: 'M24 118c0-8 4-14 13-17l28-8c10-16 22-26 42-28h64c12 0 22 6 30 16l24 22c6 3 11 8 11 15v10c0 4-3 7-7 7H31c-4 0-7-3-7-7z', glass: 'M98 70c8-8 18-14 34-14h42c10 0 20 6 28 16l12 18H92z', wheels: [80, 258], r: 19 },
-  suv: { body: 'M20 120c0-8 3-14 11-17l22-8c8-18 20-30 38-32h96c14 0 24 8 32 22l22 14c8 4 12 10 12 20v9c0 4-3 7-7 7H27c-4 0-7-3-7-7z', glass: 'M96 68c6-8 16-14 30-14h82c10 0 18 6 26 18l8 14H90z', wheels: [84, 262], r: 22 },
-  pickup: { body: 'M18 120c0-8 4-14 12-17l24-8c8-14 20-24 38-26h64c6 0 10 3 12 8l6 14h98c6 0 10 4 10 10v19c0 4-3 7-7 7H25c-4 0-7-3-7-7z', glass: 'M96 70c6-7 14-12 26-12h46l6 22H92z', wheels: [84, 270], r: 22 },
-  formula: { body: 'M8 124l56-10 44-6 22-14 20-4 40 2 36 10 54 4 24 6v12H8z', glass: 'M150 98l14-12h24l10 14z', wheels: [72, 282], r: 21 },
-  prototype: { body: 'M10 124c0-8 6-12 16-14l66-10c14-12 32-20 52-20h60c18 0 32 6 44 18l56 14c8 2 12 6 12 12v8c0 4-3 6-7 6H17c-4 0-7-2-7-6z', glass: 'M128 84c14-10 28-14 46-14h40c10 0 22 4 30 12l-6 10H120z', wheels: [86, 288], r: 21 },
+  sedan: { body: 'M20 118c0-8 4-14 14-17l34-10c12-12 26-22 44-24h58c20 0 34 8 46 22l40 10c10 3 14 10 14 19v10c0 4-3 7-7 7H27c-4 0-7-3-7-7z', glass: 'M110 90l12-16c6-3 14-4 24-4h28c12 0 22 6 30 20z', wheels: [82, 225], r: 19 },
+  coupe: { body: 'M18 118c0-9 5-15 15-18l40-9c13-14 28-25 48-27h46c18 0 32 8 44 22l40 11c10 3 15 9 15 18v10c0 4-3 7-7 7H25c-4 0-7-3-7-7z', glass: 'M118 72c12-9 24-14 40-14h28c12 0 24 7 34 18l-6 8H108z', wheels: [82, 224], r: 19 },
+  hatch: { body: 'M24 118c0-8 4-14 13-17l28-8c10-16 22-26 42-28h64c12 0 22 6 30 16l24 22c6 3 11 8 11 15v10c0 4-3 7-7 7H31c-4 0-7-3-7-7z', glass: 'M98 70c8-8 18-14 34-14h42c10 0 20 6 28 16l12 18H92z', wheels: [77, 207], r: 19 },
+  suv: { body: 'M20 120c0-8 3-14 11-17l22-8c8-18 20-30 38-32h96c14 0 24 8 32 22l22 14c8 4 12 10 12 20v9c0 4-3 7-7 7H27c-4 0-7-3-7-7z', glass: 'M96 68c6-8 16-14 30-14h82c10 0 18 6 26 18l8 14H90z', wheels: [80, 212], r: 22 },
+  pickup: { body: 'M18 120c0-8 4-14 12-17l24-8c8-14 20-24 38-26h64c6 0 10 3 12 8l6 14h98c6 0 10 4 10 10v19c0 4-3 7-7 7H25c-4 0-7-3-7-7z', glass: 'M96 70c6-7 14-12 26-12h46l6 22H92z', wheels: [84, 237], r: 22 },
+  formula: { body: 'M8 124l56-10 44-6 22-14 20-4 40 2 36 10 54 4 24 6v12H8z', glass: 'M150 98l14-12h24l10 14z', wheels: [72, 265], r: 21 },
+  prototype: { body: 'M10 124c0-8 6-12 16-14l66-10c14-12 32-20 52-20h60c18 0 32 6 44 18l56 14c8 2 12 6 12 12v8c0 4-3 6-7 6H17c-4 0-7-2-7-6z', glass: 'M128 84c14-10 28-14 46-14h40c10 0 22 4 30 12l-6 10H120z', wheels: [86, 260], r: 21 },
 };
 
 export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7c93', label, className, equipped }: { kind?: PosterKind; color?: string; label?: string; className?: string; equipped?: ArcadeProgress['equipped'] }) {
@@ -31,6 +31,17 @@ export const CarPoster = memo(function CarPoster({ kind = 'sedan', color = '#6d7
         <path d={s.body} fill={`url(#pb-${kind})`} stroke="rgba(255,255,255,0.22)" strokeWidth="1.2" />
         <path d={s.glass} fill="#0b0d11" opacity="0.82" transform={kind === 'sedan' || kind === 'formula' ? undefined : 'translate(0 9)'} />
         <path d={s.body} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="6" strokeLinejoin="round" style={{ mixBlendMode: 'overlay' }} />
+        {(kind==='coupe'||kind==='sedan'||kind==='hatch')&&<g aria-hidden="true">
+          <path d={kind==='coupe'?'M26 111Q78 101 125 99Q177 94 227 101L257 106':'M28 111Q87 101 142 103Q204 97 251 108'} fill="none" stroke="#fce9c1" opacity=".53" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M44 121Q122 116 233 119" fill="none" stroke="#102a39" opacity=".62" strokeWidth="2"/>
+          <path d="M125 91L120 119Q120 125 126 125" fill="none" stroke="#101823" strokeWidth="1.2" opacity=".65"/>
+          <path d="M132 102h20" stroke="#fce6b5" strokeWidth="3" strokeLinecap="round"/>
+          <path d="M160 104h20" stroke="#eac7a1" strokeWidth="2" opacity=".5"/>
+          <path d="M250 101l9-1 4 3-2 5-11 2z" fill="#d7f0ed" opacity=".83"/>
+          <path d="M22 115l8-4 5 0" fill="none" stroke="#f76c72" strokeWidth="4" strokeLinecap="round"/>
+          <path d="M258 118l9-1" fill="none" stroke="#0a192c" strokeWidth="4" strokeLinecap="round"/>
+          <path d="M132 80Q155 68 192 76" fill="none" stroke="#c8eaf7" strokeWidth="2" opacity=".38"/>
+        </g>}
         {equipped?.body && <path d="M65 100L158 100" stroke="rgba(255,216,146,.9)" strokeWidth="3" strokeLinecap="round" />}
         {equipped?.chassis && <path d="M48 139H289" stroke="#c6e6e1" strokeWidth="3" strokeLinecap="round" opacity=".75" />}
         {equipped?.engine && <path d="M248 103l8-10 7 8 8-10" fill="none" stroke="#f3d9a1" strokeWidth="3" />}
