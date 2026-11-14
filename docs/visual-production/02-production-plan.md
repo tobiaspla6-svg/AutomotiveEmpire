@@ -1,119 +1,135 @@
 # 2. Asset-production plan
 
-Nothing in this plan starts until the owner approves **Gate G1** (trial verification) and each later gate. All counts
-are *maximum* numbers of final assets; generation attempts are capped separately.
+Revision 2 (2026-11-14), after the owner's review. Decisions in force:
 
-## 2.1 Outputs, ranked by value to Automotive Empire
+| # | Decision |
+|---|---|
+| 1 | **Do not activate** the trial, any subscription or spend any credit yet. Every activation needs the owner's express authorisation. |
+| 2 | Connect through **ChatGPT or Claude with browser sign-in**; do not assume Claude Code locally (`05-connect-procedure.md`). |
+| 3 | **Videos are stored outside the repository**, preferably in Google Drive: `Automotive Empire/Visuales/Videos`. |
+| 4 | Keep the six concepts, but **production starts with AE-01 Meridian only**. |
+| 5 | First objective: **five consistent Meridian views**, built on its real dimensions and the existing Blender blueprints. |
+| 6 | The other 43 stills and the 7 videos are **not generated** until the owner has reviewed the Meridian results. |
+| 7 | Before any generation, verify the **72-hour Unlimited benefit is active for the owner's account and the chosen connection**, and check **renewal date and price** (Gate G1). |
+| 8 | PR #5 and the simulation are not modified. |
+| — | G0 is approved **provisionally**; the six names are **not** approved for commercial use (trademark screen pending). |
 
-| Rank | Output | Count (final) | Why it matters | Feeds |
-|---|---|---|---|---|
-| 1 | **Family AE-01 (Meridian) hero + 4 views**, checked against the existing blueprint | 5 | The only family that already has a GLB; a hero still is the best store/README/menu image and the check shows whether AI stills are good enough to guide modelling | marketing, Blender references |
-| 2 | **Studio background plates** (BG-01…06) | 6 | Reusable for every screenshot, trailer and the menu; no consistency problem (no car) | UI/marketing |
-| 3 | **Families AE-02…AE-06, hero + 4 views** | 25 | Defines the next five models to build; AE-06 doubles as the motorsport car | roadmap, Blender references |
-| 4 | **Motorsport stills** (MS-01…07) | 7 | The racing mode has no promotional imagery at all | marketing |
-| 5 | **Cinematic clips** (V-01…07) | 7 clips (~50 s assembled) | Highest cost per asset, highest promotional value; depends on approved stills | trailer |
-| 6 | **UI mood references** (UI-01…05) | 5 | Internal only; low value (the interface already exists) | design review |
+## 2.1 Scope by phase
 
-Totals: 48 stills + 7 clips. Aspect ratios: vehicles 16:9 (hero 3:2 acceptable), plates 16:9 then crops, UI 16:10, clips 16:9.
+| Phase | Output | Count | State |
+|---|---|---|---|
+| **1 — now** | **AE-01 Meridian**: `front34` (hero), `side`, `front`, `rear`, `rear34`, checked against the Blender blueprints | 5 stills | **Prepared**, waits for Gate G1/G2 |
+| 2 | Backgrounds BG-01…06, AE-06 Vektor + motorsport stills | up to 14 | **On hold** until the owner reviews phase 1 |
+| 3 | AE-02…AE-05 (hero + 4 views each) | 20 | **On hold** (this is most of the "other 43") |
+| 4 | Clips V-01…07, UI mood | 7 clips + up to 5 stills | **On hold** |
 
-## 2.2 Generation budget (to be fixed at Gate G1)
+(5 + 43 = 48 stills in total; the 7 videos are separate.) Nothing from phases 2–4 is generated, queued or
+"warmed up" during phase 1, even if unlimited access is active and idle. If the owner later wants to use the
+remainder of an active window, that is a new, written decision.
 
-Unknown until the credit prices are quoted (1.3). Rules that hold in either scenario:
+## 2.2 Phase 1 — AE-01 Meridian: exact objective
 
-* **Attempts per approved still:** at most **4** for a hero, **3** for each derived view; **2** for plates, MS and UI;
-  **3** per clip. After that the prompt is revised (not re-rolled) or the item is dropped.
-* **Ceiling:** the owner sets a maximum credit spend per day at G1. The agent stops at 80 % and asks.
-* **Cheap-first:** candidates are made with the model's lower-resolution/fast option when one exists; only the approved
-  candidate is upscaled (`upscale` is also credit-priced — ask first).
-* **Models:** pick one image model for all vehicle views (mixing models inside a family hurts consistency), chosen on
-  a 3-candidate test of AE-01 `front34` against the blueprint. A second model may be used for plates and UI.
-  Video: Seedance 2.0 or Kling 3.0 (image-to-video), chosen on one test clip.
-* **Concurrency:** Unlimited modes run one generation at a time — queue jobs sequentially and do not plan for parallel
-  runs.
+**Inputs (all ours):** `assets-src/sedan-ref/references/{side,front,rear}.png` (parametric blueprints, 220 px/m) and
+the design numbers from `tools/blender/sedan/design.py` / `src/three/assets/catalog.ts`:
 
-## 2.3 Workflow per asset
+| Quantity | Value |
+|---|---|
+| Length × width × height | 4.825 × 1.89 × 1.446 m |
+| Wheelbase | 2.90 m |
+| Front overhang / rear overhang | 0.885 m / 1.04 m |
+| Track front / rear | 1.62 / 1.63 m |
+| Tyre | 245/40 R19 (rolling radius 0.339 m) |
+| Layout | front engine, four-door saloon, glasshouse set rearward, short trunk lid |
 
-```
-prompt pack  ─►  agent states credit cost, waits for approval  ─►  generate  ─►  candidate downloaded to
-assets-src/concepts/_candidates/ (git-ignored)  ─►  checklist QA (+ overlay for vehicles)  ─►  owner picks  ─►
-ingest.py add (copy, hash, compress, manifest entry)  ─►  approved file committed
-```
+Prompt text with these numbers is in `03-prompts.md` (`DL-AE01`) and fully assembled, ready to paste, in
+`docs/visual-production/prompts-ae01/` (five files, one per view).
 
-Rejected candidates are kept locally for the session only; they are never committed.
+**Procedure:**
+1. Hero first: up to **4 candidates** of `front34`; owner picks one. Name it `AE01-hero`.
+2. Using the hero as image reference (and the blueprint for the matching view where useful), generate `side`, `front`,
+   `rear`, `rear34` — up to **3 attempts** per view. Change only the camera.
+3. For `side`: run the overlay check against the blueprint (`ingest.py overlay`, wheel pixel centres in
+   `prompts-ae01/README.md`). Tolerances: overhangs ±4 % of wheelbase, roof height ±3 %, belt line ±3 %, wheel diameter ±5 %.
+4. Checklist `QA-VEH` on all five (lamps, windows, body lines, wheels, no badges/logos/plates).
+5. Owner reviews the set. Only then do approved files go through `ingest.py add` and are committed.
 
-## 2.4 Three-day schedule
+**Phase-1 success criteria** (decided before looking at results): the five images read as one car; the `side` view passes
+the overlay tolerances; lamps and glasshouse agree between views; ≥ 4 of 5 views pass on the first or second attempt.
+If not, the finding "AI stills cannot hold this design" is itself a result, reported to the owner before phases 2–4 are
+considered. Images are references; the numbers in `design.py` win.
 
-Day boundaries are working sessions; the 72-hour trial clock (if that is what is activated) starts only when Gate G2 is
-passed, so Day 0 costs nothing. Higgsfield jobs are sequential, so the schedule is ordered by value and every day ends
-with ingested, committed assets.
+**Attempt ceiling:** at most 4 + 4×3 = **16 generations** for the whole of phase 1, plus at most **2** upscales of
+approved images. Under scenario A (credits) the owner sets a credit ceiling; the assistant stops at 80 %.
 
-**Day 0 — preparation (this deliverable, zero credits)**
-Assessment, prompt packs, manifest, ingest tool, folder structure. Owner decisions: approve G1 questions, daily credit
-ceiling, trademark screen of working names, where videos are stored.
+## 2.3 Schedule
 
-**Gate G1 — trial verification (owner present, zero credits).** Run the pre-flight checklist (1.3), fill in
-`trial-verification.md`. Owner says "go" or "stop". No card is entered before this.
+The trial promotion lasts **72 hours from activation** (to be confirmed). Phase 1 needs a few hours, not three days;
+the rest of the window will go unused **unless** the owner decides otherwise. That has a cost consequence the owner
+should weigh at Gate G2 (decision C below).
 
-**Gate G2 — activation.** Owner explicitly approves starting the trial (and sees plan, price, renewal date). The
-agent sets a reminder to confirm auto-renewal is cancelled (if the owner wants that) 24 h before expiry.
+| Step | When | Credits | Owner action |
+|---|---|---|---|
+| Review revision 2 of these documents | now | 0 | approve / amend |
+| Trademark screen of the six working names | before any public use | 0 | owner or counsel |
+| Create the Drive folder `Automotive Empire/Visuales/Videos` | any time | 0 | owner |
+| **Gate G1 part 1**: read the offer page, fill `trial-verification.md` | when the owner is ready | 0 | present, **no card entered** |
+| **Gate G2**: written authorisation to start the trial | owner's call | trial starts | **explicit message** |
+| **Gate G1 part 2**: connect, balance/status/quote checks (`05`) | immediately after G2 | 0 if unlimited | present |
+| Phase 1 generation (hero → four views, QA) | same session, one sitting | 0 / ceiling | picks the hero, reviews |
+| Hand-over of files, ingest, commit to `visual-production-prep` | same day | 0 | download + hand over |
+| Owner review of the Meridian set | after phase 1 | 0 | decides on phases 2–4 |
+| Subscription clean-up | before the 72 h end | — | owner decides cancel/keep |
 
-**Day 1 — the highest-value material (target 19 stills)**
-1. Connect, ask for credit balance and per-job prices, pick the models with 3 test candidates (AE-01 hero).
-2. AE-01 hero → approve → `side`, `front`, `rear`, `rear34` chained; overlay QA against the blueprint. *(5 stills)*
-3. Plates BG-01…BG-06. *(6 stills)*
-4. AE-06 (Vektor) hero + 4 views, because it unlocks both the motorsport stills and the race-car concept. *(5 stills)*
-5. MS-01 grid, MS-03 rain, MS-04 night. *(3 stills)*
-6. Ingest and commit what is approved; update the manifest. End-of-day check: credits used vs ceiling.
+Decision C (to take at G2): *(a)* start the trial only when ready to run phase 1 in one sitting and **cancel
+auto-renewal straight away** if the terms keep access until the window ends (verify first); or *(b)* leave renewal as
+is. The assistant never cancels or changes anything in the account by itself; it only tells the owner where the
+button is.
 
-**Day 2 — breadth (target 24–29 stills + 2 test clips)**
-1. AE-04 Orrin, AE-03 Tallis, AE-02 Kestrel, AE-05 Brantley: hero + 4 views each (AE-06 was done on Day 1). *(20 stills)*
-2. MS-02 pit, MS-05 cockpit, MS-06 podium, MS-07 livery sheet. *(4 stills)*
-3. UI mood UI-01…UI-05 only if credits remain. *(2–5 stills)*
-4. **Test clips** V-01 and V-05 to choose the video model. *(2 clips)*
-5. Ingest and commit.
+## 2.4 Decision gates
 
-**Day 3 — clips, selection, closing (target 5 more clips; V-01 and V-05 came from Day 2)**
-1. V-02, V-03, V-04, V-06, V-07 (each at most 3 attempts).
-2. Final selection with the owner; ingest videos (stored outside git, see 4) with manifest entries.
-3. Re-run `ingest.py validate`; update the README section and `docs/asset-pipeline.md` link.
-4. Close-out: confirm the subscription status in the account (cancel auto-renewal **only if the owner asks**), record
-   total credits used and the model chosen per output in the manifest.
-
-If time or credits run out, the order above is the order of cuts: UI mood → video clips beyond the first three →
-AE-05 / AE-02 → motorsport extras. Items 1–4 of Day 1 are never cut.
-
-## 2.5 Decision gates
-
-| Gate | Question | Needed from owner |
+| Gate | Question | State |
 |---|---|---|
-| G0 | Approve this plan, the working names to screen, the video storage location | yes |
-| G1 | Trial terms verified, scenario A or B, daily credit ceiling | yes — written answer |
-| G2 | Start the trial / connect the account | **explicit approval** |
-| G3 | Each batch over the ceiling or any `upscale`/outpaint/audio use | approval per batch |
-| G4 | Commit approved assets | approval (or standing "commit approved only") |
-| G5 | Anything touching game code, the Blender builder, or a PR | separate request — not part of this work |
+| G0 | Plan, six concepts, file structure | **provisionally approved**; names not cleared for commercial use |
+| G1 | Offer/benefit/price/renewal verified (parts 1 and 2) | **not started** |
+| G2 | Start the trial | **not authorised** |
+| G3 | Phase 1 results reviewed → go / no-go for phases 2–4 | pending |
+| G4 | Commit approved files to the repository | after phase 1, owner OK |
+| G5 | Anything touching game code, the Blender builder, PR #5 | not part of this work |
 
-## 2.6 What is *not* in this plan
+## 2.5 What is *not* in this plan
 
-* No change to the game, its tests, the GLB assets, `build.py`, or the pull requests. (The one future Blender-side
-  change — accepting a `rear34` stem — is listed, not applied.)
-* No 3D generation, no "image-to-3D" step. If a 3D-from-image tool is ever considered it is a separate evaluation with its
-  own rights review.
-* No audio generation, no voice cloning, no human likenesses.
+* No change to the game, its tests, the GLB assets, `build.py`, PR #5 or the simulation. The future one-line `rear34`
+  support in `REF_VIEWS` is listed, not applied.
+* No 3D generation and no "image-to-3D". Generated stills are references; the Meridian GLB already exists and is not
+  replaced by anything produced here.
+* No audio, no voice cloning, no human likenesses.
+* No video in phase 1 (see 04 §4.1 for where videos go when phase 4 happens).
+
+## 2.6 Budget rules (hold in either scenario)
+
+* Scenario A (credits deducted) or B (unlimited): determined by the Gate G1 quote, not assumed.
+* The assistant states the credit cost and **waits for approval before each batch** ("Before generating anything, tell me
+  the credit cost and wait for my confirmation").
+* One image model for all five Meridian views (mixing models hurts consistency), chosen with up to **2 test
+  candidates** inside the hero attempts. Use the best model among those the connected tool lists as unlimited inside
+  the trial window.
+* Unlimited runs are queued **one at a time**; do not plan parallel jobs.
 
 ## 2.7 Template: `trial-verification.md` (fill in at Gate G1)
 
 ```
-Date / time (UTC):                 Who was present:
-Offer page URL:
-Offer name and duration:           Start condition:
-Converts into plan:                Price / billing date:      Card charged at sign-up? (y/n/hold)
-"Unlimited" covers MCP/CLI? (y/n)  Which models / resolution / duration are inside it:
-Credits deducted anyway? (y/n)     Starting balance:          Cost per image / per 8 s video (by model):
-Concurrency / daily cap:
-How to cancel auto-renewal (exact steps):                   Where confirmation appears:
-Output / commercial terms shown at sign-up (version/date):
-Eligible surfaces (Claude connector / CLI / web):
-Scenario chosen (A credits / B unlimited):   Daily credit ceiling:
-Owner decision:   GO / STOP                  Signature (message quoted):
+Date / time (UTC and owner's time zone):        Who was present:
+Offer page URL:                                  Screenshot / copied text saved at:
+Offer name and duration:                         Start condition (card entry / connect / first generation):
+Converts into:                                   Price after trial:        Renewal date and time:
+Charge or authorisation today? (y/n)             Payment method:
+Eligible account? (y/n)                          Surface the offer attaches to (Claude / ChatGPT / CLI / web):
+"Unlimited access to all models" inside MCP? (y/n)  Models actually listed as unlimited:
+Resolution / duration / concurrency / daily limits:
+How to cancel (exact steps):                      What happens to access on cancel:
+Connector-reported plan / trial status and renewal date:
+Credit balance before generating:                Quote for 1 test image (credits):   Quote for 1 test video (credits):
+Output / commercial terms shown (version/date):
+Scenario (A credits / B unlimited):              Credit ceiling (if A):
+Owner decision: GO / STOP                        Authorisation message quoted:
 ```

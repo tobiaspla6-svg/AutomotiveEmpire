@@ -24,11 +24,21 @@ Rules:
 * **Commit approved files only**, compressed: stills as WebP quality ≈ 90 (long side ≤ 2560 px, typically 150–500 KB).
   Budget for 48 stills: about 15–25 MB, comparable to the existing `assets-src` (38 MB). `.git` is already ≈ 92 MB, so
   no uncompressed PNG batches and no rejected candidates.
-* **Videos are not committed** (8-second 1080p clips are 5–25 MB each). They are stored outside the repository (a
-  GitHub Release asset or the owner's storage — decision at G0); the manifest entry records location, SHA-256 and size,
-  and `video-stills/` keeps a first-frame thumbnail in git.
+* **Videos are not committed** (8-second 1080p clips are 5–25 MB each). Decision 2026-11-14: they live in **Google
+  Drive, `Automotive Empire/Visuales/Videos`** (one sub-folder per clip id, e.g. `V-01-hero-reveal/`, holding the
+  original MP4 as downloaded). The manifest entry records `storage: { "location": "gdrive:Automotive Empire/Visuales/Videos/V-01-hero-reveal/<file>.mp4", "retention": "owner" }`,
+  SHA-256 and size; `video-stills/` keeps a first-frame thumbnail in git. The Google Drive connector is **not
+  connected** in the repository session, so the assistant does not write to Drive: the owner uploads, or authorises a
+  connector in a later step. No videos exist or are planned until phase 4.
 * Originals as downloaded from Higgsfield (PNG/MP4, with any C2PA marks) are kept in the owner's storage; the manifest
   records the SHA-256 of both the original and the committed file.
+
+### 4.1b Hand-over inbox
+
+Approved images arrive from the owner's Higgsfield download either as chat attachments or in
+`assets-src/concepts/_inbox/` on the branch (`05-connect-procedure.md` §5.5). `_inbox/` is **transient**: the ingest tool
+turns each file into a manifest entry under `vehicles/…` and the inbox copy is deleted in the same commit. Local
+download scratch stays in git-ignored `_candidates/`.
 
 ## 4.2 Making images available to Blender and the existing scripts
 

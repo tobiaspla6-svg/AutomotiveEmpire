@@ -3,6 +3,10 @@
 All prompts are tool-independent text; they work in Higgsfield (any image model) or any other generator. Nothing here
 has been run. Each prompt has an ID used in the manifest (`prompt_id`).
 
+> **Scope, revision 2:** only **AE-01 Meridian** is in production (phase 1). Families AE-02…06, backgrounds, UI
+> references, motorsport imagery and all videos below are **specified but on hold** until the owner has reviewed the
+> Meridian results. The ready-to-paste AE-01 prompts are in `prompts-ae01/`.
+
 ## 3.1 How consistency is enforced
 
 A text-to-image model cannot guarantee that a car has the same wheelbase in five pictures. We therefore do not rely on

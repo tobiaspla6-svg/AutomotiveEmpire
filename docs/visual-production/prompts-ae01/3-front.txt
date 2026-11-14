@@ -1,0 +1,16 @@
+PROMPT ID: P-AE01-front
+ATTEMPT CAP: 3
+REFERENCES TO ATTACH (through Higgsfield's upload window; the chat itself cannot pass images):
+  1. upload/select the APPROVED HERO (AE01 front34) as the first reference
+  2. upload assets-src/sedan-ref/references/front.png (our own blueprint) as the second reference
+ASPECT RATIO: 16:9   MIN LONG SIDE: 2048 px
+
+----- PROMPT (paste exactly) -----
+Original modern four-door executive saloon, 4.83 m long, 1.89 m wide, 1.45 m high, wheelbase 2.90 m, long hood and short front overhang (0.89 m), longer rear overhang (1.04 m), cab-rearward glasshouse with a gently curved roof and a raked rear window ending on a short trunk lid, crisp shoulder crease running from the headlamps to the tail lamps, sculpted lower doors with gloss-black sills, slim LED headlamps with three projector modules, wide trapezoidal grille with a fine diamond mesh and one horizontal chrome blade, vertical corner intakes, full-width slim LED tail lamps with three horizontal light bars, rectangular exhaust finishers in a gloss-black diffuser, 19-inch ten-spoke turbine alloy wheels, chrome window surround, deep blue metallic paint.
+studio photograph on a seamless dark graphite floor and backdrop, soft overhead softbox plus two long strip lights, low contrast reflections, sharp focus, no people, no text, no watermark, no badges, no logos, no licence plate, no brand names, no recognisable production car, original design
+exact front elevation, centred, camera at wheel-centre height, 85 mm lens, perfectly symmetrical framing
+Same car as the reference image: identical proportions, wheelbase, lamps, glasshouse and body lines; only the camera changes.
+The second uploaded image is a technical line drawing of the same car: use it ONLY for proportions (wheelbase, overhangs, roof height, belt line); do not copy its line style, background or colours.
+
+----- NEGATIVE (negative-prompt field, or append "Avoid: ...") -----
+badge, emblem, logo, brand lettering, licence plate text, real manufacturer styling cues, extra wheels, mismatched wheels, asymmetric lamps, duplicated door handles, warped proportions, melted details, fisheye distortion, cropped wheels, motion blur, people, reflections of cameras or photographers

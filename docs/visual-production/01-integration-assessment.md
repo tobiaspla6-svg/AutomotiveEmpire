@@ -20,10 +20,10 @@ land in the account's Assets at higgsfield.ai (tagged with the MCP source). Refe
 an upload window the agent opens, or by pasting a direct image URL — **the agent cannot read images attached to the
 chat**. Files therefore have to be downloaded from Higgsfield afterwards and committed by us (see 4).
 
-Models named in Higgsfield's pages (availability must be re-checked at activation, the list rotates): images —
-Seedream 5.0 Pro/Lite/4.5, Nano Banana Pro/2, GPT Image 2, Flux.2 Pro, Kling O1 Image, Soul 2.0; video — Seedance 2.0
-(+Fast/Mini), Kling 3.0 (+Motion Control), Wan 2.7, Gemini Omni Flash. Images cap at about 2K; video clips are about
-7–8 s.
+Models named in Higgsfield's pages (the list rotates; the connected tool's own list at activation is what counts):
+July 2026 — images Seedream 5.0 Pro/Lite/4.5, Nano Banana Pro/2, GPT Image 2, Flux.2 Pro, Kling O1 Image, Soul 2.0;
+video Seedance 2.0, Kling 3.0, Wan 2.7, Gemini Omni Flash. November 2026 (11.11 post) — Seedance 2.5 (+Flash), Nano
+Banana Pro, Seedream 5.0 Pro, GPT Image 2.5 / 2.6. Images cap at about 2K in the promotions' listings.
 
 ## 1.2 Does *this* environment support it?
 
@@ -31,60 +31,87 @@ Seedream 5.0 Pro/Lite/4.5, Nano Banana Pro/2, GPT Image 2, Flux.2 Pro, Kling O1 
 |---|---|---|
 | Is a Higgsfield MCP server connected to this session? | **No.** The session's MCP servers are Finzon, Gmail, Google Calendar and Google Drive. | tool list / `~/.claude/mcp-needs-auth-cache.json` |
 | Can the agent add the hosted MCP connector itself? | **No.** Adding a connector with OAuth is an account action done by the user in claude.ai / Desktop settings (or `claude mcp add` on their own machine). | Higgsfield help article |
-| Can Claude Code (CLI) use the CLI route here? | **Partly.** Node 22 and npm work and the package resolves (`@higgsfield/cli` 1.2.2). Its postinstall downloads a prebuilt binary from GitHub Releases (checksum-verified) — not tested here, to avoid side effects. `higgsfield auth login` needs a **browser sign-in**, which a headless cloud container cannot complete unless the CLI offers a device/URL flow (unverified). | `npm view`, package README |
+| Can Claude Code (CLI) use the CLI route here? (not the chosen route) | **Partly.** Node 22 and npm work and the package resolves (`@higgsfield/cli` 1.2.2). Its postinstall downloads a prebuilt binary from GitHub Releases (checksum-verified) — not tested here, to avoid side effects. `higgsfield auth login` needs a **browser sign-in**, which a headless cloud container cannot complete unless the CLI offers a device/URL flow (unverified). | `npm view`, package README |
 | Can the session reach Higgsfield? | `higgsfield.ai` answers through the session proxy with `curl` (HTTP 200); `mcp.higgsfield.ai` answers 404 to a plain GET (normal for an MCP endpoint, it needs the protocol + OAuth). The built-in WebFetch tool could not resolve `higgsfield.ai`. Generation traffic goes to API hosts not yet tested; the session network policy may need them allowed. | `curl` probes |
 | Blender / image tooling | Blender 4.5.16 LTS, Python 3 with Pillow + NumPy, Node 22 are present — everything needed to ingest and check images. | `blender --version` |
 | Is Higgsfield integration needed *inside the game*? | No. It is an offline production tool. The shipped game never calls it. | — |
 
-**Recommendation.** Run generation where the human can sign in:
+**Decision (owner, 2026-11-14): connect through ChatGPT or Claude (claude.ai / Claude Desktop) with browser sign-in, and do
+not assume Claude Code is installed locally.** Consequences:
 
-1. **Preferred — Claude Code or Claude Desktop on the owner's computer.** Connect the connector or CLI there (sign-in
-   works, the browser is available), generate, download, then commit the approved files with the ingest tool (4).
-2. **Alternative — this cloud session**, only after (a) the owner approves the trial, (b) the required Higgsfield hosts
-   are added to the environment's network allow-list, and (c) a sign-in path that works headlessly is confirmed. If
-   (c) is not possible, the owner downloads images from higgsfield.ai Assets and uploads them to the repository.
-3. **Fallback with zero integration risk**: the owner generates in the Higgsfield web app using the prompt packs in
-   `03-prompts.md`, downloads, and the ingest tool handles the rest. The prompt packs are tool-independent.
+* The connection is the chat client's own connector/plugin (`05-connect-procedure.md`); this repository session is
+  not connected to Higgsfield and does not need to be.
+* Generated files land in the owner's **Higgsfield Assets** (and a chat client cannot write into the repository).
+  The owner downloads approved candidates and hands them over (attach to this conversation, or upload to the
+  repository inbox — see 04 §4.5); the ingest tool then does hashing, compression, manifest and commit.
+* The chat assistants **cannot read files attached in the chat as references**: reference images (our blueprints) go
+  through Higgsfield's upload window, which the assistant opens on request (help article).
+* Choice between the two chat clients: **Claude** supports image, video **and audio**; **ChatGPT** supports image and
+  video only (no audio) — irrelevant here since audio is out of scope. Pick the one the owner already uses; the
+  procedure covers both.
+* The CLI route (Claude Code, local install) stays documented as an alternative but is **not** the plan.
 
-## 1.3 Trial, credits and renewal — what is known and what is not
+## 1.3 Trial, credits and renewal — three different things
 
-This is the part that must be verified **before** any generation. The sources conflict.
+Revision 2 (2026-11-14): corrected with Higgsfield's own **11.11 post of 11 Nov 2026**
+([Higgsfield 11.11 Deals](https://higgsfield.ai/blog/higgsfield-11-11-deals), read directly). It supersedes the
+earlier "unconfirmed, third-party only" treatment of the 72-hour offer. Three separate regimes exist and must not be
+mixed up:
 
-| Claim | Source | Reliability |
-|---|---|---|
-| A **free 24-hour** "Unlimited MCP" trial existed until 31 July 2026: no credit deduction for the window, card required, **auto-converts to the Plus monthly plan** unless cancelled; cancel by chat message ("I want to cancel the trial") or Manage Account → Subscription → Cancel auto-renewal; cancelling keeps access until the 24 h end. | [Higgsfield blog, 28 Jul 2026](https://higgsfield.ai/blog/unlimited-mcp) | Official, but a **past** promotion |
-| An **active paid subscription is required** to use the agent connection, and **"Unlimited model access ✕, Free generations ✕"** through MCP: *every generation through a connected agent deducts credits, regardless of plan*. | [Higgsfield help article, 1 Aug 2026](https://higgsfield.ai/creator-hub/help-center/integrations/how-do-i-connect-higgsfield-to-ai-agent) | Official, **newer** than the blog; contradicts it |
-| Unlimited/All-Unlimited is a web-side purchase (e.g. 1-day $99, 3-day $250 bundles) with 1 concurrent generation per format; works only with an active subscription; the 1-day free trial converts to Plus (card charged) if not cancelled. | [Higgsfield "All Unlimited explained"](https://higgsfield.ai/blog/higgsfield-all-unlimited-explained) | Official |
-| A **72-hour MCP free trial** opened on 9 Nov 2026, **rolls into the Ultra plan automatically**, e-mail before expiry. | One news article ([pasqualepillitteri.it](https://pasqualepillitteri.it/en/news/31553/higgsfield-free-72-hour-trial-claude-fable-5-2)); no Higgsfield page found | **Unconfirmed** |
-| Terms: free trials convert to a paid subscription at the then-current standard price and charge the payment method until cancelled; cancel before the end to avoid charges. | [Higgsfield Terms](https://higgsfield.ai/terms), Free Trials and Promotional Offers | Official |
+| Regime | What it says | Source | Applies to us? |
+|---|---|---|---|
+| **A. The MCP free trial (November 2026 promotion)** | **US$0 for 3 days; "Unlimited access to all models"; after 3 days the subscription automatically renews on the Ultra 3K plan at a discounted price.** The post tells readers to review the discounted price and renewal terms before starting. It states no price, no start condition, no end date, no per-model resolution/duration limits and no concurrency limit. "The MCP free trial is a separate offer with its own terms." | [11.11 post, 11 Nov 2026](https://higgsfield.ai/blog/higgsfield-11-11-deals) | **Yes — this is the offer we would use** |
+| **B. General MCP conditions (August 2026)** | An active **paid** subscription is required to use the agent connection; through MCP **"Unlimited model access ✕, Free generations ✕"** — every generation through a connected agent deducts credits, regardless of plan. | [Help article, 1 Aug 2026](https://higgsfield.ai/creator-hub/help-center/integrations/how-do-i-connect-higgsfield-to-ai-agent) | Applies **outside** the promotion (after it, or if the trial is not active for the account/surface) |
+| **C. 11.11 plan bonuses (Unlimited Seedance 2.5, Nano Banana Pro, Seedream 5.0 Pro, GPT Image 2.5/2.6 for 7–60 days)** | Granted with Plus/Ultra plans bought by 14 Nov 23:59 UTC; **work only on higgsfield.ai**; "generations through MCP, CLI, Canvas, or Supercomputer still deduct credits". | same 11.11 post | **No** — we are not buying a plan, and these do not apply to MCP |
 
-Consequences for us:
+How to read A against B: B is the standing rule; A is a time-limited promotion that, according to Higgsfield's newer
+post, grants unlimited access to all models for 3 days over MCP. The two are therefore **not contradictory** if A
+really is "unlimited over MCP"; but the 11.11 post does not say *how* A is applied to a given account and surface, so
+that has to be **proven for our account before generating** (see the gate below). The older 24-hour July trial
+(card required, converts to Plus, cancel by chat message or Manage Account → Subscription) is a **historical
+precedent** for the mechanics, not the current offer; in that offer unlimited ran **one generation at a time** and had
+per-model resolution/duration limits — the November post is silent on both, so assume the same until shown otherwise.
 
-* We **cannot assume** the 72-hour trial is "unlimited", nor that it is free of credit cost through MCP. Plan for both:
-  *scenario A* (credits deducted, a hard budget) and *scenario B* (unlimited within the window, one job at a time).
-* The trial **needs a card and probably auto-converts to a paid plan** (Plus in July's offer, Ultra in the 72 h report).
-  Starting it is a financial commitment unless cancelled — therefore **only with the owner's explicit approval**.
-* Higgsfield's own recommendation covers the risk: start every session with *"Before generating anything, tell me the
-  credit cost and wait for my confirmation."* and ask *"What is my current Higgsfield credit balance?"*.
+What the generic Terms add ([Terms](https://higgsfield.ai/terms), Free Trials and Promotional Offers): unless the offer
+states otherwise, a trial converts to a paid subscription at the then-current standard price and the payment method is
+charged until cancelled; cancel before the trial ends to avoid charges.
 
-### Pre-flight checklist (Gate G1 — zero credits, owner present)
+Facts we **do not have** and must read on the checkout/trial screen: the Ultra 3K **price and billing date**, whether
+the card is **charged or only held** at sign-up, **when the 3 days start** (at card entry, connection or first
+generation), the exact end time, whether the offer is open to **this account** (one-time new-user offers exist), whether
+**cancelling** keeps the unlimited window until it ends, and what "all models" includes (resolution, duration,
+concurrency, daily caps). Model names also changed since July (the 11.11 post lists Seedance 2.5, GPT Image 2.5/2.6,
+Nano Banana Pro, Seedream 5.0 Pro; the earlier lists named Seedance 2.0, GPT Image 2): the model for each prompt is
+picked from what the connected tool actually lists.
 
-Do these on the offer/checkout page and in the account **before** pressing "start trial". Record the answers in
-`docs/visual-production/trial-verification.md` (template at the end of `02-production-plan.md`).
+### Gate G1 — verification before ANY generation (zero credits, owner present)
 
-1. Offer page states the duration (72 h?) and **start condition** (starts at card entry? at first generation? at connect?).
-2. Plan it converts into, **price, billing date, whether the card is charged at sign-up** (auth hold vs charge).
-3. Whether "unlimited" covers **MCP/CLI generations** or only the web; which models/resolutions/durations are inside it.
-4. Whether credits are deducted anyway, the starting **credit balance**, and the credit price of one image / one 8 s video
-   for each model we plan to use (the agent can quote them).
-5. Concurrency limit (1 at a time in Unlimited) and any daily cap.
-6. How to **cancel auto-renewal** and where the confirmation shows; set a reminder to verify it 24 h before expiry.
-7. Commercial-use and output terms shown at sign-up (see 1.4) and the model-provider terms for the chosen models.
-8. Whether the surface we will use (Claude connector, CLI, web) is eligible for the offer.
+Decision recorded 2026-11-14: **do not activate the trial, any subscription or spend any credit until the owner
+approves in writing after this gate.** The gate has two parts. **Part 1 is read-only (before signing up);** part 2 is
+checked in the connected chat right after the owner activates, **before the first generation**.
 
-**Stop conditions** (do not generate and ask the owner): the plan/price is not visible; credits would be deducted and a
-budget has not been approved; the offer converts to a plan the owner did not approve; the connector cannot show a cost
-before generating.
+*Part 1 — on the offer/checkout page (nothing is entered, nothing is started):*
+1. The offer is the **72-hour / 3-day MCP free trial, US$0, Unlimited, renews on Ultra 3K** (as in the 11.11 post).
+2. **Ultra 3K price after the trial** and the **exact renewal date and time** (shown in the owner's time zone).
+3. Whether a charge or authorisation happens today; which payment method.
+4. When the 72 hours start, and how the trial is **cancelled** (exact steps) and what happens to access on cancel.
+5. Whether the account is eligible; which **surface** the offer attaches to (Claude connector, ChatGPT plugin, CLI, web).
+6. Output / commercial terms shown at sign-up (note the version/date).
+
+*Part 2 — in the connected chat, before generating (the prompts to paste are in `05-connect-procedure.md`):*
+1. The assistant lists the Higgsfield tools (proves the connection works).
+2. **Credit balance** and **subscription/trial status** as reported by the connector, including plan name and renewal date.
+3. A **cost quote for one test image and one video** with the chosen model: it must show **0 credits / unlimited**, or the
+   quoted credits (scenario A, with a ceiling the owner sets). If the quote shows credits while the trial is supposed to
+   be unlimited, **stop**: that is regime B, not A.
+4. The model list available inside the unlimited window, with resolution/duration limits and concurrency.
+
+**Stop conditions** (do not generate; ask the owner): any item above is not visible or contradicts the 11.11 post;
+credits would be deducted without an approved ceiling; the plan or price differs from what the owner approved; the
+renewal date or price cannot be read; the connector cannot show a cost before generating.
+
+Result to record in `trial-verification.md` (template in `02-production-plan.md` §2.7), including a screenshot or
+copied text of the offer, the confirmation e-mail and the renewal date.
 
 ## 1.4 Rights
 
