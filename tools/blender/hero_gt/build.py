@@ -32,7 +32,18 @@ SOURCE=DEST/"AE_GTRS_HERO.blend"
 bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE),compress=True)
 
 def triangles():
-    return sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in bpy.data.objects if o.type=="MESH")
+    """Evaluated triangles include curves and live bevels, not merely raw mesh faces."""
+    depsgraph=bpy.context.evaluated_depsgraph_get()
+    total=0
+    for obj in bpy.data.objects:
+        if obj.type not in {"MESH","CURVE","FONT"}:continue
+        if obj.name.startswith("STUDIO_"):continue
+        evaluated=obj.evaluated_get(depsgraph)
+        render_mesh=evaluated.to_mesh()
+        if render_mesh is None:continue
+        total+=sum(len(f.vertices)-2 for f in render_mesh.polygons)
+        evaluated.to_mesh_clear()
+    return total
 
 def delete_unneeded(lod):
     # Cosmetic high-frequency details disappear with distance, not the primary silhouette.
