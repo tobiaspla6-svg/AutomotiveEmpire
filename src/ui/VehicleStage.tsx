@@ -7,7 +7,7 @@ import { useVisualPlan } from '../three/assets/usePlan';
 import { FINISH_NAME } from '../three/assets/names';
 import type { VisualPlan } from '../three/assets/adapter';
 import { CarPoster, posterForBody } from './ds/poster';
-import { Guard3D, VehicleViewer } from './Lazy3D';
+import { EngineInspectionViewer, Guard3D, VehicleViewer } from './Lazy3D';
 import { useT, type MessageKey, type Vars } from '../i18n';
 import { useTerm } from '../i18n/terms';
 import { useGraphics } from '../three/quality';
@@ -33,25 +33,30 @@ export function shownSummary(plan: VisualPlan, desc: RenderDescriptor, t: (key: 
 export function VehicleStage({ desc, spec, year, title, height, autoRotate = true, extra }: {
   desc: RenderDescriptor; spec: VehicleSpec; year?: number; title?: ReactNode; height?: number | string; autoRotate?: boolean; extra?: ReactNode;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const term = useTerm();
   const gfx = useGraphics();
   const plan = useVisualPlan(desc, year);
   const [status, setStatus] = useState<{ s: AssetStatus; info?: string }>({ s: plan.kind === 'asset' ? 'loading' : 'procedural' });
+  const [inspection, setInspection] = useState(false);
   const onStatus = useCallback((s: AssetStatus, info?: string) => setStatus({ s, info }), []);
   return (
     <div className="stage-wrap">
       <div className="viewer studio" style={{ height: height ?? 420 }}>
+        <div role="group" aria-label={lang === 'es' ? 'Vista 3D' : '3D view'} style={{ position: 'absolute', right: 12, top: 12, zIndex: 6, display: 'flex', gap: 6 }}>
+          <button className={"btn " + (!inspection ? "primary" : "ghost")} type="button" aria-pressed={!inspection} data-action="view-exterior" onClick={() => setInspection(false)}>{lang === 'es' ? 'Exterior' : 'Exterior'}</button>
+          <button className={"btn " + (inspection ? "primary" : "ghost")} type="button" aria-pressed={inspection} data-action="view-powertrain" onClick={() => setInspection(true)}>{lang === 'es' ? 'Motor 3D' : 'Powertrain 3D'}</button>
+        </div>
         <Guard3D eager poster={<CarPoster kind={posterForBody(desc.body)} color={desc.color} label={t('stage.poster')} className="poster-hero" />}>
-          <VehicleViewer plan={plan} spec={spec} onStatus={onStatus} autoRotate={autoRotate} sceneVersion={`${status.s}|${status.info ?? ''}|${JSON.stringify(desc)}`} />
+          {inspection ? <EngineInspectionViewer spec={spec} /> : <VehicleViewer plan={plan} spec={spec} onStatus={onStatus} autoRotate={autoRotate} sceneVersion={`${status.s}|${status.info ?? ''}|${JSON.stringify(desc)}`} />}
         </Guard3D>
-        {title && <div className="overlay">{title}</div>}
-        <div className={'vstatus ' + (gfx.enabled ? status.s : 'off')} title={status.info}>
+        {!inspection && title && <div className="overlay">{title}</div>}
+        <div className={'vstatus ' + (gfx.enabled ? status.s : 'off')} title={status.info} style={inspection ? { display: 'none' } : undefined}>
           {!gfx.enabled ? t('stage.poster') : status.s === 'loading' ? t('stage.loading') : status.s === 'ready' ? t('stage.asset', { name: plan.kind === 'asset' ? plan.asset.name : '' }) : status.s === 'failed' ? t('stage.failed') : t('stage.procedural')}
         </div>
       </div>
       <div className="stage-notes">
-        <span className="tiny">{shownSummary(plan, desc, t, term)}</span>
+        {inspection ? <span className="tiny" data-inspection-note>{lang === 'es' ? 'Vista técnica ilustrativa del conjunto motriz, independiente de la carrocería. No representa un capó abierto ni un modelo CAD de fábrica.' : 'Illustrative standalone powertrain inspection, not an opened bonnet or a factory CAD engine.'} {spec.engine.layout === 'EV' ? `${Math.round(spec.engine.motorKw)} kW · ${Math.round(spec.engine.batteryKwh)} kWh` : `${spec.engine.layout} · ${(spec.engine.displacement / 1000).toFixed(1)} L · ${spec.engine.aspiration}`}</span> : <span className="tiny">{shownSummary(plan, desc, t, term)}</span>}
         {plan.kind === 'procedural' && <span className="tiny muted"> — {plan.reason}</span>}
         {plan.kind === 'asset' && plan.notes.map((n) => <div key={n} className="tiny warn">{n}</div>)}
         {extra}
