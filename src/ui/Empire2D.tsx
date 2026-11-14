@@ -1,6 +1,6 @@
 // Phase 5 — interactive, GPU-free 2D game surfaces over the existing simulation.
 import { useState } from 'react';
-import type { BodyType, EngineLayout, SegmentId, VehicleSpec } from '../sim/types';
+import type { BodyType, EngineLayout, SegmentId, VehicleSpec, StageId } from '../sim/types';
 import { useGame, useStore } from '../store/game';
 import { useT } from '../i18n';
 import { money, num, monthYear } from '../i18n/format';
@@ -225,17 +225,28 @@ export function Collection2D(){
 
 export function FactoryFloor2D(){
   const {g,p}=useGame(),{lang}=useT(),es=lang==='es';
+  const [selectedFactory,setSelectedFactory]=useState(p.factories[0]?.id??'');
+  const [selectedStage,setSelectedStage]=useState<StageId>('body');
+  const factory=p.factories.find(f=>f.id===selectedFactory)??p.factories[0];
   const setView=useStore(s=>s.setView), active=p.models.filter(m=>m.status==='ready'||m.status==='production');
+  const stages:{id:StageId;es:string;en:string}[]=[
+    {id:'body',es:'Carrocería',en:'Body shop'},
+    {id:'paint',es:'Pintura',en:'Paint shop'},
+    {id:'powertrain',es:'Instalar motor',en:'Powertrain'},
+    {id:'assembly',es:'Montaje final',en:'Assembly'},
+    {id:'inspection',es:'Control de calidad',en:'Inspection'},
+  ];
+  const cap=factory?(factory.stages?.[selectedStage]??factory.capacity):0;
   return <section className="ae2d">
-    <Headline kicker={label(es,'PLANTA INDUSTRIAL','ASSEMBLY PLANT')} title={label(es,'De piezas a automóviles','From parts to cars')} sub={label(es,'Una fábrica se construye por etapas. El simulador mantiene los costos, la producción y las restricciones reales.','Production flows through real simulation stages and industrial constraints.')}/>
+    <Headline kicker={label(es,'PLANTA INDUSTRIAL','ASSEMBLY PLANT')} title={label(es,'De piezas a automóviles','From parts to cars')} sub={label(es,'Entrá a cada sector de la fábrica y comprobá su capacidad real. Las inversiones y ampliaciones siguen usando el simulador.','Inspect production stations and their real capacities; changes use the existing industrial simulator.')}/>
+    {p.factories.length>0&&<label className="ae2d-factory-select">{label(es,'Tu fábrica','Your factory')}<select value={factory?.id??''} onChange={e=>setSelectedFactory(e.target.value)}>{p.factories.map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select></label>}
     <div className="ae2d-assembly">
-      {[
-        {id:1,es:'Materias primas',en:'Raw materials',sub:'01'},
-        {id:2,es:'Chasis y carrocería',en:'Chassis & body',sub:'02'},
-        {id:3,es:'Instalar motor',en:'Powertrain install',sub:'03'},
-        {id:4,es:'Pintura y acabados',en:'Paint & finish',sub:'04'},
-        {id:5,es:'Control de calidad',en:'Quality checks',sub:'05'},
-      ].map(x=><div className="ae2d-assembly-step" key={x.id}><span>{x.sub}</span><div className="ae2d-assembly-machine" aria-hidden="true"><span>⚙</span><i/></div><b>{label(es,x.es,x.en)}</b></div>)}
+      {stages.map((x,i)=><button type="button" className={'ae2d-assembly-step'+(selectedStage===x.id?' on':'')} aria-pressed={selectedStage===x.id} key={x.id} onClick={()=>setSelectedStage(x.id)}><span>{String(i+1).padStart(2,'0')}</span><div className="ae2d-assembly-machine" aria-hidden="true"><span>⚙</span><i/></div><b>{label(es,x.es,x.en)}</b></button>)}
+    </div>
+    <div className="ae2d-stage-detail">
+      <div><span className="ae2d-kicker">{label(es,'SECTOR SELECCIONADO','SELECTED STATION')}</span><h3>{label(es,stages.find(x=>x.id===selectedStage)!.es,stages.find(x=>x.id===selectedStage)!.en)}</h3><p>{factory?factory.name:label(es,'Todavía no construiste una planta.','You have not built a factory yet.')}</p></div>
+      <div><span>{label(es,'CAPACIDAD MENSUAL','MONTHLY CAPACITY')}</span><strong>{num(cap,lang)}</strong><small>{label(es,'vehículos por mes','cars per month')}</small></div>
+      <button className="ae2d-portal" onClick={()=>setView('factories')}>{label(es,'Gestionar este sector','Manage this station')} ↗</button>
     </div>
     <div className="ae2d-factory-info">
       <article><span>{label(es,'PLANTAS','PLANTS')}</span><strong>{p.factories.length}</strong><p>{label(es,'Talleres y plantas registrados en tu compañía','Factories currently owned by your company')}</p></article>
