@@ -18,7 +18,7 @@ import { unitCost } from './company';
 import { sharedVolume } from './families';
 import { contractIndex } from './supply';
 import { regionalFactor, regionalValue } from './regional';
-import { annualSupply, appeal, computeMarket, fuelPrice, modelWeights, priceResponse, segVolume, tariff, valuePrice, type MarketResult } from './market';
+import { annualSupply, appeal, computeMarket, fuelPrice, modelWeights, playerCoverage, priceResponse, segVolume, tariff, valuePrice, type MarketResult } from './market';
 
 /** Share of the list price the manufacturer keeps after the dealer's margin. */
 export const DEALER_NET = 0.88;
@@ -57,7 +57,7 @@ export function demandCurve(g: GameState, c: Company, m: VehicleModel, monthlySu
   const probe = { ...m, price: value } as VehicleModel;
   const rows: { vol: number; D: number; base: number; rest: number; t: number }[] = [];
   for (const r of REGION_IDS as RegionId[]) {
-    const D = c.reach[r] * weight;
+    const D = playerCoverage(c, c.reach[r] * weight, r, m.segment, g.year);
     if (D <= 0) continue;
     const key = `${r}:${m.segment}`;
     const cell = mk.cells[key];

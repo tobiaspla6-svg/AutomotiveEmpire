@@ -364,6 +364,13 @@ export function retireModel(g: GameState, modelId: string) {
   news(g, 'company', `${m.name} leaves production`, `${Math.round(m.cumulativeUnits).toLocaleString()} built.${stock}`);
 }
 
+/**
+ * Construction times in months. On the hard difficulty permits, contractors and commissioning take a quarter longer
+ * (Phase 4F): money tied up longer before a plant earns anything, and expansions arrive later than the demand that
+ * asked for them.
+ */
+export const BUILD_MONTHS = { plant: 15, expansion: 9, stage: 6 } as const;
+export const buildMonths = (g: Pick<GameState, 'difficulty'>, kind: keyof typeof BUILD_MONTHS) => Math.round(BUILD_MONTHS[kind] * (g.difficulty === 'hard' ? 1.25 : 1));
 export const maxAutomation = (c: Company) => (hasTech(c.tech, 'auto80') ? 0.9 : hasTech(c.tech, 'auto60') ? 0.8 : hasTech(c.tech, 'auto30') ? 0.6 : 0.3);
 export function buildFactory(g: GameState, name: string, country: string, capacity: number, automation: number): string | null {
   const c = player(g);
@@ -374,8 +381,8 @@ export function buildFactory(g: GameState, name: string, country: string, capaci
   const cost = factoryBuildCost(capacity, automation, g.year);
   const err = pay(c, g, cost, 'capex');
   if (err) return err;
-  c.factories.push({ id: uid(g, 'f'), name: name.trim() || `${COUNTRY[country].name} plant`, country, region: COUNTRY[country].region, capacity: 0, automation, lines: [], expansion: { add: capacity, monthsLeft: 15 }, builtYear: g.year, historical: false, disruption: 0, bookValue: cost });
-  news(g, 'company', `Ground broken for a new plant in ${COUNTRY[country].name}`, `Capacity ${capacity.toLocaleString()} units per month; production can start in 15 months.`);
+  c.factories.push({ id: uid(g, 'f'), name: name.trim() || `${COUNTRY[country].name} plant`, country, region: COUNTRY[country].region, capacity: 0, automation, lines: [], expansion: { add: capacity, monthsLeft: buildMonths(g, 'plant') }, builtYear: g.year, historical: false, disruption: 0, bookValue: cost });
+  news(g, 'company', `Ground broken for a new plant in ${COUNTRY[country].name}`, `Capacity ${capacity.toLocaleString()} units per month; production can start in ${buildMonths(g, 'plant')} months.`);
   return null;
 }
 export function expandFactory(g: GameState, factoryId: string, add: number): string | null {
@@ -387,7 +394,7 @@ export function expandFactory(g: GameState, factoryId: string, add: number): str
   const err = pay(c, g, cost, 'capex');
   if (err) return err;
   f.bookValue += cost;
-  f.expansion = { add, monthsLeft: 9 };
+  f.expansion = { add, monthsLeft: buildMonths(g, 'expansion') };
   return null;
 }
 export function upgradeAutomation(g: GameState, factoryId: string, to: number): string | null {
@@ -509,7 +516,7 @@ export function expandStage(g: GameState, factoryId: string, stage: StageId, add
   const cost = stageCost(f, stage, add, g.year);
   const err = pay(c, g, cost, 'capex'); if (err) return err;
   f.bookValue += cost;
-  f.stageWork = { stage, add: Math.round(add), monthsLeft: 6 };
+  f.stageWork = { stage, add: Math.round(add), monthsLeft: buildMonths(g, 'stage') };
   return null;
 }
 export const stageCost = (f: Factory, stage: StageId, add: number, year: number) => factoryBuildCost(add, f.automation, year) * STAGE_WEIGHT[stage] * 1.15;

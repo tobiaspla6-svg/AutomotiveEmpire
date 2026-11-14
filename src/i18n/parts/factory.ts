@@ -27,7 +27,7 @@ export const FACTORY = {
   'fac.since': ['since {year}', 'desde {year}'], 'fac.underConstruction': ['Under construction · {n} months', 'En construcción · {n} meses'], 'fac.disrupted': ['Output disrupted · {n} months', 'Producción interrumpida · {n} meses'], 'fac.expanding': ['+{n} in {m} months', '+{n} en {m} meses'],
   'fac.construction': ['Under construction: production can start in {n} months.', 'En construcción: la producción podrá empezar en {n} meses.'],
   'fac.line.add': ['Production line', 'Línea de producción'], 'fac.line.noModels': ['No model is ready to build yet', 'Ningún modelo está listo para fabricarse'],
-  'fac.expand': ['Expand +50% ({cost})', 'Ampliar +50% ({cost})'], 'fac.expand.hint': ['Adds half the present capacity; takes about a year.', 'Añade la mitad de la capacidad actual; tarda alrededor de un año.'], 'fac.expanded': ['Expansion ordered.', 'Ampliación encargada.'],
+  'fac.expand': ['Expand +50% ({cost})', 'Ampliar +50% ({cost})'], 'fac.expand.hint': ['Adds half the present capacity; takes {months} months.', 'Añade la mitad de la capacidad actual; tarda {months} meses.'], 'fac.expanded': ['Expansion ordered.', 'Ampliación encargada.'],
   'fac.automate': ['Automate +15% ({cost})', 'Automatizar +15% ({cost})'], 'fac.automate.hint': ['Fewer labour hours per car; higher fixed costs.', 'Menos horas de mano de obra por coche; costes fijos más altos.'], 'fac.automated': ['Automation upgraded.', 'Automatización mejorada.'],
   'fac.sell': ['Sell', 'Vender'], 'fac.confirmSell': ['Sell {name}? Its {lines} production line(s) stop at once and the cars they build can no longer be supplied from here. This cannot be undone.', '¿Vender {name}? Sus {lines} línea(s) de producción se detienen de inmediato y los coches que fabrican dejarán de suministrarse desde aquí. No se puede deshacer.'],
   'fac.confirmExpand': ['Expand {name} for {cost}? That is more than half of your {cash} in cash.', '¿Ampliar {name} por {cost}? Es más de la mitad de tus {cash} de caja.'],
@@ -39,7 +39,7 @@ export const FACTORY = {
   // flow diagram
   'fac.flow': ['Production flow', 'Flujo de producción'], 'fac.flow.parts': ['Components', 'Componentes'], 'fac.flow.partsOk': ['supplied', 'suministrados'], 'fac.flow.partsShort': ['{pct}% short', 'falta un {pct}%'],
   'fac.flow.used': ['{pct}% used', '{pct}% en uso'], 'fac.flow.bottleneck': ['Bottleneck', 'Cuello de botella'], 'fac.flow.out': ['cars built', 'coches fabricados'], 'fac.flow.select': ['Select this stage to expand it', 'Selecciona esta etapa para ampliarla'],
-  'fac.flow.expand': ['Expand the {stage} by {n} ({cost}, 6 months)', 'Ampliar {stage} en {n} ({cost}, 6 meses)'], 'fac.flow.ordered': ['Stage expansion ordered.', 'Ampliación de etapa encargada.'],
+  'fac.flow.expand': ['Expand the {stage} by {n} ({cost}, {months} months)', 'Ampliar {stage} en {n} ({cost}, {months} meses)'], 'fac.flow.ordered': ['Stage expansion ordered.', 'Ampliación de etapa encargada.'],
   'fac.flow.working': ['Expanding the {stage} by {n}: {m} months left.', 'Ampliando {stage} en {n}: faltan {m} meses.'],
   'fac.inspection': ['Quality inspection', 'Inspección de calidad'], 'fac.inspection.min': ['Minimal', 'Mínima'], 'fac.inspection.std': ['Standard', 'Estándar'], 'fac.inspection.max': ['Thorough', 'Exhaustiva'],
   'fac.inspection.hint': ['Thorough inspection costs labour on every car and lets fewer defects reach customers.', 'Una inspección exhaustiva cuesta mano de obra en cada coche y deja llegar menos defectos al cliente.'],
@@ -65,7 +65,7 @@ export const FACTORY = {
   'fac.new.countryFmt': ['{name} — {region}, wage about ${wage}/h in 2020 terms', '{name} — {region}, salario de unos {wage} $/h en valores de 2020'], 'fac.new.capacityFmt': ['{n} cars / month ({y} a year)', '{n} coches / mes ({y} al año)'],
   'fac.new.autoHint': ['Automation cuts labour hours per car but raises investment and fixed costs.', 'La automatización reduce las horas por coche pero eleva la inversión y los costes fijos.'],
   'fac.new.investment': ['Investment', 'Inversión'], 'fac.new.time': ['Construction time', 'Plazo de construcción'], 'fac.new.go': ['Build', 'Construir'], 'fac.new.started': ['Construction started.', 'Construcción iniciada.'],
-  'fac.new.confirm': ['Build this factory for {cost}? You hold {cash} in cash, so the rest will be borrowed and the plant earns nothing for 15 months.', '¿Construir esta fábrica por {cost}? Tienes {cash} en caja, así que el resto será deuda y la planta no ingresará nada durante 15 meses.'],
+  'fac.new.confirm': ['Build this factory for {cost}? You hold {cash} in cash, so the rest will be borrowed and the plant earns nothing for {months} months.', '¿Construir esta fábrica por {cost}? Tienes {cash} en caja, así que el resto será deuda y la planta no ingresará nada durante {months} meses.'],
 
   // ---- supply chain
   'sup': ['Suppliers', 'Proveedores'], 'sup.title': ['Supply chain', 'Cadena de suministro'],

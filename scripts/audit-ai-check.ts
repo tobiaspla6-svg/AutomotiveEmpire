@@ -4,7 +4,7 @@
 import { capitalOptions, newFounderGame, advanceMonth } from '../src/sim/world';
 import { resolveDecision } from '../src/sim/events';
 for (const year of [1965, 2015]) {
-  const g = newFounderGame({ name: 'T', country: 'Germany', year, capital: capitalOptions(year)[2], specialization: 'sports', factory: 2, engineers: 1, research: 1, workforce: 1, color: '#fff', difficulty: 'normal', historyMode: 'historical', seed: 99 });
+  const g = newFounderGame({ name: 'T', country: 'Germany', year, capital: capitalOptions(year)[2], specialization: 'sports', factory: 2, engineers: 1, research: 1, workforce: 1, color: '#fff', difficulty: (process.env.DIFF as 'normal' | 'hard') ?? 'normal', historyMode: 'historical', seed: 99 });
   for (let i = 0; i < 120; i++) { if (g.decision) resolveDecision(g, 0, g.rng); advanceMonth(g); }
   const ai = g.companies.filter((c) => !c.isPlayer);
   const units = (c: typeof ai[number]) => c.ledger.slice(-12).reduce((a, l) => a + l.units, 0);

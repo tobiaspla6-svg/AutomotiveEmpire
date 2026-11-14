@@ -316,7 +316,10 @@ export function respondToMarket(g: GameState, c: Company, mk: MarketResult) {
     if (m.status !== 'production' || m.salesHistory.length < 6) continue;
     const h = m.salesHistory, n = h.length;
     const recent = (h[n - 1] + h[n - 2] + h[n - 3]) / 3, before = (h[n - 4] + h[n - 5] + h[n - 6]) / 3;
-    if (!(recent < before * 0.9)) continue;
+    // on the hard difficulty rivals defend their sales sooner and harder (Phase 4F): a smaller loss triggers a price
+    // response and they follow cheaper rivals further — never below their minimum margin
+    const hard = g.difficulty === 'hard';
+    if (!(recent < before * (hard ? 0.95 : 0.9))) continue;
     // demand-weighted price/value ratio of the rivals this model meets
     let rw = 0, rv = 0;
     for (const [key, cell] of Object.entries(mk.cells)) {
@@ -332,9 +335,9 @@ export function respondToMarket(g: GameState, c: Company, mk: MarketResult) {
     const rivals = rv / rw;
     const value = valuePrice(m, c, g.year, annualSupply(c, m));
     const own = m.price / value;
-    if (own - rivals < 0.04) continue;
+    if (own - rivals < (hard ? 0.02 : 0.04)) continue;
     const floor = (m.lastUnitCost * (1 + strat.minMargin)) / DEALER_NET;
-    const next = Math.max(floor, value * (own - strat.priceFollow * Math.min(0.15, own - rivals)));
+    const next = Math.max(floor, value * (own - strat.priceFollow * (hard ? 1.5 : 1) * Math.min(hard ? 0.25 : 0.15, own - rivals)));
     if (next < m.price * 0.995) {
       if (row(m) && (m.lastDemand > 2000 || m.segment === 'supercar')) news(g, 'market', `${c.name} cuts the price of the ${m.name}`, `Rivals are selling comparable cars for less and ${m.name} sales are falling: the list price drops ${Math.round((1 - next / m.price) * 100)}%.`);
       m.price = next;

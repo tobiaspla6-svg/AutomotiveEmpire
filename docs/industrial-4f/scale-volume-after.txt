@@ -1,0 +1,2 @@
+line tooled for 600/month: sold 4800 cars in year 3, unit cost $16987, tooling paid $26.1M, cost of sales $83.0M, depreciation $12.1M, operating $-73.6M
+line tooled for 3000/month: sold 4800 cars in year 3, unit cost $16961, tooling paid $130.7M, cost of sales $82.8M, depreciation $16.7M, operating $-78.1M

@@ -1,0 +1,72 @@
+2015 mass   cap2 normal H  alive | y10 cap 600 units 7199 op -27M | y20 cap 600 units 7200 op -30M cash 384 debt 0 equity 453M (start 650) capex 190M maxDebt 0M trouble 0
+2015 mass   cap2 normal S1 alive | y10 cap 1350 units 16200 op -17M | y20 cap 3038 units 26884 op 1M cash 278 debt 0 equity 677M (start 650) capex 675M maxDebt 0M trouble 0
+2015 mass   cap2 normal S2 BANKRUPT y18 | y10 cap 2400 units 28800 op 16M | y20 cap - units - op -M cash - debt - equity -M (start 650) capex 1726M maxDebt 1093M trouble 7
+2015 mass   cap2 normal S3 alive | y10 cap 5000 units 60000 op 90M | y20 cap 5000 units 60471 op 71M cash 601 debt 0 equity 1312M (start 650) capex 1341M maxDebt 237M trouble 0
+2015 mass   cap2 normal S4 BANKRUPT y12 | y10 cap 4800 units 28800 op -82M | y20 cap - units - op -M cash - debt - equity -M (start 650) capex 804M maxDebt 583M trouble 7
+2015 mass   cap2 hard   H  alive | y10 cap 600 units 6749 op -28M | y20 cap 600 units 7200 op -25M cash 472 debt 0 equity 525M (start 650) capex 151M maxDebt 0M trouble 0
+2015 mass   cap2 hard   S1 alive | y10 cap 1350 units 15143 op -22M | y20 cap 3038 units 23253 op -17M cash 235 debt 0 equity 643M (start 650) capex 691M maxDebt 0M trouble 0
+2015 mass   cap2 hard   S2 alive | y10 cap 2400 units 26640 op 5M | y20 cap 4800 units 21108 op -56M cash 5 debt 68 equity 449M (start 650) capex 922M maxDebt 215M trouble 0
+2015 mass   cap2 hard   S3 alive | y10 cap 5000 units 56250 op 68M | y20 cap 5000 units 59726 op 62M cash 254 debt 0 equity 1005M (start 650) capex 1347M maxDebt 333M trouble 0
+2015 mass   cap2 hard   S4 BANKRUPT y16 | y10 cap 2400 units 27000 op -51M | y20 cap - units - op -M cash - debt - equity -M (start 650) capex 581M maxDebt 471M trouble 4
+2015 mass   cap3 normal H  alive | y10 cap 600 units 7199 op -39M | y20 cap 600 units 7200 op -49M cash 2730 debt 0 equity 2864M (start 2272) capex 394M maxDebt 0M trouble 0
+2015 mass   cap3 normal S1 alive | y10 cap 1350 units 16200 op -60M | y20 cap 10254 units 109679 op 135M cash 902 debt 0 equity 2958M (start 2272) capex 2930M maxDebt 0M trouble 0
+2015 mass   cap3 normal S2 alive | y10 cap 2400 units 28800 op -27M | y20 cap 19200 units 89395 op -103M cash 275 debt 89 equity 2883M (start 2272) capex 4110M maxDebt 404M trouble 0
+2015 mass   cap3 normal S3 alive | y10 cap 5000 units 60000 op -42M | y20 cap 5000 units 60000 op -18M cash 1280 debt 0 equity 2047M (start 2272) capex 2454M maxDebt 0M trouble 0
+2015 mass   cap3 normal S4 BANKRUPT y14 | y10 cap 4800 units 57600 op -157M | y20 cap - units - op -M cash - debt - equity -M (start 2272) capex 2896M maxDebt 1244M trouble 7
+2015 mass   cap3 hard   H  alive | y10 cap 600 units 6749 op -39M | y20 cap 600 units 7200 op -33M cash 2948 debt 0 equity 3024M (start 2272) capex 254M maxDebt 0M trouble 0
+2015 mass   cap3 hard   S1 alive | y10 cap 1350 units 15143 op -63M | y20 cap 10254 units 82717 op 65M cash 960 debt 0 equity 2947M (start 2272) capex 2910M maxDebt 0M trouble 0
+2015 mass   cap3 hard   S2 alive | y10 cap 2400 units 26640 op -36M | y20 cap 19200 units 71087 op -178M cash 128 debt 300 equity 2480M (start 2272) capex 4067M maxDebt 386M trouble 0
+2015 mass   cap3 hard   S3 alive | y10 cap 5000 units 56250 op -58M | y20 cap 5000 units 60000 op 40M cash 2161 debt 0 equity 2721M (start 2272) capex 1954M maxDebt 0M trouble 0
+2015 mass   cap3 hard   S4 BANKRUPT y16 | y10 cap 4800 units 53280 op -158M | y20 cap - units - op -M cash - debt - equity -M (start 2272) capex 2736M maxDebt 1305M trouble 4
+2015 sports cap2 normal H  alive | y10 cap 600 units 7199 op 53M | y20 cap 600 units 7200 op 95M cash 1599 debt 0 equity 1644M (start 632) capex 91M maxDebt 0M trouble 0
+2015 sports cap2 normal S1 alive | y10 cap 900 units 10800 op 118M | y20 cap 6836 units 57658 op 1149M cash 3856 debt 0 equity 5548M (start 632) capex 2090M maxDebt 0M trouble 0
+2015 sports cap2 normal S2 alive | y10 cap 2400 units 17746 op 209M | y20 cap 9600 units 64480 op 1227M cash 5575 debt 0 equity 7494M (start 632) capex 2694M maxDebt 0M trouble 0
+2015 sports cap2 normal S3 BANKRUPT y3 | y10 cap - units - op -M | y20 cap - units - op -M cash - debt - equity -M (start 632) capex 664M maxDebt 228M trouble 7
+2015 sports cap2 normal S4 alive | y10 cap 2400 units 28800 op 268M | y20 cap 19200 units 158198 op 2389M cash 8685 debt 0 equity 12712M (start 632) capex 6035M maxDebt 335M trouble 0
+2015 sports cap2 hard   H  alive | y10 cap 600 units 6459 op 34M | y20 cap 600 units 7278 op 86M cash 1442 debt 0 equity 1492M (start 632) capex 93M maxDebt 0M trouble 0
+2015 sports cap2 hard   S1 alive | y10 cap 900 units 9420 op 81M | y20 cap 4557 units 55821 op 1065M cash 3360 debt 0 equity 4568M (start 632) capex 1640M maxDebt 0M trouble 0
+2015 sports cap2 hard   S2 alive | y10 cap 1200 units 12420 op 124M | y20 cap 9600 units 64606 op 1126M cash 3654 debt 0 equity 5991M (start 632) capex 2957M maxDebt 0M trouble 0
+2015 sports cap2 hard   S3 BANKRUPT y3 | y10 cap - units - op -M | y20 cap - units - op -M cash - debt - equity -M (start 632) capex 664M maxDebt 198M trouble 4
+2015 sports cap2 hard   S4 alive | y10 cap 4800 units 49680 op 514M | y20 cap 19200 units 177921 op 2400M cash 9658 debt 0 equity 14438M (start 632) capex 7643M maxDebt 847M trouble 0
+2015 sports cap3 normal H  alive | y10 cap 600 units 7199 op 51M | y20 cap 600 units 7200 op 92M cash 4185 debt 0 equity 4241M (start 2256) capex 126M maxDebt 0M trouble 0
+2015 sports cap3 normal S1 alive | y10 cap 1350 units 16200 op 199M | y20 cap 6836 units 64984 op 1297M cash 8472 debt 0 equity 10009M (start 2256) capex 2137M maxDebt 0M trouble 0
+2015 sports cap3 normal S2 alive | y10 cap 2400 units 29020 op 412M | y20 cap 9600 units 65212 op 1260M cash 9795 debt 0 equity 11478M (start 2256) capex 2596M maxDebt 0M trouble 0
+2015 sports cap3 normal S3 alive | y10 cap 5000 units 60000 op 864M | y20 cap 5000 units 60849 op 1290M cash 15730 debt 0 equity 16124M (start 2256) capex 1269M maxDebt 0M trouble 0
+2015 sports cap3 normal S4 alive | y10 cap 4800 units 57600 op 640M | y20 cap 19200 units 155358 op 2358M cash 14818 debt 0 equity 18388M (start 2256) capex 5809M maxDebt 0M trouble 0
+2015 sports cap3 hard   H  alive | y10 cap 600 units 6300 op 35M | y20 cap 600 units 7200 op 85M cash 4193 debt 0 equity 4246M (start 2256) capex 99M maxDebt 0M trouble 0
+2015 sports cap3 hard   S1 alive | y10 cap 900 units 9436 op 89M | y20 cap 4557 units 35409 op 643M cash 5422 debt 0 equity 6479M (start 2256) capex 1294M maxDebt 0M trouble 0
+2015 sports cap3 hard   S2 alive | y10 cap 2400 units 23365 op 285M | y20 cap 9600 units 71161 op 1273M cash 8960 debt 0 equity 10976M (start 2256) capex 3012M maxDebt 0M trouble 0
+2015 sports cap3 hard   S3 alive | y10 cap 5000 units 52500 op 598M | y20 cap 5000 units 60000 op 1149M cash 13600 debt 0 equity 14180M (start 2256) capex 1952M maxDebt 0M trouble 0
+2015 sports cap3 hard   S4 alive | y10 cap 4800 units 49680 op 475M | y20 cap 19200 units 168798 op 2331M cash 13611 debt 0 equity 17684M (start 2256) capex 6868M maxDebt 0M trouble 0
+workshop sports cap1 eng25 normal H  alive | y10 cap 60 units 720 op -8M | y20 cap 60 units 720 op -10M cash 0 debt 11 equity -2M (start 121) capex 25M maxDebt 11M trouble 0
+workshop sports cap1 eng25 normal S1 alive | y10 cap 135 units 1620 op -10M | y20 cap 305 units 3648 op 30M cash 62 debt 0 equity 111M (start 121) capex 84M maxDebt 0M trouble 0
+workshop sports cap1 eng25 hard   H  alive | y10 cap 60 units 630 op -9M | y20 cap 60 units 720 op -9M cash 0 debt 6 equity 1M (start 121) capex 20M maxDebt 6M trouble 0
+workshop sports cap1 eng25 hard   S1 alive | y10 cap 135 units 1414 op -11M | y20 cap 135 units 1620 op -7M cash 0 debt 43 equity -27M (start 121) capex 43M maxDebt 43M trouble 0
+workshop sports cap1 eng5  normal H  alive | y10 cap 60 units 720 op -4M | y20 cap 60 units 720 op -5M cash 86 debt 0 equity 96M (start 121) capex 28M maxDebt 0M trouble 0
+workshop sports cap1 eng5  normal S1 alive | y10 cap 135 units 1620 op -7M | y20 cap 1031 units 10160 op 162M cash 314 debt 0 equity 540M (start 121) capex 281M maxDebt 0M trouble 0
+workshop sports cap1 eng5  hard   H  alive | y10 cap 60 units 630 op -5M | y20 cap 60 units 720 op -4M cash 97 debt 0 equity 104M (start 121) capex 20M maxDebt 0M trouble 0
+workshop sports cap1 eng5  hard   S1 alive | y10 cap 135 units 1414 op -8M | y20 cap 687 units 7533 op 99M cash 202 debt 0 equity 350M (start 121) capex 194M maxDebt 0M trouble 0
+workshop sports cap2 eng25 normal H  alive | y10 cap 60 units 720 op -10M | y20 cap 60 units 720 op -12M cash 835 debt 0 equity 852M (start 647) capex 51M maxDebt 0M trouble 0
+workshop sports cap2 eng25 normal S1 alive | y10 cap 135 units 1620 op -16M | y20 cap 1031 units 12372 op 184M cash 863 debt 0 equity 1219M (start 647) capex 541M maxDebt 0M trouble 0
+workshop sports cap2 eng25 hard   H  alive | y10 cap 60 units 630 op -10M | y20 cap 60 units 720 op -10M cash 859 debt 0 equity 869M (start 647) capex 33M maxDebt 0M trouble 0
+workshop sports cap2 eng25 hard   S1 alive | y10 cap 135 units 1414 op -17M | y20 cap 1031 units 8335 op 87M cash 703 debt 0 equity 1031M (start 647) capex 487M maxDebt 0M trouble 0
+workshop sports cap2 eng5  normal H  alive | y10 cap 60 units 720 op -6M | y20 cap 60 units 720 op -7M cash 908 debt 0 equity 925M (start 646) capex 51M maxDebt 0M trouble 0
+workshop sports cap2 eng5  normal S1 alive | y10 cap 135 units 1620 op -12M | y20 cap 1031 units 12372 op 187M cash 919 debt 0 equity 1286M (start 646) capex 556M maxDebt 0M trouble 0
+workshop sports cap2 eng5  hard   H  alive | y10 cap 60 units 630 op -6M | y20 cap 60 units 720 op -5M cash 932 debt 0 equity 942M (start 646) capex 33M maxDebt 0M trouble 0
+workshop sports cap2 eng5  hard   S1 alive | y10 cap 135 units 1414 op -13M | y20 cap 1031 units 8335 op 91M cash 763 debt 0 equity 1099M (start 646) capex 499M maxDebt 0M trouble 0
+workshop luxury cap1 eng25 normal H  alive | y10 cap 60 units 720 op -7M | y20 cap 60 units 720 op -9M cash 0 debt 32 equity -25M (start 100) capex 19M maxDebt 32M trouble 0
+workshop luxury cap1 eng25 normal S1 BANKRUPT y20 | y10 cap 135 units 1620 op -8M | y20 cap - units - op -M cash - debt - equity -M (start 100) capex 39M maxDebt 91M trouble 7
+workshop luxury cap1 eng25 hard   H  BANKRUPT y20 | y10 cap 60 units 630 op -8M | y20 cap - units - op -M cash - debt - equity -M (start 100) capex 20M maxDebt 47M trouble 4
+workshop luxury cap1 eng25 hard   S1 BANKRUPT y19 | y10 cap 135 units 1414 op -10M | y20 cap - units - op -M cash - debt - equity -M (start 100) capex 39M maxDebt 86M trouble 4
+workshop luxury cap1 eng5  normal H  alive | y10 cap 60 units 720 op -3M | y20 cap 60 units 720 op -5M cash 66 debt 0 equity 74M (start 99) capex 23M maxDebt 0M trouble 0
+workshop luxury cap1 eng5  normal S1 alive | y10 cap 135 units 1620 op -5M | y20 cap 458 units 4729 op 58M cash 102 debt 0 equity 211M (start 99) capex 138M maxDebt 0M trouble 0
+workshop luxury cap1 eng5  hard   H  alive | y10 cap 60 units 630 op -5M | y20 cap 60 units 720 op -4M cash 57 debt 0 equity 65M (start 99) capex 22M maxDebt 0M trouble 0
+workshop luxury cap1 eng5  hard   S1 alive | y10 cap 135 units 1414 op -7M | y20 cap 203 units 2436 op 4M cash 50 debt 0 equity 78M (start 99) capex 61M maxDebt 0M trouble 0
+workshop luxury cap2 eng25 normal H  alive | y10 cap 60 units 720 op -7M | y20 cap 60 units 720 op -10M cash 850 debt 0 equity 859M (start 626) capex 25M maxDebt 0M trouble 0
+workshop luxury cap2 eng25 normal S1 alive | y10 cap 135 units 1620 op -12M | y20 cap 1031 units 12372 op 227M cash 925 debt 0 equity 1305M (start 626) capex 543M maxDebt 0M trouble 0
+workshop luxury cap2 eng25 hard   H  alive | y10 cap 60 units 630 op -9M | y20 cap 60 units 720 op -9M cash 850 debt 0 equity 857M (start 626) capex 23M maxDebt 0M trouble 0
+workshop luxury cap2 eng25 hard   S1 alive | y10 cap 135 units 1414 op -14M | y20 cap 1031 units 8335 op 102M cash 707 debt 0 equity 1056M (start 626) capex 486M maxDebt 0M trouble 0
+workshop luxury cap2 eng5  normal H  alive | y10 cap 60 units 720 op -4M | y20 cap 60 units 720 op -5M cash 923 debt 0 equity 932M (start 625) capex 25M maxDebt 0M trouble 0
+workshop luxury cap2 eng5  normal S1 alive | y10 cap 135 units 1620 op -8M | y20 cap 1031 units 12372 op 231M cash 985 debt 0 equity 1374M (start 625) capex 556M maxDebt 0M trouble 0
+workshop luxury cap2 eng5  hard   H  alive | y10 cap 60 units 630 op -5M | y20 cap 60 units 720 op -4M cash 923 debt 0 equity 931M (start 625) capex 23M maxDebt 0M trouble 0
+workshop luxury cap2 eng5  hard   S1 alive | y10 cap 135 units 1414 op -10M | y20 cap 1031 units 8335 op 106M cash 771 debt 0 equity 1127M (start 625) capex 495M maxDebt 0M trouble 0
