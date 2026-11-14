@@ -30,9 +30,15 @@ The bonnet opens between frames **1 and 40** to 54 degrees. Every piece is still
 | Material datablocks | **32** |
 | Committed hosted GLB size | **4,215,764 bytes** |
 | Native Blender source size | **6,638,469 bytes** |
+| Evaluated mesh + curve + modifier triangles, LOD0 | **145,728** |
+| LOD1 evaluated triangles (dry run) | **113,727** |
+| LOD2 evaluated triangles (dry run, after engine batch reduction) | **64,397** |
+| Experimental BODY-only GLB | **1,429,228 bytes** |
+| Experimental ENGINE-only GLB | **1,305,356 bytes** |
+| Tested body animations | **1 track, bonnet node present** |
 | Engine versus closed hood vertex penetrations | **0** (post-correction sample) |
 
-**Caveats:** The measured triangles exclude the tessellation of Bezier curves and evaluated modifiers, so final exported triangle counts can be higher. Zero intersections is a targeted per-vertex hood-envelope check, **not** a full vehicle collision-detection or manufacturability certification.
+**Caveats:** The raw 68,912 triangles count excludes curves and evaluated modifiers; the later evaluated LOD counts include them. The final packaged artifacts are still subject to build verification. Zero intersections is a targeted per-vertex hood-envelope check, **not** a full vehicle collision-detection or manufacturability certification.
 
 ## Rebuild and export
 
@@ -54,6 +60,7 @@ The game should load `AE_GTRS_BODY_LOD*.glb` first, then load `AE_GTRS_ENGINE_LO
 | Resource | Hero/LOD0 | Standard/LOD1 | Distance/LOD2 |
 |---|---:|---:|---:|
 | Combined GLB max | 16 MB | 12 MB | 8 MB |
+| Observed evaluated geometry (includes curves) | 145,728 tris | 113,727 tris | 64,397 tris |
 | Body shading | full | reduced | simplified |
 | V8 wiring/fasteners | complete | reduced | simplified or hidden |
 | Motor downloaded if hood shut | no, on-demand | no, on-demand | no, on-demand |
