@@ -31,6 +31,10 @@ const ES: Record<string, string> = {
   'Skeleton crew (25)': 'Equipo mínimo (25)', 'Design office (80)': 'Oficina de diseño (80)', 'Engineering centre (220)': 'Centro de ingeniería (220)',
   'Supplier technology (4 years behind)': 'Tecnología de proveedor (4 años por detrás)', 'Up to date (1 year behind)': 'Al día (1 año por detrás)', 'Advanced laboratory (1 year ahead)': 'Laboratorio avanzado (1 año por delante)',
   'Craftsmen (hand-built)': 'Artesanos (a mano)', 'Conventional line': 'Línea convencional', 'Automated line': 'Línea automatizada', Privateer: 'Privado', Midfield: 'Media parrilla', 'Front-runner': 'Puntero',
+  // trim levels
+  Entry: 'Acceso', Mid: 'Medio', Premium: 'Premium', Sport: 'Sport', Performance: 'Performance', 'Limited Edition': 'Edición limitada',
+  'The price leader: smallest engine, basic cabin.': 'El de precio de entrada: motor más pequeño, habitáculo básico.', 'The volume seller.': 'El que más se vende.', 'Better cabin and more equipment at a higher price.': 'Mejor habitáculo y más equipamiento a mayor precio.',
+  'Stronger engine, firmer tuning, sport tyres.': 'Motor más potente, tarado más firme, neumáticos deportivos.', 'Everything included.': 'Todo incluido.', 'The most powerful variant, track tyres.': 'La variante más potente, neumáticos de circuito.', 'A numbered run: scarcity lifts what buyers will pay.': 'Una serie numerada: la escasez eleva lo que el comprador paga.',
   // technology areas
   'Chassis & materials': 'Chasis y materiales', Aerodynamics: 'Aerodinámica', 'Electronics & safety': 'Electrónica y seguridad', Manufacturing: 'Fabricación',
   // racing categories

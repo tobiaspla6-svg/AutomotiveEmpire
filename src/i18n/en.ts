@@ -6,9 +6,10 @@ import { FACTORY } from './parts/factory';
 import { MOTORSPORT } from './parts/motorsport';
 import { CORPORATE } from './parts/corporate';
 import { SETUP } from './parts/setup';
+import { RANGE } from './parts/range';
 
 export const en = {
-  ...pick(STUDIO, 0), ...pick(FACTORY, 0), ...pick(MOTORSPORT, 0), ...pick(CORPORATE, 0), ...pick(SETUP, 0),
+  ...pick(STUDIO, 0), ...pick(FACTORY, 0), ...pick(MOTORSPORT, 0), ...pick(CORPORATE, 0), ...pick(SETUP, 0), ...pick(RANGE, 0),
   // ---- common
   'common.close': 'Close', 'common.done': 'Done', 'common.open': 'Open', 'common.loading': 'Loading…',
   'mode.ceo': 'Historical CEO', 'mode.founder': 'Company Founder', 'mode.motorsport': 'Motorsport Director',

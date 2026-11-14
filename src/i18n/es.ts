@@ -7,9 +7,10 @@ import { FACTORY } from './parts/factory';
 import { MOTORSPORT } from './parts/motorsport';
 import { CORPORATE } from './parts/corporate';
 import { SETUP } from './parts/setup';
+import { RANGE } from './parts/range';
 
 export const es: Record<MessageKey, string> = {
-  ...pick(STUDIO, 1), ...pick(FACTORY, 1), ...pick(MOTORSPORT, 1), ...pick(CORPORATE, 1), ...pick(SETUP, 1),
+  ...pick(STUDIO, 1), ...pick(FACTORY, 1), ...pick(MOTORSPORT, 1), ...pick(CORPORATE, 1), ...pick(SETUP, 1), ...pick(RANGE, 1),
   // ---- común
   'common.close': 'Cerrar', 'common.done': 'Listo', 'common.open': 'Abrir', 'common.loading': 'Cargando…',
   'mode.ceo': 'CEO histórico', 'mode.founder': 'Fundador de marca', 'mode.motorsport': 'Director de motorsport',
