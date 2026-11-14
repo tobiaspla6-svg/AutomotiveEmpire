@@ -12,6 +12,7 @@ import './styles/studio.css';
 import './styles/factory.css';
 import './styles/motorsport.css';
 import './styles/corporate.css';
+import './styles/empire2d.css';
 import './styles.css';
 import { App } from './App';
 
