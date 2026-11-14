@@ -265,14 +265,19 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
     if (sm.factor < 0.999) news(g, 'company', 'Component shortage', `Missing ${sm.short.map((k) => CATEGORY_NAME[k].toLowerCase()).join(' and ')} cut this month's output by ${Math.round((1 - sm.factor) * 100)}%.`);
   }
   for (const f of c.factories) f.lastOutput = 0;
+  // purchasing volume: suppliers price parts on the cars actually built this month (all lines of the model), not on
+  // the capacity its lines are tooled for — idle tooling buys no volume discount (Phase 4F)
+  const built = new Map<string, number>();
+  for (const x of plan) built.set(x.m.id, (built.get(x.m.id) ?? 0) + x.n * sm.factor);
   // pass 2: build
   for (const item of plan) {
-    const { f, m, totalCap } = item;
+    const { f, m } = item;
     let n = item.n * sm.factor;
     {
       if (n <= 0) continue;
       f.lastOutput = (f.lastOutput ?? 0) + n;
-      const shared = sharedVolume(c, m, totalCap);
+      const volume = Math.max(1, built.get(m.id) ?? n);
+      const shared = sharedVolume(c, m, volume);
       if (hasTrims(m)) {
         // the line builds the trims in their planned mix; a limited edition stops at its cap
         const mix = productionMix(m);
@@ -284,7 +289,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
           const nt = Math.max(0, Math.min(n * share, t.cap !== undefined ? t.cap - t.built - already : Infinity));
           if (nt <= 0) continue;
           const tv = trimView(m, t);
-          const uc = unitCost(g, tv, f, totalCap, shared, partsIndex(categoryShares(tv.stats), sm.index, usesBatteries(tv.stats))) + personalCost(t.personal ?? 0) * t.price;
+          const uc = unitCost(g, tv, f, volume, shared, partsIndex(categoryShares(tv.stats), sm.index, usesBatteries(tv.stats))) + personalCost(t.personal ?? 0) * t.price;
           produced.set(trimKey(m, t), already + nt);
           costSum.set(trimKey(m, t), (costSum.get(trimKey(m, t)) ?? 0) + nt * uc);
           L.production += nt * uc;
@@ -294,7 +299,7 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
         produced.set(m.id, (produced.get(m.id) ?? 0) + n);
         continue;
       }
-      const uc = unitCost(g, m, f, totalCap, shared, partsIndex(categoryShares(m.stats), sm.index, usesBatteries(m.stats))) + personalCost(m.personal ?? 0) * m.price;
+      const uc = unitCost(g, m, f, volume, shared, partsIndex(categoryShares(m.stats), sm.index, usesBatteries(m.stats))) + personalCost(m.personal ?? 0) * m.price;
       produced.set(m.id, (produced.get(m.id) ?? 0) + n);
       costSum.set(m.id, (costSum.get(m.id) ?? 0) + n * uc);
       L.production += n * uc; // paid now, held in inventory until the car is sold
@@ -472,7 +477,8 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   }
   if (wSum > 0) {
     // +8: familiarity of an established marque lifts its image above the bare product scores
-    c.prestige += (clamp(pre2 / wSum + 8 + 0.4 * c.msGlow, 0, 100) - c.prestige) * 0.008;
+    // on the hard difficulty buyers are slower to grant a new badge the standing of its cars (Phase 4F)
+    c.prestige += (clamp(pre2 / wSum + 8 + 0.4 * c.msGlow, 0, 100) - c.prestige) * (g.difficulty === 'hard' ? 0.005 : 0.008);
     c.reliabilityRep += (rel / wSum - c.reliabilityRep) * 0.02;
     c.sportiness += (clamp(perf / wSum + c.msGlow, 0, 100) - c.sportiness) * 0.015;
   } else if (c.motorsport) {
@@ -482,7 +488,9 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
   c.msGlow *= 0.97;
   const intensity = (c.marketingBudget * 12) / (annualRevenue(c) + 50e6 * cpi(g.year));
   const awTarget = clamp(32 + 55 * (1 - Math.exp(-intensity / 0.03)) + c.prestige / 10 + 0.5 * c.msGlow, 0, 100);
-  for (const r of REGION_IDS) c.awareness[r] += ((c.reach[r] > 0 ? awTarget : awTarget * 0.4) - c.awareness[r]) * 0.06;
+  // buyers get to know a brand more slowly on the hard difficulty (Phase 4F)
+  const awRate = g.difficulty === 'hard' ? 0.04 : 0.06;
+  for (const r of REGION_IDS) c.awareness[r] += ((c.reach[r] > 0 ? awTarget : awTarget * 0.4) - c.awareness[r]) * awRate;
 
   // ---- solvency: a cash shortfall is drawn on the credit line
   if (c.cash < 0) { L.financingCash += -c.cash; c.debt += -c.cash; c.cash = 0; }

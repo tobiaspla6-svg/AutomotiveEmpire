@@ -13,7 +13,7 @@ import { CATEGORIES, CATEGORY_NAME, IN_HOUSE, SUPPLIER_BY_ID, suppliersFor } fro
 import { estimateUnitCost, factoryBuildCost, factoryFixedCost, lineShareUsed, toolingCost } from '../sim/company';
 import {
   addLine, automationCost, buildFactory, buildInHouse, endContract, expandFactory, expandStage, maxAutomation, removeLine, sellFactory, setInspection,
-  setLineTarget, setSafetyStock, signContract, stageCost, upgradeAutomation,
+  setLineTarget, setSafetyStock, signContract, stageCost, upgradeAutomation, buildMonths,
 } from '../sim/actions';
 import { bottleneck, capacityRef, effectiveCapacity, inHouseCost, inspectionOf, quote, STAGES, stagesOf, supplierCapacity } from '../sim/supply';
 import { DEALER_NET } from '../sim/pricing';
@@ -167,7 +167,7 @@ function PlantCard({ f, defaultOpen }: { f: Factory; defaultOpen: boolean }) {
         </div>
         <div className="row wrap plant-actions">
           {f.capacity > 0 && <button className="btn sm primary" data-action="add-line" disabled={!buildable.length || used > 0.999} title={!buildable.length ? t('fac.line.noModels') : undefined} onClick={() => setLine(true)}><Icon name="vehicle" size={14} />{t('fac.line.add')}</button>}
-          {f.capacity > 0 && !f.expansion && <button className="btn sm" onClick={expand} title={t('fac.expand.hint')}>{t('fac.expand', { cost: m$(expandCost) })}</button>}
+          {f.capacity > 0 && !f.expansion && <button className="btn sm" onClick={expand} title={t('fac.expand.hint', { months: buildMonths(g, 'expansion') })}>{t('fac.expand', { cost: m$(expandCost) })}</button>}
           {f.capacity > 0 && f.automation < mAuto - 0.01 && <button className="btn sm" onClick={() => act((gg) => upgradeAutomation(gg, f.id, nextAuto), t('fac.automated'))} title={t('fac.automate.hint')}>{t('fac.automate', { cost: m$(automationCost(f.capacity, f.automation, nextAuto, g.year)) })}</button>}
           <button className="btn sm danger" onClick={sell}>{t('fac.sell')}</button>
           {f.capacity > 0 && <button className="iconbtn" aria-expanded={open} aria-label={open ? t('fac.collapse') : t('fac.expandCard')} title={open ? t('fac.collapse') : t('fac.expandCard')} onClick={() => setOpen(!open)}><Icon name={open ? 'up' : 'down'} size={16} /></button>}
@@ -259,7 +259,7 @@ function Flow({ f }: { f: Factory }) {
       </ol>
       <div className="flow-controls">
         {f.stageWork ? <span className="small muted">{t('fac.flow.working', { stage: t(k(`stage.${f.stageWork.stage}`)).toLowerCase(), n: n(f.stageWork.add), m: f.stageWork.monthsLeft })}</span>
-          : <button className="btn sm" data-action="expand-stage" onClick={() => act((gg) => expandStage(gg, f.id, stage, add), t('fac.flow.ordered'))}>{t('fac.flow.expand', { stage: t(k(`stage.${stage}`)).toLowerCase(), n: n(add), cost: money(stageCost(f, stage, add, g.year), lang) })}</button>}
+          : <button className="btn sm" data-action="expand-stage" onClick={() => act((gg) => expandStage(gg, f.id, stage, add), t('fac.flow.ordered'))}>{t('fac.flow.expand', { stage: t(k(`stage.${stage}`)).toLowerCase(), n: n(add), cost: money(stageCost(f, stage, add, g.year), lang), months: buildMonths(g, 'stage') })}</button>}
         <div className="flow-inspect"><Slider label={t('fac.inspection')} value={inspectionOf(f)} min={0} max={1} step={0.05} onChange={(v) => act((gg) => setInspection(gg, f.id, v))} fmt={(v) => t(v < 0.3 ? 'fac.inspection.min' : v < 0.7 ? 'fac.inspection.std' : 'fac.inspection.max')} hint={t('fac.inspection.hint')} /></div>
       </div>
     </div>
@@ -313,7 +313,7 @@ function BuildFactory({ onClose }: { onClose: () => void }) {
       <StatLine label={t('fac.new.time')} value={t('st.months', { n: 15 })} />
       <ImpactPreview deps={[nf.country, nf.capacity, auto]} horizon={18} run={run} />
       <div className="row end"><button className="btn" onClick={onClose}>{t('confirm.cancel')}</button>
-        <button className="btn primary" data-action="confirm-build" onClick={() => { if (cost > p.cash) ask(t('fac.new.confirm', { cost: money(cost, lang), cash: money(p.cash, lang) }), commit); else commit(); }}>{t('fac.new.go')}</button></div>
+        <button className="btn primary" data-action="confirm-build" onClick={() => { if (cost > p.cash) ask(t('fac.new.confirm', { cost: money(cost, lang), cash: money(p.cash, lang), months: buildMonths(g, 'plant') }), commit); else commit(); }}>{t('fac.new.go')}</button></div>
     </Modal>
   );
 }

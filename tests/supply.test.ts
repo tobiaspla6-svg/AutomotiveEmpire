@@ -51,8 +51,17 @@ describe('suppliers and contracts', () => {
     const base = clone(g);
     for (const [cat, id] of [['metals', 'yellow-sea-metal'], ['electronics', 'pearl-river-elec'], ['tires', 'jade-rubber'], ['interior', 'mekong-materials']] as const) expect(A.signContract(g, cat, id, 1400, 5)).toBeNull();
     expect(contractIndex(p, p.models[0])).toBeLessThan(0.97);
-    step(g); step(base);
-    expect(perCar(g)).toBeLessThan(perCar(base) * 0.98);
+    // compare months in which both plants built the same number of cars: parts are priced on the cars actually built
+    // (Phase 4F), so a month cut short by a supplier disruption costs more per car whatever the contract
+    let compared = 0;
+    for (let i = 0; i < 8 && compared < 2; i++) {
+      step(g); step(base);
+      const out = player(g).factories[0].lastOutput ?? 0, outBase = player(base).factories[0].lastOutput ?? 0;
+      if (Math.abs(out - outBase) > 0.5) continue;
+      expect(perCar(g)).toBeLessThan(perCar(base) * 0.98);
+      compared++;
+    }
+    expect(compared).toBeGreaterThan(0);
     expect(player(base).supply).toBeUndefined();
   });
   it('take-or-pay: committing far more than you build is charged; within 90 % it is not', () => {

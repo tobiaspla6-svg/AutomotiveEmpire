@@ -177,9 +177,10 @@ export function platformKey(m: VehicleModel): string {
 /** Monthly rate a model is built at, for sharing purposes: line capacity for the player, recent sales for AI makers. */
 function rate(c: Company, m: VehicleModel): number {
   if (c.isPlayer) {
+    // what the car's lines are building: its demand, never more than their capacity (Phase 4F: not the idle capacity)
     let cap = 0;
     for (const f of c.factories) for (const l of f.lines) if (l.modelId === m.id) cap += f.capacity * l.share;
-    return cap;
+    return m.lastDemand > 0 ? Math.min(cap, m.lastDemand) : cap;
   }
   return m.lastDemand;
 }

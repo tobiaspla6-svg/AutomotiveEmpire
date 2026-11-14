@@ -55,7 +55,7 @@ describe('engineering, cost, price and demand lead to commercial results', () =>
       const g = founder({ year: 2005, capital: capitalOptions(2005)[2] });
       const p = player(g);
       A.investDealers(g, 'EU', 60e6);
-      launch(g, 'Base', defaultVehicle(2005, 'hatch'), 'budget', 1200);
+      launch(g, 'Base', defaultVehicle(2005, 'hatch'), 'budget', 300); // a line sized to what the car sells (parts are priced on the cars built, Phase 4F)
       let plants = 0;
       // keep building large plants for demand that does not exist yet, until the lenders refuse
       if (expand) for (const c of ['Mexico', 'Spain', 'Poland', 'Brazil', 'China', 'India', 'Turkey', 'Thailand']) if (A.buildFactory(g, `Plant ${c}`, c, 1200, 0.5) === null) plants++;

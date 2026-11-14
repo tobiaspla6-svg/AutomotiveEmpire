@@ -207,6 +207,22 @@ export interface MarketResult {
   cells: Record<string, { volume: number; entries: MarketEntry[]; other: number }>; // `${region}:${seg}`
 }
 
+/**
+ * Distribution a model can actually use in one market cell (Phase 4F). A dealer network reaches buyers; it cannot reach
+ * more buyers than the segment has. The player's network for a model therefore counts in full while it is small next
+ * to the segment and saturates towards the segment's yearly volume as it grows beyond it:
+ *     effective = V · (1 − e^(−D / V))       (V = the segment's yearly volume in that region)
+ * A network a tenth of the segment counts 95 %, one as large as the segment 63 %, three times the segment 95 % of V.
+ * AI makers are untouched: their reach is, by construction, the volume they actually build and sell, which never
+ * outgrows the segments they sell in; the player's network is bought freely and could (before this) be made many
+ * times larger than the segment and take most of it with a single model.
+ */
+export function playerCoverage(c: Company, D: number, r: RegionId, seg: SegmentId, year: number): number {
+  if (!c.isPlayer || D <= 0) return D;
+  const V = segVolume(r, seg, year);
+  return V > 0 ? V * (1 - Math.exp(-D / V)) : D;
+}
+
 export function computeMarket(g: GameState): MarketResult {
   const fuel = fuelPrice(g);
   const cells: MarketResult['cells'] = {};
@@ -228,7 +244,7 @@ export function computeMarket(g: GameState): MarketResult {
           const tSupply = Math.max(12, t.cap !== undefined ? Math.min(supply * share, t.cap) : supply * share);
           const value = valuePrice(view, c, g.year, tSupply);
           for (const r of REGION_IDS) {
-            const D = c.reach[r] * wm * share;
+            const D = playerCoverage(c, c.reach[r] * wm, r, m.segment, g.year) * share;
             if (D <= 0) continue;
             cells[`${r}:${m.segment}`].entries.push({ company: c, model: view, D, q: appeal(g, c, view, r, fuel, value), demand: 0 });
           }
@@ -237,7 +253,7 @@ export function computeMarket(g: GameState): MarketResult {
       }
       const value = valuePrice(m, c, g.year, annualSupply(c, m, wm));
       for (const r of REGION_IDS) {
-        const D = c.reach[r] * wm;
+        const D = playerCoverage(c, c.reach[r] * wm, r, m.segment, g.year);
         if (D <= 0) continue;
         cells[`${r}:${m.segment}`].entries.push({ company: c, model: m, D, q: appeal(g, c, m, r, fuel, value), demand: 0 });
       }
