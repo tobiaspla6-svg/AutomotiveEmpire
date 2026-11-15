@@ -21,6 +21,7 @@ import { ICONIC_ENGINES, type IconicEngine } from '../data/iconicEngines';
 import { BLUEPRINTS, MILESTONES, RARITY, REDEEM_LEVEL, effectiveOdds, availableMilestones, equipPart, fixedPrice, lifetimeSales, openSalesChest, redeemPart, type ChestResult, type PartSlot } from '../sim/progression';
 import { ACHIEVEMENTS, achievementViews, claimAchievement, companyLevel, LEVELS, nextLevelXp, type AchievementView } from '../sim/achievements';
 import { Car2D, type WheelLook } from './art2d/Car2D';
+import { HeroShowroom2D } from './art2d/HeroShowroom2D';
 import { Engine2D } from './art2d/Engine2D';
 import { Chassis2D, Gearbox2D, Suspension2D, Brake2D, Tyre2D } from './art2d/Parts2D';
 import { Campus2D, OFFICE_H, SPOT_ANCHOR, spotPos, type CampusSpot, type CampusState } from './art2d/Campus2D';
@@ -350,7 +351,7 @@ export function Workshop2D() {
       </div>
       <aside className="g2-preview">
         <span className="g2-kicker">{tx('ws.preview')}</span>
-        {step === 'engine' ? <Engine2D engine={spec.engine} /> : step === 'chassis' ? <Chassis2D type={spec.chassis} /> : <CarArt spec={spec} year={g.year} equipped={p.arcade?.equipped} />}
+        {step === 'engine' ? <Engine2D engine={spec.engine} /> : step === 'chassis' ? <Chassis2D type={spec.chassis} /> : (step === 'body' || step === 'finish' || step === 'approval') && (spec.body === 'sedan' || spec.body === 'coupe' || spec.body === 'supercar' || spec.body === 'suv') ? <HeroShowroom2D compact color={spec.color} body={spec.body} label={name || tx('ws.unnamed')} /> : <CarArt spec={spec} year={g.year} equipped={p.arcade?.equipped} />}
         <h3>{name || tx('ws.unnamed')}</h3>
         <dl className="g2-specs">
           <dt>{tx('ws.power')}</dt><dd>{fmtKw(cur.power)}</dd>
