@@ -25,8 +25,8 @@ describe('Phase 5 game-first 2D screens',()=>{
    setLang('en');useStore.getState().start(founder());
    expect(useStore.getState().view).toBe('hq2d');
    const h=render(EmpireHub2D);
-   for(const phrase of ['Build a legend','Head office','Design centre','R&amp;D laboratory','Plants','Showroom &amp; dealers','Trophy hall','Your range','Objectives'])expect(h).toContain(phrase);
-   expect(h).toContain('<svg');
+   for(const phrase of ['Headquarters','Head office','Design workshop','Research','Factory','Garage','Dealers','Motorsport','Your range','Objectives'])expect(h).toContain(phrase);
+   expect(h).toContain('flow/bg/headquarters.webp');   // the Flow campus scene
    expect(h).toContain('data-spot="factory"'); // every building is a real button
    expect(h).toContain('guide-steps');          // the onboarding checklist lives on the landing screen
    expect(h).not.toContain('<canvas');

@@ -1,0 +1,22 @@
+{
+ "source": "user-gt-blue-original.jpg",
+ "sourceSha256": "d5ff9b7b219e5e0c3f710134de68ed24339f57bc867ca59c249cdfaa9d54c20d",
+ "size": [
+  1376,
+  768
+ ],
+ "backdropColour": [
+  244.0,
+  245.0,
+  239.0
+ ],
+ "transparentPixels": 735224,
+ "partialAlphaPixels": 1284,
+ "paintMaskPixels": 180152,
+ "recomposition": {
+  "meanAbsDiff": 0.261,
+  "p99AbsDiff": 2.0,
+  "pixelsOver16": 755
+ },
+ "note": "Layers derived from the original by thresholding, flood fill and circular cuts; no pixels were generated. The wheel layers are the original wheels: there are still no approved alternative wheels."
+}

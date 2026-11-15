@@ -2,6 +2,7 @@
 // with rarity. They play only after a user gesture, can be muted (remembered in this browser), and do nothing where
 // Web Audio is unavailable (tests, old browsers). Sound is off until the player turns it on.
 import type { PartRarity } from '../../sim/progression';
+import { sfxGain } from '../flow/prefs';
 
 const KEY = 'ae.sound.muted';
 let ctx: AudioContext | null = null;
@@ -17,6 +18,7 @@ function audio(): AudioContext | null {
 }
 function tone(freq: number, at: number, dur: number, type: OscillatorType = 'sine', gain = 0.06) {
   const a = audio(); if (!a) return;
+  gain *= sfxGain(); if (gain <= 0.0002) return;
   const o = a.createOscillator(), g = a.createGain();
   o.type = type; o.frequency.value = freq;
   g.gain.setValueAtTime(0, a.currentTime + at);

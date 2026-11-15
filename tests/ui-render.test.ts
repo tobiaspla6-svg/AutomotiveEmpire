@@ -20,14 +20,16 @@ beforeAll(() => {
 });
 
 describe('main menu', () => {
-  it('shows the three game modes, save access and settings in English and Spanish', () => {
+  it('shows continue, new game, load and settings in English and Spanish (Flow menu)', () => {
     setLang('en');
     const en = (live(), renderToString(createElement(MainMenu)));
-    for (const s of ['Historical Automotive CEO', 'Automotive Company Founder', 'Professional Motorsport Director']) expect(text(en), s).toContain(s);
+    for (const s of ['Automotive', 'Empire', 'Continue', 'New game', 'Load game']) expect(text(en), s).toContain(s);
     expect(en).toContain('aria-label="Settings"');
+    expect(en).toContain('data-action="resume"');
+    expect(en).toContain('flow/bg/inicio.webp');            // the Flow garage scene, not a generated menu
     setLang('es');
     const es = (live(), renderToString(createElement(MainMenu)));
-    for (const s of ['CEO histórico de una marca', 'Fundador de una marca de coches', 'Director de motorsport profesional']) expect(text(es), s).toContain(s);
+    for (const s of ['Continuar', 'Nueva partida', 'Cargar partida']) expect(text(es), s).toContain(s);
     expect(es).toContain('aria-label="Ajustes"');
     expect(es).not.toContain('menu.');
     setLang('en');

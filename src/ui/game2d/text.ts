@@ -3,7 +3,7 @@ import { useT } from '../../i18n';
 
 export const TX = {
   // navigation
-  'nav.hq': ['My empire', 'Mi imperio'], 'nav.workshop': ['Workshop', 'Taller'], 'nav.factory': ['Factory', 'Fábrica'], 'nav.skills': ['Tech tree', 'Tecnologías'],
+  'nav.hq': ['My empire', 'Mi imperio'], 'nav.workshop': ['Engineering', 'Ingeniería'], 'nav.studio': ['Design workshop', 'Taller de diseño'], 'nav.garage': ['Garage', 'Garaje'], 'nav.chests': ['Chests', 'Cofres'], 'nav.factory': ['Factory', 'Fábrica'], 'nav.skills': ['Tech tree', 'Tecnologías'],
   'nav.collection': ['Achievements & garage', 'Logros y garaje'], 'nav.campaigns': ['Marketing', 'Publicidad'], 'nav.league': ['Rankings', 'Clasificaciones'], 'nav.advanced': ['Advanced analysis', 'Análisis avanzado'],
   'back.hq': ['Back to headquarters', 'Volver a la sede'],
   // hub

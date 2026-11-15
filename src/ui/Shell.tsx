@@ -15,6 +15,9 @@ import { FinanceView, MarketView, ResearchView } from './Corporate';
 import { FactoriesView } from './Factories';
 import { EmpireHub2D, Workshop2D, Collection2D, FactoryFloor2D, Campaigns2D, League2D } from './Empire2D';
 import { SkillTree2D } from './SkillTree2D';
+import { FlowStudio } from './flow/FlowStudio';
+import { FlowGarage } from './flow/FlowGarage';
+import { FlowChestsScreen } from './flow/FlowChests';
 import { useTx } from './game2d/text';
 import { isMuted, setMuted, sfx } from './game2d/sfx';
 
@@ -24,6 +27,9 @@ const MotorsportView = lazy(() => import('./Motorsport').then((m) => ({ default:
 
 type NavItem = { id: string; icon: IconName; label: MessageKey; custom?: string; dot?: boolean };
 type NavGroup = { id: MessageKey; items: NavItem[] };
+
+/** Screens built on the Flow scenes: the side navigation shrinks to icons so the scene has the room. */
+const FLOW_VIEWS = new Set(['hq2d', 'studio2d', 'factory2d', 'garage2d', 'chests2d']);
 
 export function Shell() {
   const { g, p } = useGame();
@@ -40,10 +46,13 @@ export function Shell() {
     : [
       { id: 'nav.group.command', items: [
         { id: 'hq2d', icon: 'home', label: 'nav.dashboard', custom: tx('nav.hq') },
-        { id: 'workshop2d', icon: 'wrench', label: 'nav.vehicles', custom: tx('nav.workshop') },
+        { id: 'studio2d', icon: 'wrench', label: 'nav.vehicles', custom: tx('nav.studio') },
+        { id: 'workshop2d', icon: 'gauge', label: 'nav.vehicles', custom: tx('nav.workshop') },
         { id: 'factory2d', icon: 'factory', label: 'nav.factories', custom: tx('nav.factory') },
+        { id: 'garage2d', icon: 'vehicle', label: 'nav.vehicles', custom: tx('nav.garage') },
+        { id: 'chests2d', icon: 'box', label: 'nav.company', custom: tx('nav.chests') },
         { id: 'skills2d', icon: 'bolt', label: 'nav.research', custom: tx('nav.skills') },
-        { id: 'collection2d', icon: 'box', label: 'nav.company', custom: tx('nav.collection') },
+        { id: 'collection2d', icon: 'trophy', label: 'nav.company', custom: tx('nav.collection') },
         { id: 'campaign2d', icon: 'market', label: 'nav.market', custom: tx('nav.campaigns') },
         { id: 'league2d', icon: 'trophy', label: 'nav.company', custom: tx('nav.league') },
       ] },
@@ -61,7 +70,7 @@ export function Shell() {
   const conf = p.board?.confidence;
   const confTone = conf === undefined ? '' : conf < 25 ? 'bad' : conf < 45 ? 'warn' : 'good';
   return (
-    <div className="shell">
+    <div className={'shell' + (FLOW_VIEWS.has(view) ? ' flow-focus' : '')}>
       <header className="topbar">
         <div className="who"><Emblem size={30} /><div className="who-text"><b title={p.name}>{p.name}</b><span className="eyebrow">{t(`mode.${g.mode}` as MessageKey)}</span></div></div>
         <div className="ribbon">
@@ -91,7 +100,7 @@ export function Shell() {
           <div key={grp.id} className="nav-group">
             <span className="nav-eyebrow">{t(grp.id)}</span>
             {grp.items.map((it) => (
-              <button key={it.id} data-view={it.id} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
+              <button key={it.id} data-view={it.id} title={it.custom ?? t(it.label)} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
                 <Icon name={it.icon} size={18} /><span className="nav-label">{it.custom ?? t(it.label)}</span>{it.dot && <i className="dot" title={t('nav.attention')} />}
               </button>
             ))}
@@ -108,6 +117,9 @@ export function Shell() {
         <Suspense fallback={<div className="screen-loading" role="status">{t('common.loading')}</div>}>
           {view === 'hq2d' && <EmpireHub2D />}
           {view === 'workshop2d' && <Workshop2D />}
+          {view === 'studio2d' && <FlowStudio />}
+          {view === 'garage2d' && <FlowGarage />}
+          {view === 'chests2d' && <FlowChestsScreen />}
           {view === 'factory2d' && <FactoryFloor2D />}
           {view === 'skills2d' && <SkillTree2D />}
           {view === 'collection2d' && <Collection2D />}

@@ -10,6 +10,8 @@ import { Icon } from './ds/icons';
 import { CarPoster } from './ds/poster';
 import { FpsTestViewer, Guard3D } from './Lazy3D';
 import { Seg } from './common';
+import { FlowSettings } from './flow/FlowSettings';
+export { FlowSettings as SettingsDialog };
 
 const PREFS: { id: QualityPref; name: MessageKey; desc: MessageKey }[] = [
   { id: 'auto', name: 'gfx.auto', desc: 'gfx.auto.desc' },
@@ -19,7 +21,8 @@ const PREFS: { id: QualityPref; name: MessageKey; desc: MessageKey }[] = [
   { id: 'off', name: 'gfx.off', desc: 'gfx.off.desc' },
 ];
 
-export function SettingsDialog({ onClose }: { onClose: () => void }) {
+/** The 3D graphics test (preset list and frame-rate test), opened from the Video tab. */
+export function GraphicsTestDialog({ onClose }: { onClose: () => void }) {
   const { t, lang } = useT();
   const gfx = useGraphics();
   const [trigger, setTrigger] = useState(0);
@@ -93,5 +96,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
 export function SettingsButton({ className = 'iconbtn' }: { className?: string }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-  return <><button className={className} onClick={() => setOpen(true)} aria-label={t('settings.title')} title={t('settings.title')}><Icon name="sliders" /></button>{open && <SettingsDialog onClose={() => setOpen(false)} />}</>;
+  return <><button className={className} data-action="settings" onClick={() => setOpen(true)} aria-label={t('settings.title')} title={t('settings.title')}>{className === 'fm-gear' ? <Gear /> : <Icon name="sliders" />}</button>{open && <FlowSettings onClose={() => setOpen(false)} />}</>;
+}
+/** A gear (settings), drawn inline: the icon set has no gear. */
+export function Gear() {
+  return <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="currentColor"><path d="M10.3 2h3.4l.5 2.6c.6.2 1.2.5 1.7.9l2.5-1 1.7 2.9-2 1.7c.1.6.1 1.3 0 1.9l2 1.7-1.7 2.9-2.5-1c-.5.4-1.1.7-1.7.9l-.5 2.6h-3.4l-.5-2.6c-.6-.2-1.2-.5-1.7-.9l-2.5 1-1.7-2.9 2-1.7a6 6 0 0 1 0-1.9l-2-1.7 1.7-2.9 2.5 1c.5-.4 1.1-.7 1.7-.9zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z" /></svg>;
 }
