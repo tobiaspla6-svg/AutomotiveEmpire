@@ -87,3 +87,10 @@ Video B: usar la estación de fábrica de la referencia A. Cámara fija, plano �
 - No extraer una pieza con un recorte a ojo y declarar que quedó alineada. No agregar un canal alfa totalmente opaco y llamarlo transparencia.
 - No ampliar el catálogo a otros vehículos antes de aprobar el montaje del GT-01.
 
+
+
+## Continuación tras el reintento manual
+
+Se comprobó el reintento informado por el usuario. Un reintento normal llegó a mostrar 0 %, pero terminó nuevamente en «Detectamos actividad inusual». Después se envió una única edición nueva con una instrucción más breve y los centros de ruedas medidos; se esperó su finalización antes de cualquier otra solicitud. También fue rechazada y Flow indicó que no hubo cobro. El historial mantuvo una sola imagen: el original. No se generaron las propuestas B–D ni piezas.
+
+El prompt adicional está en `gt-blue-v1/prompts/A-short-retry.txt`; la evidencia actual está en `gt-blue-v1/qa/flow-retry-current.png`. Ambos archivos se conservan localmente y se adjuntan en la actualización de evidencia. El checkpoint ZIP anterior es histórico y no contiene estos dos archivos adicionales. La producción sigue bloqueada y el prototipo modular no ha sido verificado. El siguiente paso depende de que Flow permita completar una edición manual o se resuelva el rechazo del servicio; no se seguirán acumulando solicitudes automatizadas fallidas.
