@@ -487,6 +487,28 @@ test('SUV 1990 family: wheels, lamps and colour saved per vehicle and recovered;
   noErrors(errors); await ctx.close();
 });
 
+test('Tuning Lab (separate page): stage, race, incompatible stage disabled, ECU refuses a map', async (browser) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage(); page.setDefaultTimeout(20000);
+  const errors = []; page.on('pageerror', (e) => errors.push(String(e))); page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto(BASE + 'tuning.html'); await page.locator('.tl').waitFor();
+  assert(await page.locator('[data-stage="m18-stage1"]').isDisabled(), 'a stage for another engine is disabled');
+  assert(await page.locator('[data-field="boost"]').isDisabled(), 'the stock ECU cannot be recalibrated');
+  await page.locator('[data-action="race"]').click(); await page.locator('[data-results]').waitFor();
+  const stock = parseFloat(await page.locator('[data-run="build"] [data-et4]').innerText());
+  await page.locator('[data-stage="k20t-stage2"]').click();
+  for (const [cat, id] of [['clutch', 'clutch-r5-twin'], ['differential', 'diff-r-lsd-41'], ['tyres', 'tyres-16-drag']]) await page.locator(`select[data-cat="${cat}"]`).selectOption(id);
+  await page.locator('[data-action="race"]').click(); await page.locator('[data-results]').waitFor();
+  const built = parseFloat(await page.locator('[data-run="build"] [data-et4]').innerText());
+  assert(built < stock - 1, `the built car is quicker over 1/4 mile (${built} vs ${stock})`);
+  await page.locator('[data-field="boost"]').fill('2.2');
+  assert((await page.locator('.tl-error').allInnerTexts()).join(' ').includes('supera lo que puede dar este turbo'), 'the ECU names the limit');
+  assert(await page.locator('[data-action="race"]').isDisabled(), 'no race with an invalid map');
+  // the game itself is untouched: its page still opens
+  await page.goto(BASE); await page.locator('.menu2').waitFor();
+  noErrors(errors); await ctx.close();
+});
+
 test('studio at 1280x720: the stage and the parts tray fit the window', async (browser) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });

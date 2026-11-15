@@ -1,0 +1,43 @@
+{
+ "390": {
+  "errors": [],
+  "stageDisabled": true,
+  "ecuLockedSliders": true,
+  "peakKw": "258 kW a 6500 rpm (serie 178)",
+  "et4": {
+   "stock": "15.62 s",
+   "build": "12.79 s"
+  },
+  "overflowX": 0,
+  "overBoostError": "✕ 2.2 bar supera lo que puede dar este turbo (1.45 bar) | ✕ avance +1° detona a 2.2 bar con este intercooler (límite +0.5°)",
+  "raceDisabledWhenInvalid": true
+ },
+ "1280": {
+  "errors": [],
+  "stageDisabled": true,
+  "ecuLockedSliders": true,
+  "peakKw": "258 kW a 6500 rpm (serie 178)",
+  "et4": {
+   "stock": "15.62 s",
+   "build": "12.79 s"
+  },
+  "tooltip": "5.3k rpm\nDe serie: 161 kW\nPreparado: 230 kW",
+  "overflowX": 0,
+  "overBoostError": "✕ 2.2 bar supera lo que puede dar este turbo (1.45 bar) | ✕ avance +1° detona a 2.2 bar con este intercooler (límite +0.5°)",
+  "raceDisabledWhenInvalid": true
+ },
+ "1920": {
+  "errors": [],
+  "stageDisabled": true,
+  "ecuLockedSliders": true,
+  "peakKw": "258 kW a 6500 rpm (serie 178)",
+  "et4": {
+   "stock": "15.62 s",
+   "build": "12.79 s"
+  },
+  "tooltip": "5.2k rpm\nDe serie: 159 kW\nPreparado: 226 kW",
+  "overflowX": 0,
+  "overBoostError": "✕ 2.2 bar supera lo que puede dar este turbo (1.45 bar) | ✕ avance +1° detona a 2.2 bar con este intercooler (límite +0.5°)",
+  "raceDisabledWhenInvalid": true
+ }
+}

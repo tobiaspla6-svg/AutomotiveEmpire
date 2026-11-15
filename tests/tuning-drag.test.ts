@@ -92,12 +92,12 @@ describe('more power is not automatically quicker', () => {
 describe('parts and stages: compatibility', () => {
   it('an incompatible part is refused and not installed', () => {
     const m = VEHICLES.marlin;
-    expect(partFitProblem(PARTS['intercooler-k20t-fmic'], m)).toMatch(/engine K20T/);
+    expect(partFitProblem(PARTS['intercooler-k20t-fmic'], m)).toMatch(/motor K20T/);
     expect(partFitProblem(PARTS['turbo-k20t-hybrid'], m)).toMatch(/K20T/);
-    expect(partFitProblem(PARTS['clutch-r5-stage2'], VEHICLES.atlas)).toMatch(/bellhousing pattern R5/);
+    expect(partFitProblem(PARTS['clutch-r5-stage2'], VEHICLES.atlas)).toMatch(/campana de caja R5/);
     expect(partFitProblem(PARTS['diff-r-lsd-41'], m)).toMatch(/RWD/);
-    expect(partFitProblem(PARTS['tyres-16-semi'], m)).toMatch(/16-inch/);
-    expect(partFitProblem(PARTS['weight-ks-strip'], VEHICLES.atlas)).toMatch(/platform KS/);
+    expect(partFitProblem(PARTS['tyres-16-semi'], m)).toMatch(/16 pulgadas/);
+    expect(partFitProblem(PARTS['weight-ks-strip'], VEHICLES.atlas)).toMatch(/plataforma KS/);
     const { hw, installed, errors } = fitParts(m, ['intercooler-k20t-fmic', 'intake-m18'], PARTS);
     expect(installed).toEqual(['intake-m18']);
     expect(errors).toHaveLength(1);
@@ -109,7 +109,7 @@ describe('parts and stages: compatibility', () => {
     expect(partFitProblem(PARTS['clutch-a5-stage2'], VEHICLES.kestrel)).not.toBeNull();
   });
   it('a stage is a set of parts plus a calibration for one engine code', () => {
-    expect(applyStage(VEHICLES.marlin, stage('k20t-stage1'), PARTS).errors[0]).toMatch(/for engine K20T/);
+    expect(applyStage(VEHICLES.marlin, stage('k20t-stage1'), PARTS).errors[0]).toMatch(/para el motor K20T/);
     const r = applyStage(VEHICLES.kestrel, stage('k20t-stage2'), PARTS);
     expect(r.errors).toEqual([]);
     const manual = fitParts(VEHICLES.kestrel, stage('k20t-stage2').parts, PARTS).hw;
@@ -123,13 +123,13 @@ describe('parts and stages: compatibility', () => {
     const v = VEHICLES.kestrel;
     const stockHw = fitParts(v, [], PARTS).hw;
     expect(calibrationProblems(stockHw, stockCalibration(v))).toEqual([]);
-    expect(calibrationProblems(stockHw, { ...stockCalibration(v), boostBar: 1.0 })).toEqual(expect.arrayContaining([expect.stringMatching(/stock ECU cannot be recalibrated/)]));
+    expect(calibrationProblems(stockHw, { ...stockCalibration(v), boostBar: 1.0 })).toEqual(expect.arrayContaining([expect.stringMatching(/ECU de serie no se puede recalibrar/)]));
     const flashed = fitParts(v, ['ecu-k20t-flash'], PARTS).hw;
-    expect(calibrationProblems(flashed, { ...stockCalibration(v), boostBar: 1.6 }).join(' ')).toMatch(/beyond what this turbo can make/);
-    expect(calibrationProblems(flashed, { ...stockCalibration(v), revLimit: 8000 }).join(' ')).toMatch(/valvetrain limit/);
-    expect(calibrationProblems(flashed, { ...stockCalibration(v), boostBar: 1.05, timingDeg: 4 }).join(' ')).toMatch(/knocks/);
+    expect(calibrationProblems(flashed, { ...stockCalibration(v), boostBar: 1.6 }).join(' ')).toMatch(/supera lo que puede dar este turbo/);
+    expect(calibrationProblems(flashed, { ...stockCalibration(v), revLimit: 8000 }).join(' ')).toMatch(/límite de la distribución/);
+    expect(calibrationProblems(flashed, { ...stockCalibration(v), boostBar: 1.05, timingDeg: 4 }).join(' ')).toMatch(/detona/);
     const na = fitParts(VEHICLES.marlin, ['ecu-m18-flash'], PARTS).hw;
-    expect(calibrationProblems(na, { ...stockCalibration(VEHICLES.marlin), boostBar: 0.5 }).join(' ')).toMatch(/NA engine has no boost/);
+    expect(calibrationProblems(na, { ...stockCalibration(VEHICLES.marlin), boostBar: 0.5 }).join(' ')).toMatch(/atmosférico no tiene presión/);
   });
 });
 

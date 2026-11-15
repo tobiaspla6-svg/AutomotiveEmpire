@@ -41,12 +41,12 @@ export interface Stage { id: string; name: string; engineCode: string; parts: st
 /** Why a part cannot be installed on this vehicle (null = it fits). */
 export function partFitProblem(p: Part, v: Vehicle): string | null {
   const f = p.fits, e = v.engine, d = v.drivetrain;
-  if (f.engineCodes && !f.engineCodes.includes(e.code)) return `${p.name}: made for engine ${f.engineCodes.join('/')}, this car has ${e.code}`;
-  if (f.aspiration && f.aspiration !== e.aspiration) return `${p.name}: needs a ${f.aspiration === 'turbo' ? 'turbocharged' : 'naturally aspirated'} engine`;
-  if (f.platforms && !f.platforms.includes(v.platform)) return `${p.name}: made for platform ${f.platforms.join('/')}, this car is ${v.platform}`;
-  if (f.gearboxPatterns && !f.gearboxPatterns.includes(d.gearboxPattern)) return `${p.name}: bellhousing pattern ${f.gearboxPatterns.join('/')}, this car has ${d.gearboxPattern}`;
-  if (f.drives && !f.drives.includes(d.drive)) return `${p.name}: for ${f.drives.join('/')} cars, this one is ${d.drive}`;
-  if (f.wheelInch && !f.wheelInch.includes(v.tyre.wheelInch)) return `${p.name}: for ${f.wheelInch.join('/')}-inch wheels, this car has ${v.tyre.wheelInch}-inch`;
+  if (f.engineCodes && !f.engineCodes.includes(e.code)) return `${p.name}: hecho para el motor ${f.engineCodes.join('/')}; este auto tiene ${e.code}`;
+  if (f.aspiration && f.aspiration !== e.aspiration) return `${p.name}: necesita un motor ${f.aspiration === 'turbo' ? 'turbo' : 'atmosférico'}`;
+  if (f.platforms && !f.platforms.includes(v.platform)) return `${p.name}: hecho para la plataforma ${f.platforms.join('/')}; este auto es ${v.platform}`;
+  if (f.gearboxPatterns && !f.gearboxPatterns.includes(d.gearboxPattern)) return `${p.name}: campana de caja ${f.gearboxPatterns.join('/')}; este auto tiene ${d.gearboxPattern}`;
+  if (f.drives && !f.drives.includes(d.drive)) return `${p.name}: para autos ${f.drives.join('/')}; este es ${d.drive}`;
+  if (f.wheelInch && !f.wheelInch.includes(v.tyre.wheelInch)) return `${p.name}: para llantas de ${f.wheelInch.join('/')} pulgadas; este auto usa ${v.tyre.wheelInch}`;
   return null;
 }
 
@@ -78,7 +78,7 @@ export function fitParts(base: Vehicle, ids: string[], catalogue: Record<string,
   const byCat = new Map<PartCategory, Part>();
   for (const id of ids) {
     const p = catalogue[id];
-    if (!p) { errors.push(`unknown part ${id}`); continue; }
+    if (!p) { errors.push(`pieza desconocida: ${id}`); continue; }
     const why = partFitProblem(p, base);
     if (why) { errors.push(why); continue; }
     byCat.set(p.category, p);
@@ -108,15 +108,15 @@ export function calibrationProblems(hw: Hardware, c: Calibration): string[] {
   const e = hw.vehicle.engine, errs: string[] = [];
   const stock = stockCalibration(hw.vehicle);
   const mapChanged = c.boostBar !== stock.boostBar || c.revLimit !== stock.revLimit || c.timingDeg !== 0;
-  if (mapChanged && !hw.remappable) errs.push('the stock ECU cannot be recalibrated: fit an ECU reflash or standalone first');
-  if (c.revLimit > e.mechanicalLimitRpm) errs.push(`rev limit ${c.revLimit} above the valvetrain limit ${e.mechanicalLimitRpm}`);
-  if (c.revLimit < e.idleRpm + 2000) errs.push('rev limit too low');
-  if (e.aspiration === 'na' && c.boostBar !== 0) errs.push('an NA engine has no boost to set');
-  if (hw.turbo && c.boostBar > hw.turbo.maxBoostBar) errs.push(`boost ${c.boostBar} bar is beyond what this turbo can make (${hw.turbo.maxBoostBar} bar)`);
-  if (c.boostBar < 0) errs.push('boost cannot be negative');
-  if (c.timingDeg > knockLimitDeg(hw, c.boostBar)) errs.push(`ignition advance +${c.timingDeg}° knocks at ${c.boostBar} bar with this intercooler (limit +${knockLimitDeg(hw, c.boostBar).toFixed(1)}°)`);
-  if (c.launchRpm < e.idleRpm || c.launchRpm > c.revLimit) errs.push('launch rpm outside idle…rev limit');
-  if (c.shiftRpm > c.revLimit) errs.push('shift point above the rev limit');
+  if (mapChanged && !hw.remappable) errs.push('la ECU de serie no se puede recalibrar: instalá antes una reprogramación o una ECU programable');
+  if (c.revLimit > e.mechanicalLimitRpm) errs.push(`corte de vueltas ${c.revLimit} por encima del límite de la distribución (${e.mechanicalLimitRpm})`);
+  if (c.revLimit < e.idleRpm + 2000) errs.push('corte de vueltas demasiado bajo');
+  if (e.aspiration === 'na' && c.boostBar !== 0) errs.push('un motor atmosférico no tiene presión de turbo que ajustar');
+  if (hw.turbo && c.boostBar > hw.turbo.maxBoostBar) errs.push(`${c.boostBar} bar supera lo que puede dar este turbo (${hw.turbo.maxBoostBar} bar)`);
+  if (c.boostBar < 0) errs.push('la presión no puede ser negativa');
+  if (c.timingDeg > knockLimitDeg(hw, c.boostBar)) errs.push(`avance +${c.timingDeg}° detona a ${c.boostBar} bar con este intercooler (límite +${knockLimitDeg(hw, c.boostBar).toFixed(1)}°)`);
+  if (c.launchRpm < e.idleRpm || c.launchRpm > c.revLimit) errs.push('régimen de largada fuera del rango ralentí…corte');
+  if (c.shiftRpm > c.revLimit) errs.push('punto de cambio por encima del corte');
   return errs;
 }
 
@@ -130,7 +130,7 @@ export function knockLimitDeg(hw: Hardware, boostBar: number): number {
 
 /** Resolve a stage for a vehicle: its parts (each must fit) and its calibration (must pass on that hardware). */
 export function applyStage(v: Vehicle, s: Stage, catalogue: Record<string, Part>, extra: string[] = []): { build: Build | null; errors: string[] } {
-  if (s.engineCode !== v.engine.code) return { build: null, errors: [`${s.name} is for engine ${s.engineCode}, this car has ${v.engine.code}`] };
+  if (s.engineCode !== v.engine.code) return { build: null, errors: [`${s.name} es para el motor ${s.engineCode}; este auto tiene ${v.engine.code}`] };
   const { hw, errors } = fitParts(v, [...s.parts, ...extra], catalogue);
   const cal: Calibration = { ...stockCalibration(v), ...s.calibration };
   cal.shiftRpm = Math.min(cal.shiftRpm, cal.revLimit);
