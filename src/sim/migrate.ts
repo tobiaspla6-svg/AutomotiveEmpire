@@ -7,6 +7,7 @@
 //            (cars whose engines and structures are compatible share them). Nothing else changes;
 //            the optional Phase 2 fields keep their defaults.
 import type { Company, GameState, MonthLedger } from './types';
+import { validateConfig } from './vehicleConfig';
 import { emptyLedger, factoryValue } from './company';
 import { emptyPending, openBooks } from './accounts';
 import { adoptFamilies } from './families';
@@ -77,6 +78,7 @@ export function saveDamage(g: GameState): string | null {
           (a.xp !== undefined && (!isNum(a.xp) || a.xp < 0)) ||
           (a.achievements !== undefined && (!isObj(a.achievements) || !Object.values(a.achievements).every((v) => isObj(v) && isNum(v.y) && isNum(v.m))))) return `${who} has damaged collectibles`;
     }
+    if (c.designs !== undefined && (!isObj(c.designs) || Object.values(c.designs).some((d) => validateConfig(d) !== null))) return `${who} has a damaged vehicle design`;
     if (!isObj(c.books) || !isObj(c.books.pending) || !isObj(c.books.close)) return `${who} has no books`;
     for (const m of c.models) {
       if (!isObj(m) || typeof m.id !== 'string' || !isObj(m.spec) || !isObj(m.stats) || !isObj(m.stats.scores)) return `${who} has a vehicle without its specification`;

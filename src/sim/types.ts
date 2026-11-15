@@ -343,6 +343,8 @@ export interface Company {
   marketingBudget: number; // per month
   /** Phase 5: saved, earned-only 2D collectible progression; absent in older saves. */
   arcade?: import('./progression').ArcadeProgress;
+  /** Phase 5C: visual configurations from the design studio, by model id (or 'draft'); visual only */
+  designs?: Record<string, import('./vehicleConfig').VehicleConfig>;
   ledger: MonthLedger[];
   motorsport: MotorsportDivision | null;
   board: { confidence: number; objectives: Objective[]; note: string } | null;
