@@ -41,9 +41,16 @@ function Box({ x, y, w, d, h, c, win, glass = false, rows = 0 }: { x: number; y:
     }
   }
   return <g>
+    {/* Site-level occlusion sells the mass and position of the architecture. */}
+    <polygon points={pts([P(x+1.1,y+1.1),P(x+w+3,y+1.1),P(x+w+3,y+d+2.2),P(x+1.1,y+d+2.2)])}
+      fill="#050d19" opacity=".19" />
     <polygon points={pts(left)} fill={shade(c, -0.18)} />
     <polygon points={pts(right)} fill={shade(c, -0.38)} />
     <polygon points={pts(top)} fill={shade(c, 0.12)} />
+    <polygon points={pts([P(x+.12,y+d-.12,h),P(x+w-.12,y+d-.12,h),P(x+w-.12,y+d-.12,0),P(x+.12,y+d-.12,0)])}
+      fill="#ffffff" opacity=".045" />
+    <path d={'M'+P(x+.15,y+.15,h).join(' ')+'L'+P(x+w-.15,y+.15,h).join(' ')}
+      stroke="#f1f8ff" strokeOpacity=".26" strokeWidth="1.5" />
     {glass && <polygon points={pts(left)} fill="#7fc4ee" opacity="0.35" />}
     {wins}
   </g>;
@@ -51,7 +58,13 @@ function Box({ x, y, w, d, h, c, win, glass = false, rows = 0 }: { x: number; y:
 
 function Tree({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
   const [a, b] = P(x, y, 0);
-  return <g><rect x={a - 1.5} y={b - 10 * s} width={3} height={10 * s} fill="#5a3d24" /><circle cx={a} cy={b - 14 * s} r={8 * s} fill="#2f6b4a" /><circle cx={a - 3} cy={b - 17 * s} r={5 * s} fill="#3f8a5f" /></g>;
+  return <g>
+    <ellipse cx={a+3*s} cy={b+1} rx={11*s} ry={3*s} fill="#101c1f" opacity=".34"/>
+    <rect x={a - 1.5} y={b - 10 * s} width={3} height={10 * s} fill="#5a3d24" />
+    <circle cx={a} cy={b - 14 * s} r={8 * s} fill="#1f5a46"/>
+    <circle cx={a - 3} cy={b - 17 * s} r={6 * s} fill="#408563"/>
+    <circle cx={a - 5.8*s} cy={b - 20*s} r={2*s} fill="#a2dcb4" opacity=".4"/>
+  </g>;
 }
 
 function Plant({ p, x, y, color }: { p: CampusPlant; x: number; y: number; color: string }) {
@@ -92,14 +105,23 @@ export const Campus2D = memo(function Campus2D({ s, active, extraPlants = 0 }: {
   return (
     <svg className={'campus2d' + (s.night ? ' campus-night' : '')} viewBox="0 0 1000 560" aria-hidden="true" focusable="false">
       <defs>
-        <linearGradient id="campus-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f1e33" /><stop offset="1" stopColor="#24456a" /></linearGradient>
+        <linearGradient id="campus-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0b182d" /><stop offset=".58" stopColor="#23425d" /><stop offset="1" stopColor="#6b6870" /></linearGradient>
+        <radialGradient id="campus-horizon" cx=".76" cy=".72" r=".64"><stop offset="0" stopColor="#f3c798" stopOpacity=".27" /><stop offset=".4" stopColor="#c5a6a4" stopOpacity=".08" /><stop offset="1" stopColor="#b3cfeb" stopOpacity="0" /></radialGradient>
+        <linearGradient id="campus-road" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#65717d" /><stop offset=".2" stopColor="#313e4c" /><stop offset=".8" stopColor="#222f3b" /><stop offset="1" stopColor="#404a51" /></linearGradient>
+        <filter id="campus-mist" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="15" /></filter>
         <linearGradient id="campus-ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3b6e4f" /><stop offset="1" stopColor="#285a3f" /></linearGradient>
       </defs>
       <rect width="1000" height="560" fill="url(#campus-sky)" />
-      {/* skyline */}
-      <g fill="#183250" opacity="0.8">{[[40, 120], [90, 90], [140, 140], [820, 110], [870, 150], [930, 95]].map(([x, h], i) => <rect key={i} x={x} y={200 - h} width="44" height={h} />)}</g>
+      <rect width="1000" height="275" fill="url(#campus-horizon)" />
+      {/* Distant automobile-city skyline, with scale and material depth. */}
+      <g fill="#122941" opacity=".70">{[[13,84],[74,116],[121,93],[162,129],[801,125],[839,170],[914,112],[971,146]].map(([x,h],i)=>
+        <g key={i}><path d={`M${x} 211V${211-h}h${31+i%3*7}v${h}Z`} />
+          {Array.from({length:Math.floor(h/19)},(_,j)=><path key={j} d={`M${x+5} ${211-h+10+j*18}h${18+i%3*5}`} stroke="#7ca9c5" strokeOpacity=".18" strokeDasharray="3 5" strokeWidth="2"/>)}
+        </g>)}</g>
+      <path d="M0 211Q180 195 343 211T659 205T1000 212" stroke="#cbdfe9" strokeOpacity=".18" strokeWidth="20" filter="url(#campus-mist)" fill="none"/>
+      <g opacity=".26"><path d="M0 237H1000" stroke="#edf5e2" strokeWidth="2"/><path d="M0 244H1000" stroke="#101d2a" strokeWidth="8"/></g>
       <polygon points={pts([P(0, 0), P(60, 0), P(60, 60), P(0, 60)])} fill="url(#campus-ground)" />
-      <polygon points={pts([P(0, 18), P(60, 18), P(60, 23.5), P(0, 23.5)])} fill="#3b4048" />
+      <polygon points={pts([P(0, 18), P(60, 18), P(60, 23.5), P(0, 23.5)])} fill="url(#campus-road)" />
       <polygon points={pts([P(28.5, 0), P(33.5, 0), P(33.5, 60), P(28.5, 60)])} fill="#3b4048" />
       <path d={road} stroke="#e7d9a7" strokeWidth="1.5" strokeDasharray="10 10" opacity="0.6" transform="translate(0 12)" />
       {!still && <g>
