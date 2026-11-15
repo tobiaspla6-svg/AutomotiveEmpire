@@ -212,6 +212,16 @@ function engineSolids(engine: Engine2DProps['engine'], cam: Projector): Build {
   return { cam, solids: S, belts, bolts, marks };
 }
 
+// built drawings are shared by every card showing the same engine (the workshop shows many at once)
+const CACHE = new Map<string, unknown>();
+function cached<T>(k: string, make: () => T): T {
+  if (CACHE.has(k)) return CACHE.get(k) as T;
+  const v = make();
+  if (CACHE.size > 80) CACHE.delete(CACHE.keys().next().value as string);
+  CACHE.set(k, v);
+  return v;
+}
+
 export const Engine2D = memo(function Engine2D({ engine, label, accent = '#e8b04a', className, compact = false }: Engine2DProps) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const kind = kindOf(engine.layout);
@@ -219,7 +229,7 @@ export const Engine2D = memo(function Engine2D({ engine, label, accent = '#e8b04
   const hybrid = (engine.hybridKw ?? 0) > 0;
   const text = label ?? (kind === 'ev' ? `EV · ${Math.round(engine.motorKw ?? 150)} kW` : `${engine.layout} · ${((engine.displacement ?? 2000) / 1000).toFixed(1)} L${turbos ? (turbos === 2 ? ' · twin-turbo' : ' · turbo') : engine.aspiration === 'supercharged' ? ' · supercharged' : ''}${hybrid ? ' · hybrid' : ''}`);
   const key = `${engine.layout}|${engine.aspiration}|${engine.valvetrain}|${engine.aluBlock}|${engine.redline}|${engine.hybridKw ?? 0}`;
-  const art = useMemo(() => {
+  const art = useMemo(() => cached(key + (compact ? '|c' : ''), () => {
     const cam = camera({ eye: [-2.3, -2.6, 1.9], target: [0.05, 0, 0.32], focal: 300, cx: 0, cy: 0 });
     const b = engineSolids(engine, cam);
     const solids = b.solids.filter((s) => s.facets.length).sort((p, q) => q.depth - p.depth);
@@ -230,8 +240,8 @@ export const Engine2D = memo(function Engine2D({ engine, label, accent = '#e8b04
     const ar = 280 / 190, w = Math.max(w0, h0 * ar), h = w / ar;
     const vx = (x0 + x1) / 2 - w / 2, vy = y1 + pad - h;
     return { solids: solids.map((s) => batch(s.facets)), belts: b.belts, bolts: b.bolts, marks: b.marks, vb: [vx, vy, w, h], ground: (y1 + pad * 0.4) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, compact]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [key, compact]);
   const [vx, vy, w, h] = art.vb, u = w / 280;
   return (
     <div className={'engine2d ' + (className ?? '')} role="img" aria-label={text}>

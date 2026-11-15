@@ -357,7 +357,7 @@ test('2d phone: the headquarters and workshop fit a 390 px screen', async (brows
   await startFounder(page);
   for (const v of ['hq2d', 'workshop2d', 'collection2d', 'league2d']) {
     await page.evaluate((view) => document.querySelector(`.nav [data-view="${view}"]`)?.click(), v); await page.waitForTimeout(200);
-    const over = await page.evaluate(() => [...document.querySelectorAll('.g2 *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > window.innerWidth + 1 && !e.closest('.fl2d,.g2-steps,.g2-tabs,.g2-table-wrap,.nav'); }).map((e) => e.className).slice(0, 3));
+    const over = await page.evaluate(() => [...document.querySelectorAll('.g2 *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > window.innerWidth + 1 && !e.closest('.fl2d,.g2-steps,.g2-tabs,.g2-table-wrap,.nav') && !(e.ownerSVGElement); }).map((e) => String(e.className?.baseVal ?? e.className)).slice(0, 3)); // shapes inside an <svg> are clipped by it; the <svg> itself is measured
     eq(over.length, 0, `${v}: nothing overflows the phone width (${over.join(', ')})`);
   }
   noErrors(errors); await ctx.close();

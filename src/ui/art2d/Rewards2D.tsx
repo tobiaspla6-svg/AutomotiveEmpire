@@ -34,7 +34,9 @@ function chestSolids(cam: Projector, rarity: PartRarity, open: boolean): Solid[]
   const ang = open ? -1.95 : 0, hinge: V3 = [0, D, H];
   const rot = (p: V3): V3 => { const dy = p[1] - hinge[1], dz = p[2] - hinge[2]; return [p[0], hinge[1] + dy * Math.cos(ang) - dz * Math.sin(ang), hinge[2] + dy * Math.sin(ang) + dz * Math.cos(ang)]; };
   const lidAt = (u: number, v: number, r = D): V3 => rot([-W + 2 * W * u, -Math.cos(v * Math.PI) * r, H + Math.sin(v * Math.PI) * r * 0.85]);
-  S.push({ ...solidFrom(surface(cam, 10, 14, (u, v) => lidAt(u, v), shadeMat(L.body), { inside: (q) => [q[0], rot([0, 0, H])[1], rot([0, 0, H])[2]] })), alpha: L.body.alpha });
+  S.push({ ...solidFrom(surface(cam, 10, 14, (u, v) => lidAt(u, v), shadeMat(L.body), { inside: (q) => [q[0], rot([0, 0, H])[1], rot([0, 0, H])[2]], cull: !open })), alpha: L.body.alpha });
+  // open: light pours out of the chest
+  if (open) S.push(over(abox(cam, [0, 0, H + 0.002], W - 0.03, D - 0.03, 0.002, { c: hexRgb(L.gem).map((v) => Math.min(255, v + 90)) as [number, number, number], spec: 0 }), 1));
   for (const x of [-0.42, 0, 0.42]) S.push(solidFrom(surface(cam, 1, 14, (u, v) => lidAt((x + W) / (2 * W) + (u - 0.5) * 0.075, v, D + 0.012), shadeMat(L.band), { inside: (q) => [q[0], rot([0, 0, H])[1], rot([0, 0, H])[2]] })));
   for (const sx of [-1, 1]) S.push(solidFrom(surface(cam, 1, 14, (u, v) => { const p = lidAt(sx < 0 ? 0 : 1, v, D * u); return p; }, shadeMat(L.body), { cull: false })));
   // lock plate and gem on the front

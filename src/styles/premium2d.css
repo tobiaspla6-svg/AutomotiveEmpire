@@ -90,7 +90,7 @@
   width:calc(100% + 28px);
   max-width:none;
   height:auto;
-  margin:-15px -14px -4px;
+  margin:0 -14px -4px;
   display:block;
   border-radius:12px;
   box-shadow:0 12px 25px rgba(0,5,15,.28);

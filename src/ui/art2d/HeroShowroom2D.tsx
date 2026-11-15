@@ -269,7 +269,7 @@ export const HeroShowroom2D = memo(function HeroShowroom2D({ color = '#315b8e', 
   }, [body, safe]);
   const { cam, car, s } = scene;
   const accent = '#9fd6e5', light = rgbHex(mix(car.base, [255, 255, 255], 0.35));
-  return <svg className={'ae-hero-showroom' + (compact ? ' compact' : '')} viewBox={compact ? '0 0 1280 720' : '110 150 1060 600'} role="img" aria-label={label} focusable="false" preserveAspectRatio="xMidYMid meet" data-paint={safe}>
+  return <svg className={'ae-hero-showroom' + (compact ? ' compact' : '')} viewBox={compact ? '150 175 980 552' : '110 150 1060 600'} role="img" aria-label={label} focusable="false" preserveAspectRatio="xMidYMid meet" data-paint={safe}>
     <defs>
       <linearGradient id={`wall${uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0b121c" /><stop offset="0.62" stopColor="#16222f" /><stop offset="1" stopColor="#0d141d" /></linearGradient>
       <radialGradient id={`studioFloor${uid}`} cx="0.5" cy="0.25" r="0.8"><stop offset="0" stopColor="#2a3644" /><stop offset="0.55" stopColor="#131b25" /><stop offset="1" stopColor="#080c12" /></radialGradient>

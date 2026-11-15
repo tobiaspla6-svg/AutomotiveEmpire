@@ -4,7 +4,7 @@
 // hoist, tyre stacks, a light tunnel over a rolling road, a car transporter). What is drawn follows the real plant: robots
 // replace workers as automation rises, each bay's floor shows its load, the bottleneck pulses, cars move down the line
 // while it is producing. Bays are clickable; the screen also offers real buttons for keyboard use.
-import { memo, useMemo } from 'react';
+import { memo, useId, useMemo } from 'react';
 import { add, batch, camera, cross, hexRgb, mul, norm, paint, rgbHex, satin, sub, surface, type Facet, type Projector, type RGB, type V3 } from './vector3d';
 
 export type Sector = 'materials' | 'body' | 'paint' | 'powertrain' | 'assembly' | 'inspection' | 'dispatch';
@@ -152,16 +152,17 @@ export const FactoryLine2D = memo(function FactoryLine2D({ load, automation, col
   const loadKey = SECTORS.map((s) => `${Math.round(load[s].use * 20)}${load[s].bottleneck ? 'b' : ''}`).join('|');
   const art = useMemo(() => buildPlant(load, automation, color), [loadKey, Math.round(automation * 10), color]);  // eslint-disable-line react-hooks/exhaustive-deps
   const producing = SECTORS.some((s) => load[s].working);
+  const gid = 'flw' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const [vx, vy, vw, vh] = art.vb, u = vw / 1120;
   return (
     <div className="fl2d">
       <svg viewBox={`${vx.toFixed(1)} ${vy.toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`} role="group" aria-label="Plant">
         <defs>
-          <linearGradient id="fl-wallg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22334a" /><stop offset="1" stopColor="#141f2e" /></linearGradient>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22334a" /><stop offset="1" stopColor="#141f2e" /></linearGradient>
         </defs>
         <rect x={vx} y={vy} width={vw} height={vh} fill="#0d1520" />
         {/* building shell: back wall with windows, floor tiles whose glow shows each sector's load */}
-        {art.bays.map((b) => <g key={'w' + b.sec}><polygon points={b.wall} fill="url(#fl-wallg)" /><polygon points={b.win} fill="#7fb6e0" opacity="0.28" /></g>)}
+        {art.bays.map((b) => <g key={'w' + b.sec}><polygon points={b.wall} fill={`url(#${gid})`} /><polygon points={b.win} fill="#7fb6e0" opacity="0.28" /></g>)}
         {art.lamps.map(([x, y], i) => <g key={'lp' + i}><rect x={x - 22 * u} y={y - 2 * u} width={44 * u} height={4 * u} rx={2 * u} fill="#eaf6ff" opacity="0.8" /><ellipse cx={x} cy={y + 8 * u} rx={40 * u} ry={10 * u} fill="#eaf6ff" opacity="0.06" /></g>)}
         {art.bays.map((b, i) => {
           const L = load[b.sec], tone = L.bottleneck ? '#ef4444' : L.use > 0.9 ? '#f59e0b' : L.use > 0.05 ? '#22c55e' : '#64748b';
