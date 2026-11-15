@@ -1,0 +1,598 @@
+{
+  "coordinateSpace": {
+    "width": 1920,
+    "height": 1080,
+    "units": "px",
+    "type": "normative art-direction target; not automatically measured image bounds"
+  },
+  "inicio": {
+    "reference": "01-inicio/E-garaje-refinado.jpg",
+    "regions": {
+      "menu": [
+        0,
+        0,
+        640,
+        1080
+      ],
+      "scene": [
+        640,
+        0,
+        1280,
+        1080
+      ],
+      "title": [
+        80,
+        110,
+        480,
+        255
+      ]
+    },
+    "controls": [
+      {
+        "id": "continue",
+        "label": "CONTINUAR",
+        "rect": [
+          80,
+          486,
+          480,
+          118
+        ],
+        "action": "loadSave",
+        "style": "primary"
+      },
+      {
+        "id": "newGame",
+        "label": "NUEVA PARTIDA",
+        "rect": [
+          80,
+          628,
+          480,
+          118
+        ],
+        "action": "openNewGameDialog",
+        "style": "secondary"
+      },
+      {
+        "id": "settings",
+        "label": "Configuración",
+        "rect": [
+          80,
+          930,
+          72,
+          72
+        ],
+        "action": "openSettings",
+        "style": "icon"
+      }
+    ]
+  },
+  "headquarters": {
+    "reference": "02-headquarters/A-campus.jpg",
+    "regions": {
+      "header": [
+        0,
+        0,
+        1920,
+        128
+      ],
+      "world": [
+        0,
+        128,
+        1920,
+        824
+      ],
+      "navigation": [
+        496,
+        952,
+        928,
+        128
+      ]
+    },
+    "controls": [
+      {
+        "id": "hq",
+        "label": "Sede",
+        "rect": [
+          930,
+          174,
+          320,
+          96
+        ],
+        "action": "inspectHeadquarters"
+      },
+      {
+        "id": "workshop",
+        "label": "Taller",
+        "rect": [
+          334,
+          338,
+          214,
+          102
+        ],
+        "action": "goWorkshop"
+      },
+      {
+        "id": "factory",
+        "label": "Fábrica",
+        "rect": [
+          1572,
+          292,
+          240,
+          102
+        ],
+        "action": "goFactory"
+      },
+      {
+        "id": "garage",
+        "label": "Garaje",
+        "rect": [
+          1310,
+          600,
+          228,
+          112
+        ],
+        "action": "goGarage"
+      },
+      {
+        "id": "chests",
+        "label": "Cofres",
+        "rect": [
+          1238,
+          998,
+          170,
+          64
+        ],
+        "action": "goChests"
+      }
+    ]
+  },
+  "taller": {
+    "reference": "03-taller/A.jpg",
+    "regions": {
+      "header": [
+        0,
+        0,
+        1920,
+        128
+      ],
+      "categories": [
+        0,
+        224,
+        144,
+        550
+      ],
+      "vehicle": [
+        280,
+        180,
+        1290,
+        620
+      ],
+      "inspector": [
+        1620,
+        224,
+        270,
+        528
+      ],
+      "partsTray": [
+        0,
+        860,
+        1920,
+        220
+      ]
+    },
+    "controls": [
+      {
+        "id": "save",
+        "label": "GUARDAR",
+        "rect": [
+          1648,
+          30,
+          240,
+          78
+        ],
+        "action": "saveCarConfiguration"
+      },
+      {
+        "id": "category-body",
+        "label": "Carrocería",
+        "rect": [
+          8,
+          240,
+          128,
+          96
+        ],
+        "action": "selectBody"
+      },
+      {
+        "id": "category-wheels",
+        "label": "Ruedas",
+        "rect": [
+          8,
+          340,
+          128,
+          96
+        ],
+        "action": "selectWheels"
+      },
+      {
+        "id": "category-lights",
+        "label": "Luces",
+        "rect": [
+          8,
+          440,
+          128,
+          96
+        ],
+        "action": "selectLights"
+      },
+      {
+        "id": "category-roof",
+        "label": "Techo",
+        "rect": [
+          8,
+          540,
+          128,
+          96
+        ],
+        "action": "selectRoof"
+      },
+      {
+        "id": "category-interior",
+        "label": "Interior",
+        "rect": [
+          8,
+          640,
+          128,
+          96
+        ],
+        "action": "selectInterior"
+      },
+      {
+        "id": "parts",
+        "label": "Piezas compatibles",
+        "rect": [
+          32,
+          922,
+          1856,
+          134
+        ],
+        "action": "choosePart",
+        "scroll": "horizontal"
+      },
+      {
+        "id": "paint",
+        "label": "Pintura",
+        "rect": [
+          1644,
+          280,
+          220,
+          150
+        ],
+        "action": "setPaint"
+      }
+    ]
+  },
+  "fabrica": {
+    "reference": "04-fabrica/A.jpg",
+    "regions": {
+      "header": [
+        0,
+        0,
+        1920,
+        108
+      ],
+      "stations": [
+        0,
+        108,
+        1920,
+        808
+      ],
+      "queue": [
+        0,
+        924,
+        1510,
+        156
+      ]
+    },
+    "controls": [
+      {
+        "id": "chassis",
+        "label": "Bastidor",
+        "rect": [
+          126,
+          408,
+          300,
+          60
+        ],
+        "action": "inspectStation:chassis"
+      },
+      {
+        "id": "body",
+        "label": "Carrocería",
+        "rect": [
+          614,
+          408,
+          300,
+          60
+        ],
+        "action": "inspectStation:body"
+      },
+      {
+        "id": "paint",
+        "label": "Pintura",
+        "rect": [
+          1054,
+          408,
+          300,
+          60
+        ],
+        "action": "inspectStation:paint"
+      },
+      {
+        "id": "assembly",
+        "label": "Montaje final",
+        "rect": [
+          1480,
+          408,
+          350,
+          60
+        ],
+        "action": "inspectStation:assembly"
+      },
+      {
+        "id": "queue",
+        "label": "Cola de producción",
+        "rect": [
+          40,
+          978,
+          650,
+          86
+        ],
+        "action": "selectQueuedModel"
+      },
+      {
+        "id": "start",
+        "label": "INICIAR",
+        "rect": [
+          1636,
+          980,
+          260,
+          82
+        ],
+        "action": "startProduction",
+        "style": "primary"
+      }
+    ]
+  },
+  "garaje": {
+    "reference": "05-garaje/A.jpg",
+    "regions": {
+      "details": [
+        0,
+        0,
+        600,
+        1080
+      ],
+      "vehicle": [
+        600,
+        0,
+        1320,
+        840
+      ],
+      "collection": [
+        620,
+        846,
+        1300,
+        234
+      ]
+    },
+    "controls": [
+      {
+        "id": "back",
+        "label": "Volver",
+        "rect": [
+          56,
+          48,
+          200,
+          60
+        ],
+        "action": "goPrevious"
+      },
+      {
+        "id": "customize",
+        "label": "PERSONALIZAR",
+        "rect": [
+          88,
+          890,
+          428,
+          100
+        ],
+        "action": "editSelectedVehicle"
+      },
+      {
+        "id": "collection",
+        "label": "Vehículos propios",
+        "rect": [
+          638,
+          870,
+          1250,
+          170
+        ],
+        "action": "selectVehicle",
+        "scroll": "horizontal"
+      }
+    ]
+  },
+  "cofres": {
+    "reference": "06-cofres/B.jpg",
+    "regions": {
+      "title": [
+        780,
+        70,
+        400,
+        126
+      ],
+      "chest": [
+        380,
+        350,
+        650,
+        540
+      ],
+      "reward": [
+        540,
+        170,
+        310,
+        440
+      ],
+      "inventory": [
+        180,
+        906,
+        1530,
+        150
+      ]
+    },
+    "controls": [
+      {
+        "id": "back",
+        "label": "Volver",
+        "rect": [
+          1720,
+          30,
+          150,
+          64
+        ],
+        "action": "goPrevious"
+      },
+      {
+        "id": "claim",
+        "label": "RECLAMAR",
+        "rect": [
+          774,
+          942,
+          370,
+          92
+        ],
+        "action": "claimRewardOnce",
+        "state": "reward"
+      },
+      {
+        "id": "open",
+        "label": "ABRIR",
+        "rect": [
+          774,
+          942,
+          370,
+          92
+        ],
+        "action": "consumeOneChest",
+        "state": "selectedClosed"
+      },
+      {
+        "id": "inventory",
+        "label": "Cofres disponibles",
+        "rect": [
+          180,
+          916,
+          410,
+          130
+        ],
+        "action": "selectOwnedChest"
+      }
+    ]
+  },
+  "configuracion": {
+    "reference": "07-configuracion/A.jpg",
+    "regions": {
+      "panel": [
+        466,
+        174,
+        986,
+        734
+      ],
+      "heading": [
+        750,
+        270,
+        510,
+        92
+      ],
+      "categories": [
+        526,
+        420,
+        290,
+        320
+      ],
+      "settings": [
+        846,
+        420,
+        550,
+        320
+      ]
+    },
+    "controls": [
+      {
+        "id": "master",
+        "label": "Volumen maestro",
+        "rect": [
+          850,
+          450,
+          460,
+          66
+        ],
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      {
+        "id": "music",
+        "label": "Música",
+        "rect": [
+          850,
+          552,
+          460,
+          66
+        ],
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      {
+        "id": "effects",
+        "label": "Efectos",
+        "rect": [
+          850,
+          654,
+          460,
+          66
+        ],
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      {
+        "id": "apply",
+        "label": "APLICAR",
+        "rect": [
+          846,
+          770,
+          256,
+          70
+        ],
+        "action": "applyPreferences"
+      },
+      {
+        "id": "back",
+        "label": "VOLVER",
+        "rect": [
+          1140,
+          770,
+          174,
+          70
+        ],
+        "action": "returnWithUnsavedGuard"
+      }
+    ]
+  }
+}
