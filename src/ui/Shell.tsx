@@ -15,6 +15,8 @@ import { FinanceView, MarketView, ResearchView } from './Corporate';
 import { FactoriesView } from './Factories';
 import { EmpireHub2D, Workshop2D, Collection2D, FactoryFloor2D, Campaigns2D, League2D } from './Empire2D';
 import { SkillTree2D } from './SkillTree2D';
+import { useTx } from './game2d/text';
+import { isMuted, setMuted, sfx } from './game2d/sfx';
 
 // the vehicle studio and motorsport screens carry the 3D viewers: load them on first visit
 const VehiclesView = lazy(() => import('./Vehicles').then((m) => ({ default: m.VehiclesView })));
@@ -26,6 +28,8 @@ type NavGroup = { id: MessageKey; items: NavItem[] };
 export function Shell() {
   const { g, p } = useGame();
   const { t, lang } = useT();
+  const tx = useTx();
+  const [muted, setMute] = useState(isMuted);
   const view = useStore((s) => s.view), setView = useStore((s) => s.setView), advance = useStore((s) => s.advance), go = useStore((s) => s.go), busy = useStore((s) => s.busy), decide = useStore((s) => s.decide), quit = useStore((s) => s.quit), save = useStore((s) => s.save), notify = useStore((s) => s.notify);
   const race = pendingRound(g, p);
   const last = p.ledger[p.ledger.length - 1];
@@ -35,15 +39,15 @@ export function Shell() {
     ? [{ id: 'nav.group.racing', items: [{ id: 'motorsport', icon: 'flag', label: 'nav.teamHq', dot: !!race }] }, { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'news', icon: 'news', label: 'nav.news' }] }, { id: 'nav.group.system', items: [{ id: 'saves', icon: 'save', label: 'nav.saves' }] }]
     : [
       { id: 'nav.group.command', items: [
-        { id: 'hq2d', icon: 'home', label: 'nav.dashboard', custom: lang === 'es' ? 'Mi imperio' : 'My empire' },
-        { id: 'workshop2d', icon: 'wrench', label: 'nav.vehicles', custom: lang === 'es' ? 'Taller 2D' : '2D workshop' },
-        { id: 'factory2d', icon: 'factory', label: 'nav.factories', custom: lang === 'es' ? 'Planta 2D' : '2D factory' },
-        { id: 'skills2d', icon: 'bolt', label: 'nav.research', custom: lang === 'es' ? 'Habilidades' : 'Tech tree' },
-        { id: 'collection2d', icon: 'box', label: 'nav.company', custom: lang === 'es' ? 'Cofres y piezas' : 'Chests & parts' },
-        { id: 'campaign2d', icon: 'market', label: 'nav.market', custom: lang === 'es' ? 'Publicidad' : 'Campaigns' },
-        { id: 'league2d', icon: 'trophy', label: 'nav.company', custom: lang === 'es' ? 'Liga de marcas' : 'Brands league' },
+        { id: 'hq2d', icon: 'home', label: 'nav.dashboard', custom: tx('nav.hq') },
+        { id: 'workshop2d', icon: 'wrench', label: 'nav.vehicles', custom: tx('nav.workshop') },
+        { id: 'factory2d', icon: 'factory', label: 'nav.factories', custom: tx('nav.factory') },
+        { id: 'skills2d', icon: 'bolt', label: 'nav.research', custom: tx('nav.skills') },
+        { id: 'collection2d', icon: 'box', label: 'nav.company', custom: tx('nav.collection') },
+        { id: 'campaign2d', icon: 'market', label: 'nav.market', custom: tx('nav.campaigns') },
+        { id: 'league2d', icon: 'trophy', label: 'nav.company', custom: tx('nav.league') },
       ] },
-      { id: 'nav.group.engineering', items: [{ id: 'dashboard', icon: 'dashboard', label: 'nav.dashboard', custom: lang === 'es' ? 'Análisis avanzado' : 'Advanced analysis' }, { id: 'vehicles', icon: 'vehicle', label: 'nav.vehicles', dot: ready > 0 }, { id: 'research', icon: 'research', label: 'nav.research' }] },
+      { id: 'nav.group.engineering', items: [{ id: 'dashboard', icon: 'dashboard', label: 'nav.dashboard', custom: tx('nav.advanced') }, { id: 'vehicles', icon: 'vehicle', label: 'nav.vehicles', dot: ready > 0 }, { id: 'research', icon: 'research', label: 'nav.research' }] },
       { id: 'nav.group.operations', items: [{ id: 'factories', icon: 'factory', label: 'nav.factories', dot: ready > 0 }, { id: 'market', icon: 'market', label: 'nav.market' }] },
       { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'company', icon: 'company', label: 'nav.company' }, { id: 'motorsport', icon: 'flag', label: 'nav.motorsport', dot: !!race }] },
       { id: 'nav.group.system', items: [{ id: 'news', icon: 'news', label: 'nav.news' }, { id: 'saves', icon: 'save', label: 'nav.saves' }] },
@@ -70,6 +74,7 @@ export function Shell() {
         <div className="grow" />
         <div className="row topbar-actions" style={{ gap: 4 }}>
           <button className="iconbtn" onClick={async () => { await save(`${p.name} ${g.year}`); notify(t('top.saved')); }} aria-label={t('top.save')} title={t('top.save')}><Icon name="save" /></button>
+          <button className="iconbtn" data-action="sound" aria-pressed={!muted} onClick={() => { setMuted(!muted); setMute(!muted); if (muted) sfx.click(); }} aria-label={muted ? tx('sound.off') : tx('sound.on')} title={muted ? tx('sound.off') : tx('sound.on')}><span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>{muted ? '🔇' : '🔊'}</span></button>
           <SettingsButton />
           <button className="iconbtn" data-action="help" onClick={reopenGuide} aria-label={t('guide.help')} title={t('guide.help')}><Icon name="help" /></button>
           <button className="iconbtn" data-action="quit" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
