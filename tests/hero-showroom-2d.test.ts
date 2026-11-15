@@ -15,7 +15,7 @@ describe('Phase 5B native SVG showroom', () => {
     expect(html).toContain('An original car studio');
     expect(html).toContain('ae-hero-vehicle');
     expect(html).toContain('studioFloor');
-    expect(html).toContain('ForgedWheel'.slice(0,0)); // Renderer produces vector wheel paths, no component labels.
+    expect((html.match(/<ellipse/g)??[]).length).toBeGreaterThan(7); // Wheels + ground shadows.
     expect(html).not.toContain('<canvas');
     expect(html).not.toContain('<img');
     expect(html).not.toContain('https:');
