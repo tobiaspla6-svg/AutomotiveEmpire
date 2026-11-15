@@ -32,6 +32,15 @@ jobs:
         run: npm test
       - name: Production build
         run: npx vite build
+      - name: Render standalone 2D showroom review (real game SVG)
+        run: npx tsx scripts/art-gallery.tsx visual-showroom.html showroom
+      - name: Upload visual review gallery
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ae-phase5b-vector-showroom-review
+          path: visual-showroom.html
+          retention-days: 14
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
