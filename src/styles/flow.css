@@ -274,3 +274,14 @@ html.high-contrast { --fl-soft: #dfe5e6; --fl-line-soft: rgba(238, 236, 229, 0.5
   .shell.flow-focus .nav-group button.on::before { left: -8px; }
   .shell.flow-focus .main { padding: 16px 20px 40px; }
 }
+
+/* Phase 5D: segment-relative product grade. This is NOT a sales multiplier. */
+.fs-grade-line { display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-height:36px; }
+.fs-grade-line>span { font:600 13px/1.2 var(--fl-text);color:var(--fl-soft);flex:1; }
+.fs-grade-line>strong { display:inline-flex;align-items:center;justify-content:center;min-width:45px;padding:6px 11px;border:1px solid currentColor;border-radius:5px;font:800 22px/1 var(--fl-title);color:#9fd0ed;background:#20344a; }
+.fs-grade-line>strong[data-grade="F"],.fs-grade-line>strong[data-grade="E"] {color:#e28b80;background:#3a2530}
+.fs-grade-line>strong[data-grade="D"],.fs-grade-line>strong[data-grade="C"] {color:#e0b37d;background:#3b342c}
+.fs-grade-line>strong[data-grade="B"] {color:#96dbb7;background:#203d3a}
+.fs-grade-line>strong[data-grade="A"] {color:#76d6f1;background:#203a4a}
+.fs-grade-line>strong[data-grade="S"],.fs-grade-line>strong[data-grade="S+"] {color:#dfb4ff;background:#3a2a56}
+.fs-grade-line>small {font:600 12px var(--fl-text);color:var(--fl-soft)}
