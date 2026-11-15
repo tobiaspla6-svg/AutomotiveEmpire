@@ -12,6 +12,9 @@ export interface ArcadeProgress {
   inventory: Record<string, number>;
   equipped: Partial<Record<PartSlot, string>>;
   credits: number;
+  /** Phase 5: achievements claimed (month of the claim) and experience points (company level); absent in older saves */
+  achievements?: Record<string, { y: number; m: number }>;
+  xp?: number;
 }
 export interface ChestResult { part: Blueprint; duplicate: boolean; creditsAdded: number; milestone: number }
 export const MILESTONES = [0, 50, 250, 1000, 5000, 20000] as const;
@@ -94,6 +97,11 @@ export function openSalesChest(g:GameState,milestone:number):ChestResult|string 
   a.claimedMilestones.push(milestone);a.credits+=creditsAdded;
   return {part,duplicate,creditsAdded,milestone};
 }
+/** Company level needed to redeem a blueprint with earned credits (relics can only be won). */
+export const REDEEM_LEVEL: Record<PartRarity, number> = { common: 1, rare: 1, epic: 3, legendary: 5, mythic: 7, relic: 99 };
+// same thresholds as achievements.ts (kept here to avoid an import cycle)
+const LEVEL_XP = [0, 100, 250, 450, 750, 1150, 1700, 2400, 3300, 4500];
+const levelFromXp = (xp: number) => LEVEL_XP.filter((v) => xp >= v).length;
 export function fixedPrice(r:PartRarity) {
   return {common:25,rare:100,epic:350,legendary:900,mythic:2500,relic:10000}[r];
 }
@@ -104,6 +112,8 @@ export function redeemPart(g:GameState,id:string):string|null {
   const a=player(g).arcade??=emptyArcade(),price=fixedPrice(part.rarity);
   if(a.inventory[id])return 'Blueprint already owned.';
   if(a.credits<price)return 'Not enough earned credits.';
+  if(part.rarity==='relic')return 'Relic blueprints are only won, never redeemed.';
+  if(levelFromXp(a.xp??0)<REDEEM_LEVEL[part.rarity])return `Company level ${REDEEM_LEVEL[part.rarity]} needed.`;
   a.credits-=price;a.inventory[id]=(a.inventory[id]??0)+1;
   return null;
 }

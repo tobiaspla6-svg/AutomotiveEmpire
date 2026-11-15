@@ -73,7 +73,9 @@ export function saveDamage(g: GameState): string | null {
           !a.claimedMilestones.every((n: unknown) => isNum(n) && n >= 0) ||
           !isObj(a.inventory) || !Object.values(a.inventory).every((n) => isNum(n) && n >= 0) ||
           !isObj(a.equipped) || !Object.values(a.equipped).every((id) => typeof id === 'string') ||
-          !isNum(a.credits) || a.credits < 0) return `${who} has damaged collectibles`;
+          !isNum(a.credits) || a.credits < 0 ||
+          (a.xp !== undefined && (!isNum(a.xp) || a.xp < 0)) ||
+          (a.achievements !== undefined && (!isObj(a.achievements) || !Object.values(a.achievements).every((v) => isObj(v) && isNum(v.y) && isNum(v.m))))) return `${who} has damaged collectibles`;
     }
     if (!isObj(c.books) || !isObj(c.books.pending) || !isObj(c.books.close)) return `${who} has no books`;
     for (const m of c.models) {
