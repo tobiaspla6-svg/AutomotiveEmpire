@@ -25,8 +25,7 @@ describe('segment-relative vehicle grade F to S+', () => {
     expect(before).toEqual(same(75));
   });
   it('returns real values for a full vehicle model without changing saves', () => {
-    const model = { segment: 'family', spec: { body: 'sedan' }, stats: { scores: same(75) } }
-      as VehicleModel;
+    const model = { segment: 'family', spec: { body: 'sedan' }, stats: { scores: same(75) } } as VehicleModel;
     const old = JSON.stringify(model);
     expect(gradeForModel(model)).toMatchObject({ grade: 'A', score: 78, segmentScore: 75 });
     expect(JSON.stringify(model)).toBe(old);
