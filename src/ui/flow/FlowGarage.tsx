@@ -8,6 +8,7 @@ import { money, num } from '../../i18n/format';
 import type { VehicleModel } from '../../sim/types';
 import { configOf, familyFor } from '../../sim/vehicleConfig';
 import { SEGMENTS } from '../../data/world';
+import { gradeForModel } from '../../sim/marketGrade';
 import { Icon } from '../ds/icons';
 import { Car2D } from '../art2d/Car2D';
 import { sfx } from '../game2d/sfx';
@@ -36,6 +37,7 @@ export function FlowGarage() {
   // without a remembered choice, open on a vehicle that has approved art (if the collection has one)
   const m = list.find((x) => x.id === sel.id) ?? list.find((x) => familyFor(x.spec.body, x.designYear)) ?? list[0];
   const s = m?.stats;
+  const marketGrade = m ? gradeForModel(m) : null;
   // explicit scales: top speed 100–350 km/h, 0–100 km/h from 20 s down to 2.5 s, handling = the simulator's 0–100 drivability score
   const bars = s ? [
     { k: l('Velocidad', 'Top speed'), v: (s.topSpeed - 100) / 250, txt: `${Math.round(s.topSpeed)} km/h`, scale: '100–350 km/h' },
@@ -51,6 +53,7 @@ export function FlowGarage() {
         <h2>{l('Garaje', 'Garage')}<small>{l('Colección', 'Collection')}</small></h2>
         {m && s ? <div className="fs-gcard" data-model={m.id}>
           <h3>{m.name}</h3>
+          {marketGrade && <div className="fs-grade-line"><span>{l('Clasificación de producto', 'Product grade')}</span><strong data-grade={marketGrade.grade} aria-label={l('Clasificación', 'Grade') + ' ' + marketGrade.grade}>{marketGrade.grade}</strong><small>{marketGrade.score}/100</small></div>}
           <div className="fs-tags"><span>{seg}</span><span>{m.designYear}</span><span>{m.status === 'production' ? l('En producción', 'In production') : m.status === 'ready' ? l('Listo', 'Ready') : l('Retirado', 'Retired')}</span><span>{familyFor(m.spec.body, m.designYear) ? l('Arte: familia GT-01', 'Art: GT-01 family') : l('Arte vectorial provisional', 'Provisional vector art')}</span></div>
           <div className="fs-bars">{bars.map((b) => <label key={b.k}><span>{b.k}<em>{b.txt}</em></span>
             <span className="fs-meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.max(0, Math.min(1, b.v)) * 100)} aria-label={`${b.k} ${b.txt}, ${l('escala', 'scale')} ${b.scale}`}><em style={{ width: `${Math.max(2, Math.min(1, b.v) * 100)}%` }} /></span></label>)}</div>
