@@ -4,16 +4,31 @@ import * as fs from 'node:fs';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Car2D } from '../src/ui/art2d/Car2D';
+import { HeroShowroom2D } from '../src/ui/art2d/HeroShowroom2D';
 import type { BodyType } from '../src/sim/types';
 import { Engine2D } from '../src/ui/art2d/Engine2D';
 import { Chassis2D, Gearbox2D, Suspension2D, Brake2D, Tyre2D } from '../src/ui/art2d/Parts2D';
 import { Chest2D, PartCard, RARITY_ORDER } from '../src/ui/art2d/Rewards2D';
 import { Campus2D } from '../src/ui/art2d/Campus2D';
+import { FactoryLine2D, SECTORS } from '../src/ui/art2d/FactoryLine2D';
 import { BLUEPRINTS } from '../src/sim/progression';
 
 const out = process.argv[2] ?? 'gallery.html', section = process.argv[3] ?? 'cars';
 const cells: string[] = [];
 const cell = (title: string, node: ReturnType<typeof h>) => cells.push(`<figure><div class="art">${renderToStaticMarkup(node, { identifierPrefix: 'c' + cells.length + '_' })}</div><figcaption>${title}</figcaption></figure>`);
+if (section === 'showroom') {
+  const modes = [
+    { body: 'sedan' as const, color: '#315b8e', label: 'Founder / dark sapphire sedan' },
+    { body: 'coupe' as const, color: '#a33135', label: 'CEO / metallic red grand-tourer' },
+    { body: 'suv' as const, color: '#b69b71', label: 'SUV / satin champagne' },
+    { body: 'supercar' as const, color: '#e2a92b', label: 'Supercar' },
+    { body: 'hatch' as const, color: '#3d8a5a', label: 'Hatchback' },
+    { body: 'wagon' as const, color: '#9aa4b1', label: 'Wagon' },
+    { body: 'roadster' as const, color: '#c8352e', label: 'Roadster' },
+    { body: 'pickup' as const, color: '#22262e', label: 'Pickup' },
+  ];
+  modes.forEach((car) => cell(car.label, h(HeroShowroom2D, { body:car.body, color:car.color, label:car.label })));
+}
 if (section === 'cars') {
   const bodies: BodyType[] = ['hatch', 'sedan', 'wagon', 'coupe', 'roadster', 'supercar', 'suv', 'pickup'];
   const colors = ['#c8352e', '#2f6db3', '#e2a92b', '#3d8a5a', '#e9e7df', '#22262e', '#7b3fb0', '#d86a2a'];
@@ -38,10 +53,17 @@ if (section === 'rewards') {
   RARITY_ORDER.forEach((r) => cell(r, h(Chest2D, { rarity: r, state: r === 'legendary' || r === 'relic' ? 'open' : 'ready' })));
   BLUEPRINTS.forEach((b, i) => cell(b.id, h(PartCard, { part: b, owned: i % 3 ? 1 : 0, lang: 'es' })));
 }
+if (section === 'factory') {
+  const labels = Object.fromEntries(SECTORS.map((x) => [x, x])) as never;
+  for (const [auto, bn] of [[0.2, 'paint'], [0.85, 'assembly']] as const) {
+    const load = Object.fromEntries(SECTORS.map((x, i) => [x, { use: x === bn ? 1.05 : 0.45 + i * 0.07, bottleneck: x === bn, working: true }])) as never;
+    cell(`automation ${auto}, bottleneck ${bn}`, h(FactoryLine2D, { load, automation: auto, color: '#c8352e', active: 'body', onPick: () => {}, labels }));
+  }
+}
 if (section === 'campus') {
   const base = { name: 'Aurelia Motors', color: '#c8352e', billboard: true, stock: 2000 } as const;
   cell('small founder', h(Campus2D, { s: { ...base, officeTier: 1, studioTier: 1, labTier: 1, plants: [{ id: 'a', name: 'A', capacity: 60, building: false, automation: 0.3 }], showroomTier: 0, track: false, racing: false, trophies: 0 } }));
   cell('growing', h(Campus2D, { s: { ...base, officeTier: 2, studioTier: 2, labTier: 2, plants: [{ id: 'a', name: 'A', capacity: 600, building: false, automation: 0.6 }, { id: 'b', name: 'B', capacity: 1500, building: true, automation: 0.6 }], showroomTier: 1, track: true, racing: false, trophies: 2 } }));
   cell('empire', h(Campus2D, { s: { ...base, officeTier: 4, studioTier: 3, labTier: 3, plants: [1, 2, 3, 4].map((i) => ({ id: String(i), name: String(i), capacity: 5000, building: false, automation: 0.9 })), showroomTier: 3, track: true, racing: true, trophies: 9 }, extraPlants: 3 }));
 }
-fs.writeFileSync(out, `<!doctype html><meta charset="utf-8"><style>body{background:#0e141d;color:#cfd8e3;font:12px system-ui;margin:16px}main{display:grid;grid-template-columns:repeat(${section === 'campus' ? 1 : section === 'rewards' ? 6 : 4},1fr);gap:10px}figure{margin:0;background:linear-gradient(#1b2737,#121a26);border-radius:10px;padding:6px}.art svg{width:100%;display:block}figcaption{text-align:center;opacity:.7}</style><main>${cells.join('')}</main>`);
+fs.writeFileSync(out, `<!doctype html><meta charset="utf-8"><style>body{background:#0e141d;color:#cfd8e3;font:12px system-ui;margin:16px}main{display:grid;grid-template-columns:repeat(${section === 'showroom' ? 2 : section === 'campus' || section === 'factory' ? 1 : section === 'rewards' ? 6 : 4},1fr);gap:10px}figure{margin:0;overflow:hidden;background:linear-gradient(#1b2737,#121a26);border-radius:10px;padding:6px}figure:has(.ae-hero-showroom){max-width:1280px;margin:auto;width:100%}.art svg{width:100%;display:block}figcaption{text-align:center;opacity:.7}</style><main>${cells.join('')}</main>`);

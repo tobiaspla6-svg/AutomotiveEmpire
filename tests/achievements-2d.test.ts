@@ -145,6 +145,8 @@ describe('2D art', () => {
     expect(html(createElement(Campus2D, { s: { ...campus, plants: [...campus.plants] }, active: null }))).toContain('<svg');
     const load = Object.fromEntries(SECTORS.map((s) => [s, { use: 0.5, bottleneck: s === 'paint', working: true }])) as never;
     const plant = html(createElement(FactoryLine2D, { load, automation: 0.8, color: '#c00', active: 'body', onPick: () => {}, labels: Object.fromEntries(SECTORS.map((s) => [s, s])) as never }));
-    expect(plant).toContain('fl-bottleneck'); expect(plant).toContain('fl-robot');
+    expect(plant).toContain('fl-bottleneck');
+    const manual = html(createElement(FactoryLine2D, { load, automation: 0.1, color: '#c00', active: 'body', onPick: () => {}, labels: Object.fromEntries(SECTORS.map((s) => [s, s])) as never }));
+    expect(manual).not.toBe(plant); // robots replace workers as automation rises
   });
 });

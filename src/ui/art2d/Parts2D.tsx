@@ -1,59 +1,141 @@
-// Small technical illustrations of the parts the workshop offers: chassis structures, gearboxes, suspensions, brakes
-// and tyres. Each is a 120×90 SVG in the same flat-vector style as the cars and engines.
-import { memo, useId } from 'react';
+// Technical illustrations of the parts the workshop offers, in true perspective with the shared solids: chassis
+// structures (ladder frame, steel or aluminium monocoque, tubular space frame, carbon tub), gearboxes (manual, automatic,
+// dual clutch), one corner of each suspension type, brakes from drums to carbon-ceramic discs, and tyres by compound
+// and width. Same renderer and lighting as the cars and engines.
+import { memo } from 'react';
 import type { BrakeType, ChassisType, Gearbox, SuspType, TireCompound } from '../../sim/types';
+import { MAT, SolidArt, abox, box, coil, cyl, over, tube, type Mat, type Solid } from './solids';
+import type { Projector, V3 } from './vector3d';
 
-const Frame = ({ children, label }: { children: React.ReactNode; label: string }) => (
-  <svg className="part2d" viewBox="0 0 120 90" role="img" aria-label={label}>{children}</svg>
-);
+const X: V3 = [1, 0, 0], Y: V3 = [0, 1, 0], Z: V3 = [0, 0, 1];
 
 export const Chassis2D = memo(function Chassis2D({ type }: { type: ChassisType }) {
-  const c = { ladder: '#7b8593', steel: '#a8b2bf', spaceframe: '#e0b45c', aluminium: '#d4dbe3', carbon: '#2a2d33' }[type];
-  return <Frame label={type}>
-    {type === 'ladder' && <g stroke={c} strokeWidth="5" strokeLinecap="round"><path d="M14 30H106M14 60H106" />{[22, 44, 66, 88].map((x) => <path key={x} d={`M${x} 30V60`} strokeWidth="4" />)}</g>}
-    {(type === 'steel' || type === 'aluminium') && <g><path d="M12 62Q12 40 30 34L48 22H78L98 36Q110 40 110 62Z" fill={c} stroke="#3a414b" strokeWidth="2" /><path d="M50 26H76L90 38H40Z" fill="#1b2430" opacity="0.6" /><path d="M58 26V60M84 36V60" stroke="#3a414b" strokeWidth="2" />{type === 'aluminium' && <path d="M16 56H106" stroke="#fff" strokeOpacity="0.6" strokeWidth="2" />}</g>}
-    {type === 'spaceframe' && <g stroke={c} strokeWidth="2.5" fill="none" strokeLinecap="round"><path d="M12 62H108L96 30H30Z" /><path d="M30 30L48 62L62 30L76 62L96 30M12 62L30 30" /><path d="M40 30L50 16H82L96 30" /><path d="M50 16L62 30M82 16L76 30" /></g>}
-    {type === 'carbon' && <g><path d="M16 60Q16 36 40 30L56 20H82L100 34Q108 40 106 60Z" fill={c} stroke="#5a606b" strokeWidth="2" />{Array.from({ length: 9 }, (_, i) => <path key={i} d={`M${20 + i * 10} 58L${30 + i * 10} 32`} stroke="#4a4f58" strokeWidth="2" opacity="0.6" />)}<path d="M56 22H82L96 34H48Z" fill="#11161d" opacity="0.7" /></g>}
-  </Frame>;
+  const build = (cam: Projector) => {
+    const S: Solid[] = [];
+    const m: Mat = type === 'aluminium' ? MAT.alu : type === 'spaceframe' ? { c: [214, 170, 70], spec: 0.4 } : type === 'carbon' ? MAT.carbon : type === 'ladder' ? MAT.iron : { c: [142, 150, 160], spec: 0.35 };
+    if (type === 'ladder') {
+      for (const y of [-0.42, 0.42]) S.push(abox(cam, [2, y, 0.3], 2, 0.05, 0.1, m));
+      for (const x of [0.15, 1.1, 2.0, 2.9, 3.85]) S.push(abox(cam, [x, 0, 0.3], 0.05, 0.42, 0.07, m));
+      S.push(abox(cam, [-0.02, 0, 0.3], 0.04, 0.62, 0.08, MAT.steel));
+      for (const x of [0.6, 3.4]) for (const y of [-0.5, 0.5]) S.push(cyl(cam, [x, y, 0.42], Z, 0.05, 0.22, MAT.spring, 10));
+      return S;
+    }
+    if (type === 'carbon') {
+      S.push(abox(cam, [2, 0, 0.32], 0.9, 0.6, 0.2, m), abox(cam, [2.0, -0.62, 0.38], 0.85, 0.06, 0.26, m), abox(cam, [2.0, 0.62, 0.38], 0.85, 0.06, 0.26, m));
+      S.push(abox(cam, [1.12, 0, 0.55], 0.06, 0.6, 0.4, m), abox(cam, [2.9, 0, 0.6], 0.08, 0.6, 0.45, m));
+      S.push(...tube(cam, [[2.85, -0.45, 1.0], [2.8, -0.35, 1.25], [2.8, 0.35, 1.25], [2.85, 0.45, 1.0]], 0.04, MAT.chrome));
+      for (const y of [-0.35, 0.35]) S.push(...tube(cam, [[1.1, y, 0.35], [0.2, y * 0.8, 0.35]], 0.035, MAT.alu), ...tube(cam, [[2.95, y, 0.4], [3.9, y * 0.8, 0.4]], 0.035, MAT.alu));
+      return S;
+    }
+    if (type === 'spaceframe') {
+      const r = 0.028, lo = 0.25, hi = 0.75;
+      const corners = (z: number, w: number): V3[] => [[0.2, -w, z], [3.8, -w, z], [3.8, w, z], [0.2, w, z], [0.2, -w, z]];
+      S.push(...tube(cam, corners(lo, 0.6), r, m), ...tube(cam, [[0.6, -0.5, hi], [3.4, -0.5, hi]], r, m), ...tube(cam, [[0.6, 0.5, hi], [3.4, 0.5, hi]], r, m));
+      for (const x of [0.6, 1.5, 2.4, 3.4]) for (const y of [-0.55, 0.55]) S.push(...tube(cam, [[x, y, lo], [x, y * 0.9, hi]], r, m));
+      for (const [a, b] of [[0.6, 1.5], [1.5, 2.4], [2.4, 3.4]]) for (const y of [-0.55, 0.55]) S.push(...tube(cam, [[a, y, lo], [b, y * 0.9, hi]], r, m));
+      for (const x of [0.6, 2.4, 3.4]) S.push(...tube(cam, [[x, -0.5, hi], [x, 0.5, hi]], r, m));
+      S.push(...tube(cam, [[2.4, -0.48, hi], [2.3, -0.35, 1.2], [2.3, 0.35, 1.2], [2.4, 0.48, hi]], r * 1.3, m));
+      return S;
+    }
+    // steel or aluminium monocoque: floor pan, sills, bulkheads, pillars and roof rails
+    S.push(abox(cam, [2, 0, 0.2], 1.6, 0.62, 0.03, m), abox(cam, [2, -0.66, 0.3], 1.1, 0.05, 0.12, m), abox(cam, [2, 0.66, 0.3], 1.1, 0.05, 0.12, m));
+    S.push(abox(cam, [0.95, 0, 0.55], 0.04, 0.62, 0.33, m), abox(cam, [3.15, 0, 0.6], 0.05, 0.62, 0.38, m));
+    for (const y of [-0.62, 0.62]) {
+      S.push(...tube(cam, [[1.0, y, 0.85], [1.55, y * 0.92, 1.3], [2.9, y * 0.92, 1.32], [3.3, y, 0.9]], 0.035, m));
+      S.push(abox(cam, [2.2, y * 0.95, 0.8], 0.05, 0.035, 0.5, m));
+      S.push(...tube(cam, [[0.95, y * 0.9, 0.55], [0.15, y * 0.8, 0.5]], 0.05, m), ...tube(cam, [[3.15, y * 0.9, 0.55], [3.95, y * 0.8, 0.6]], 0.05, m));
+    }
+    if (type === 'aluminium') for (const [x, y] of [[0.95, -0.62], [0.95, 0.62], [3.15, -0.62], [3.15, 0.62]]) S.push(abox(cam, [x, y, 0.55], 0.08, 0.06, 0.1, MAT.chrome));
+    return S;
+  };
+  return <SolidArt build={build} eye={[-2.2, -3.6, 2.6]} target={[2, 0, 0.5]} deps={'ch' + type} className="part2d" label={type} />;
 });
 
 export const Gearbox2D = memo(function Gearbox2D({ type, gears = 5 }: { type: Gearbox; gears?: number }) {
-  return <Frame label={`${type} ${gears}`}>
-    <path d="M18 34H78L102 46V70H18Z" fill="#8b95a3" stroke="#3a414b" strokeWidth="2" />
-    {type === 'auto' && <circle cx="30" cy="52" r="18" fill="#6c7685" stroke="#3a414b" strokeWidth="2" />}
-    {type === 'dct' && <g><circle cx="30" cy="46" r="11" fill="#6c7685" stroke="#3a414b" /><circle cx="30" cy="62" r="11" fill="#5b6574" stroke="#3a414b" /></g>}
-    {type === 'manual' && <g><path d="M60 34V14" stroke="#2b3038" strokeWidth="4" /><circle cx="60" cy="12" r="7" fill="#1b1f25" /><path d="M86 18h18M86 26h18M92 14v16M100 14v16" stroke="#c9d0d8" strokeWidth="1.5" /></g>}
-    <text x="58" y="62" textAnchor="middle" fontSize="13" fontWeight="800" fill="#1b2430" fontFamily="system-ui, sans-serif">{gears}</text>
-  </Frame>;
+  const build = (cam: Projector) => {
+    const S: Solid[] = [];
+    if (type === 'auto') {
+      S.push(cyl(cam, [0, 0, 0.4], X, 0.36, 0.3, MAT.alu, 26, 0.3), cyl(cam, [0.55, 0, 0.36], X, 0.26, 0.8, MAT.alu, 22, 0.2), abox(cam, [0.55, 0, 0.08], 0.38, 0.2, 0.04, MAT.iron));
+      S.push(...tube(cam, [[0.3, -0.22, 0.4], [0.5, -0.4, 0.3], [0.9, -0.4, 0.3]], 0.02, MAT.steel));
+    } else {
+      S.push(cyl(cam, [0, 0, 0.4], X, type === 'dct' ? 0.33 : 0.34, 0.28, MAT.alu, 26, 0.26), abox(cam, [0.55, 0, 0.36], 0.4, 0.2, 0.22, MAT.alu));
+      for (let i = 0; i < Math.min(10, gears); i++) S.push(abox(cam, [0.22 + i * (0.68 / Math.max(1, gears - 1)), -0.205, 0.36], 0.012, 0.01, 0.18, MAT.iron));
+      if (type === 'manual') S.push(...tube(cam, [[0.6, 0, 0.58], [0.6, 0, 1.0]], 0.02, MAT.chrome), cyl(cam, [0.6, 0, 1.05], Z, 0.06, 0.08, MAT.black, 14));
+      else S.push(abox(cam, [0.55, 0.0, 0.66], 0.22, 0.14, 0.08, MAT.black), cyl(cam, [0.05, 0, 0.4], X, 0.18, 0.32, MAT.steel, 20));
+    }
+    S.push(cyl(cam, [1.05, 0, 0.36], X, 0.06, 0.25, MAT.steel, 14));
+    return S;
+  };
+  return <SolidArt build={build} eye={[-1.6, -2.6, 1.7]} target={[0.5, 0, 0.45]} deps={'gb' + type + gears} className="part2d" label={type} />;
 });
 
 export const Suspension2D = memo(function Suspension2D({ type }: { type: SuspType }) {
-  return <Frame label={type}>
-    <circle cx="86" cy="58" r="22" fill="#15181d" stroke="#3a3f47" strokeWidth="3" /><circle cx="86" cy="58" r="10" fill="#9aa4b1" />
-    {type === 'solid' && <g><path d="M8 58H86" stroke="#7b8593" strokeWidth="7" /><path d="M20 40Q44 30 68 40" stroke="#c9d0d8" strokeWidth="3" fill="none" /><path d="M20 44Q44 34 68 44" stroke="#c9d0d8" strokeWidth="3" fill="none" /></g>}
-    {type === 'macpherson' && <g><path d="M70 50L48 70" stroke="#7b8593" strokeWidth="5" /><path d="M76 40L64 8" stroke="#c9d0d8" strokeWidth="6" />{[14, 20, 26, 32].map((y) => <path key={y} d={`M60 ${y}h16`} stroke="#e0b45c" strokeWidth="2.5" />)}</g>}
-    {type === 'wishbone' && <g stroke="#7b8593" strokeWidth="5" strokeLinecap="round"><path d="M70 42L36 30L40 46Z" fill="#7b8593" /><path d="M70 72L32 74L36 60Z" fill="#7b8593" /><path d="M56 36L50 68" stroke="#e0b45c" strokeWidth="4" /></g>}
-    {type === 'multilink' && <g stroke="#7b8593" strokeWidth="3.5" strokeLinecap="round"><path d="M70 44L30 30M70 50L28 46M70 66L30 64M70 72L34 80" /><path d="M54 38L50 70" stroke="#e0b45c" strokeWidth="4" /></g>}
-  </Frame>;
+  const build = (cam: Projector) => {
+    const S: Solid[] = [];
+    // the wheel hub and brake disc at the outer end, the body mount inboard
+    S.push(cyl(cam, [0, -0.62, 0.35], Y, 0.2, 0.03, MAT.steel, 22), cyl(cam, [0, -0.6, 0.35], Y, 0.07, 0.08, MAT.alu, 14));
+    if (type === 'solid') {
+      S.push(cyl(cam, [0, 0, 0.35], Y, 0.06, 1.2, MAT.iron, 14), cyl(cam, [0, 0.3, 0.35], Y, 0.16, 0.16, MAT.iron, 18));
+      for (let k = 0; k < 4; k++) S.push(box(cam, [0, -0.42, 0.24 - k * 0.025], [0.55 - k * 0.1, 0, 0.018 * k], [0, 0.04, 0], [0, 0, 0.012], MAT.steel));
+      S.push(cyl(cam, [0.25, -0.35, 0.65], [0.15, 0, 1], 0.035, 0.6, MAT.dark, 10));
+      return S;
+    }
+    const upright: V3 = [0, -0.5, 0.35];
+    S.push(abox(cam, upright, 0.05, 0.04, 0.16, MAT.alu));
+    if (type === 'macpherson') {
+      S.push(cyl(cam, [0, -0.44, 0.75], [0, 0.15, 1], 0.04, 0.7, MAT.steel, 12), ...coil(cam, [0, -0.43, 0.8], [0, 0.15, 1], 0.1, 0.35, 5, 0.015, MAT.spring));
+      S.push(...tube(cam, [[0, -0.5, 0.2], [0.25, 0.1, 0.22], [-0.25, 0.1, 0.22], [0, -0.5, 0.2]], 0.025, MAT.iron));
+    } else {
+      const arms = type === 'wishbone' ? [0.2, 0.5] : [0.18, 0.3, 0.52];
+      for (const z of arms) S.push(...tube(cam, [[0, -0.5, z], [0.22, 0.1, z + 0.02], [-0.22, 0.1, z + 0.02], [0, -0.5, z]], 0.022, type === 'multilink' ? MAT.alu : MAT.iron));
+      if (type === 'multilink') S.push(...tube(cam, [[0.06, -0.5, 0.35], [0.4, 0.05, 0.4]], 0.02, MAT.alu));
+      S.push(cyl(cam, [0.05, -0.25, 0.62], [0, 0.4, 1], 0.035, 0.55, MAT.dark, 10), ...coil(cam, [0.05, -0.25, 0.64], [0, 0.4, 1], 0.08, 0.3, 5, 0.013, MAT.spring));
+    }
+    return S;
+  };
+  return <SolidArt build={build} eye={[-1.6, -2.2, 1.3]} target={[0, -0.2, 0.42]} deps={'su' + type} className="part2d" label={type} />;
 });
 
 export const Brake2D = memo(function Brake2D({ type }: { type: BrakeType }) {
-  return <Frame label={type}>
-    {type === 'drum'
-      ? <g><circle cx="60" cy="45" r="32" fill="#4c535e" stroke="#2a2f37" strokeWidth="3" /><circle cx="60" cy="45" r="22" fill="#6c7685" />{[0, 1, 2, 3, 4].map((i) => <circle key={i} cx={60 + Math.cos(i * 1.26) * 12} cy={45 + Math.sin(i * 1.26) * 12} r="3" fill="#2a2f37" />)}</g>
-      : <g><circle cx="60" cy="45" r="34" fill={type === 'ceramic' ? '#3b3f46' : '#aab3bf'} stroke="#59616d" strokeWidth="2" /><circle cx="60" cy="45" r="14" fill="#6c7685" />
-        {type !== 'disc' && Array.from({ length: 18 }, (_, i) => { const a = (i / 18) * Math.PI * 2; return <circle key={i} cx={60 + Math.cos(a) * 25} cy={45 + Math.sin(a) * 25} r="1.8" fill="#2a2f37" />; })}
-        <path d="M84 20Q102 45 84 70" stroke={type === 'ceramic' ? '#e8b04a' : type === 'vented' ? '#c8322b' : '#59616d'} strokeWidth="13" fill="none" strokeLinecap="round" /></g>}
-  </Frame>;
+  const build = (cam: Projector) => {
+    const S: Solid[] = [];
+    const face = (r: number, y: number, m: Mat, k: number, seg = 30) => over(cyl(cam, [0, y, 0], Y, r, 0.004, m, seg), k);
+    if (type === 'drum') {
+      S.push(cyl(cam, [0, 0, 0], Y, 0.42, 0.24, MAT.iron, 30));
+      for (let k = 0; k < 5; k++) S.push(cyl(cam, [0, -0.08 + k * 0.04, 0], Y, 0.45, 0.014, MAT.iron, 30));
+      S.push(face(0.2, -0.125, MAT.steel, 1, 22), face(0.08, -0.13, MAT.dark, 2, 14));
+      for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2; S.push(over(cyl(cam, [Math.cos(a) * 0.14, -0.15, Math.sin(a) * 0.14], Y, 0.022, 0.05, MAT.chrome, 8), 3)); }
+      return S;
+    }
+    const disc: Mat = type === 'ceramic' ? { c: [70, 72, 78], spec: 0.5 } : MAT.steel;
+    const thick = type === 'disc' ? 0.04 : 0.1, f = -thick / 2 - 0.002;
+    S.push(cyl(cam, [0, 0, 0], Y, 0.48, thick, disc, 40));
+    if (type !== 'disc') for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; S.push(over(box(cam, [Math.cos(a) * 0.48, 0, Math.sin(a) * 0.48], [Math.cos(a) * 0.004, 0, Math.sin(a) * 0.004], [0, thick * 0.32, 0], [-Math.sin(a) * 0.014, 0, Math.cos(a) * 0.014], MAT.black), 1)); }
+    S.push(face(0.24, f - 0.002, MAT.alu, 2, 26), face(0.1, f - 0.006, MAT.dark, 3, 16));
+    for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2 + 0.3; S.push(over(cyl(cam, [Math.cos(a) * 0.16, f - 0.02, Math.sin(a) * 0.16], Y, 0.02, 0.03, MAT.chrome, 8), 4)); }
+    if (type !== 'disc') for (let k = 0; k < 30; k++) { const a = (k / 30) * Math.PI * 2, r = 0.31 + (k % 3) * 0.045; S.push(face(0.012, f, MAT.black, 2, 6), over(cyl(cam, [Math.cos(a) * r, f, Math.sin(a) * r], Y, 0.013, 0.004, MAT.black, 6), 2)); }
+    // calliper straddling the disc at the top right, in front of it
+    const cal: Mat = type === 'ceramic' ? MAT.gold : type === 'vented' ? MAT.red : MAT.iron;
+    const big = type === 'ceramic' ? 1.3 : type === 'vented' ? 1.12 : 0.9;
+    S.push(over(box(cam, [0.27, -0.02, 0.27], [0.12 * big, 0, -0.12 * big], [0, thick / 2 + 0.07, 0], [0.07, 0, 0.07], cal), 5));
+    return S;
+  };
+  return <SolidArt build={build} eye={[-1.9, -2.4, 1.0]} target={[0, 0, 0]} deps={'br' + type} className="part2d" label={type} />;
 });
 
 export const Tyre2D = memo(function Tyre2D({ compound, width = 205 }: { compound: TireCompound; width?: number }) {
-  const id = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const tread = { economy: 9, touring: 7, sport: 4, semislick: 0 }[compound];
-  return <Frame label={`${compound} ${width}`}>
-    <defs><linearGradient id={`t${id}`} x1="0" x2="1"><stop offset="0" stopColor="#0d0e10" /><stop offset="0.5" stopColor="#2a2d33" /><stop offset="1" stopColor="#0d0e10" /></linearGradient></defs>
-    <rect x={60 - width / 8} y="8" width={width / 4} height="74" rx="12" fill={`url(#t${id})`} />
-    {Array.from({ length: tread }, (_, i) => <path key={i} d={`M${60 - width / 8 + 4} ${14 + i * (62 / Math.max(1, tread))}h${width / 4 - 8}`} stroke="#4a4f58" strokeWidth="2" />)}
-    {compound === 'semislick' && <path d={`M60 12V78`} stroke="#e8b04a" strokeWidth="2" />}
-  </Frame>;
+  const build = (cam: Projector) => {
+    const w = Math.max(0.16, Math.min(0.36, width / 1000)), S: Solid[] = [];
+    S.push(cyl(cam, [0, 0, 0], Y, 0.48, w, MAT.rubber, 40));
+    const grooves = compound === 'semislick' ? 0 : compound === 'sport' ? 2 : compound === 'touring' ? 3 : 4;
+    for (let k = 0; k < grooves; k++) S.push(cyl(cam, [0, -w / 2 + ((k + 1) / (grooves + 1)) * w, 0], Y, 0.482, 0.012, { c: [8, 8, 9] }, 40));
+    const sw = -w / 2 - 0.002, face = (r: number, m: Mat, k: number, seg = 40) => over(cyl(cam, [0, sw - k * 0.001, 0], Y, r, 0.003, m, seg), k);
+    const band: Mat = { c: compound === 'semislick' ? [210, 50, 40] : compound === 'sport' ? [230, 190, 60] : compound === 'touring' ? [200, 205, 210] : [90, 190, 120] };
+    S.push(face(0.405, band, 1), face(0.39, MAT.rubber, 2), face(0.33, MAT.chrome, 3, 32), face(0.3, MAT.dark, 4, 32));
+    for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; S.push(over(box(cam, [Math.cos(a) * 0.17, sw - 0.012, Math.sin(a) * 0.17], [Math.cos(a) * 0.13, 0, Math.sin(a) * 0.13], [0, 0.006, 0], [-Math.sin(a) * 0.02, 0, Math.cos(a) * 0.02], MAT.chrome), 5)); }
+    S.push(face(0.06, MAT.alu, 6, 16));
+    return S;
+  };
+  return <SolidArt build={build} eye={[-1.5, -2.5, 0.9]} target={[0, 0, 0]} deps={'ty' + compound + width} className="part2d" label={compound} />;
 });
+
