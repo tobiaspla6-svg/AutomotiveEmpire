@@ -1,3 +1,5 @@
+> CHECKPOINT HISTÓRICO: para las 12 imágenes generadas y el montaje actual consultar `PRODUCTION_HANDOFF.md`.
+
 # SUV 1990 — entrega de originales y preparación
 
 ## Estado real

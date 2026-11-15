@@ -1,0 +1,65 @@
+{
+  "coordinate_system": "source pixels, origin top-left",
+  "source_size": [
+    2752,
+    1536
+  ],
+  "source": "sources/proposal-01.jpg",
+  "mount_status": "visual_overlay_reviewed_usable_in_prototype",
+  "designs": {
+    "steel": {
+      "original": "generated/steel-v2-original.png",
+      "native_bbox": [
+        63,
+        70,
+        1113,
+        1135
+      ],
+      "native_pivot": [
+        619.0,
+        637.0
+      ],
+      "uniform_scale_to_source": 0.23612334801762114,
+      "target_radius": 134,
+      "hubs": [
+        [
+          566,
+          1115
+        ],
+        [
+          2094,
+          1115
+        ]
+      ],
+      "external_aspect_ratio": 0.9806167400881057,
+      "note": "Explicit sprite mounting, not a claim of generator pixel registration. Same native sprite and scale reused at both hubs."
+    },
+    "alloy": {
+      "original": "generated/alloy-v2-original.png",
+      "native_bbox": [
+        56,
+        64,
+        1132,
+        1143
+      ],
+      "native_pivot": [
+        621.5,
+        635.0
+      ],
+      "uniform_scale_to_source": 0.23447069116360456,
+      "target_radius": 134,
+      "hubs": [
+        [
+          566,
+          1115
+        ],
+        [
+          2094,
+          1115
+        ]
+      ],
+      "external_aspect_ratio": 0.9903762029746281,
+      "note": "Explicit sprite mounting, not a claim of generator pixel registration. Same native sprite and scale reused at both hubs."
+    }
+  }
+}

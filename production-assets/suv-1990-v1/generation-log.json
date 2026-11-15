@@ -6,10 +6,40 @@
   "submitted_generation_requests": 0,
   "credits_consumed_by_these_actions": 0,
   "attempts": [
-    {"step": "capture existing Chrome window", "result": "FrameArrived timed out: timed out waiting on channel"},
-    {"step": "refresh window selection, activate and recapture once", "result": "window capture timed out: timed out waiting on channel"}
+    {
+      "step": "capture existing Chrome window",
+      "result": "FrameArrived timed out: timed out waiting on channel"
+    },
+    {
+      "step": "refresh window selection, activate and recapture once",
+      "result": "window capture timed out: timed out waiting on channel"
+    }
   ],
-  "status": "blocked_before_editor_observation",
+  "status": "partial_prototype_verified_four_layers_remaining_corrections",
   "next_step": "Restore functioning browser/desktop observation, then generate one component at a time using the selected original; verify actual outputs before approval.",
-  "rejected_provider_requests_this_turn": 0
+  "rejected_provider_requests_this_turn": 0,
+  "followup_attempts": [
+    {
+      "date": "2026-11-15",
+      "task": "Retry Flow and inspect existing SUV component cards before generating more",
+      "observed_url": "https://flow.google.com/project/f5743459-f45c-4104-8080-5f073fbe1c29",
+      "initial_state": "window minimized",
+      "capture_after_activation": "window capture timed out: timed out waiting on channel",
+      "accessibility_read": "successful, existing cards labeled alloy wheels and halogen headlamps",
+      "click_existing_alloy_card": "coordinate input geometry is unavailable",
+      "keyboard_navigation": "F6 and Tab attempted; unable to establish usable content focus",
+      "generation_requests_submitted": 0,
+      "components_downloaded": 0,
+      "modular_fit_verified": false
+    }
+  ],
+  "fallback": {
+    "provider": "ChatGPT built-in image_gen",
+    "successful_images": 12,
+    "prompts": "generated/prompts.json",
+    "real_files": "generated/manifest.json",
+    "external_paid_api_used": false,
+    "higgsfield_used": false,
+    "visual_review": "qa/visual-review.json"
+  }
 }

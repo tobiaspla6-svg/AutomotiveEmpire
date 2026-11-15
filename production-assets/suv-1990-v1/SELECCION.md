@@ -1,3 +1,5 @@
+> Revisión inicial de las cuatro propuestas. El estado de producción posterior está en `PRODUCTION_HANDOFF.md`.
+
 # SUV 1990 — selección artística
 
 Seleccionada: `sources/proposal-01.jpg`, original de Flow proporcionado por el usuario, 2752 × 1536, JPEG RGB. Referencia visual elegida; todavía no es un asset modular.

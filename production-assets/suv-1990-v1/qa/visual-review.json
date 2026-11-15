@@ -1,0 +1,37 @@
+{
+  "provider": "ChatGPT built-in image_gen",
+  "images_generated": 12,
+  "raw_layers_aligned_by_generator": false,
+  "visual_review_performed": true,
+  "approved_scope": "prototype assembly over original image 1, not complete production vehicle",
+  "layers": {
+    "layers/rims-steel-registered.svg": {
+      "status": "usable_in_verified_prototype",
+      "alpha": "transparent SVG outside actual generated artwork",
+      "assembly": "visual overlay reviewed; source body and tires unchanged"
+    },
+    "layers/rims-alloy-registered.svg": {
+      "status": "usable_in_verified_prototype",
+      "alpha": "transparent SVG outside actual generated artwork",
+      "assembly": "visual overlay reviewed; source body and tires unchanged"
+    },
+    "layers/headlamp-a-registered.svg": {
+      "status": "usable_in_verified_prototype",
+      "alpha": "transparent SVG outside actual generated artwork",
+      "assembly": "visual overlay reviewed; source body and tires unchanged"
+    },
+    "layers/headlamp-b-registered.svg": {
+      "status": "usable_in_verified_prototype",
+      "alpha": "transparent SVG outside actual generated artwork",
+      "assembly": "visual overlay reviewed; source body and tires unchanged"
+    },
+    "layers/bumper-face-a-registered.svg": {
+      "status": "pending_correction",
+      "reason": "material transitions/seams visible; face insert only, not complete detachable bumper"
+    },
+    "layers/bumper-face-b-registered.svg": {
+      "status": "pending_correction",
+      "reason": "material transitions/seams visible; face insert only, not complete detachable bumper"
+    }
+  }
+}

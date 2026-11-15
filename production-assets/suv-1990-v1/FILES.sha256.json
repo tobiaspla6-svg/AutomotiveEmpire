@@ -1,0 +1,222 @@
+[
+  {
+    "path": "assemble_inserts.py",
+    "bytes": 6475,
+    "sha256": "1bdbb455821fe7a1eb59532460b0975bb3533258d158301d12ae0f62b329a1eb"
+  },
+  {
+    "path": "ASSET_HANDOFF.md",
+    "bytes": 5517,
+    "sha256": "c18c320f7c0476cc87ca956093129707b613ccdca94953edcd061fc11073bed3"
+  },
+  {
+    "path": "build_modular_review.py",
+    "bytes": 6405,
+    "sha256": "4361094a56f3d1807ce3d6c6d929d5fdb21919e229c83120a8ebfc4e227b694b"
+  },
+  {
+    "path": "generated/alloy-v1-original.png",
+    "bytes": 202067,
+    "sha256": "1b08ed352ddb1c6c28d5d97e0dcb130de86ff0370134e1737ea5631dfe21da03"
+  },
+  {
+    "path": "generated/alloy-v2-original.png",
+    "bytes": 1998309,
+    "sha256": "2772f4b03ca9d0a6e9d8993434392140ee9c7ba82fa92831796519298949f6d6"
+  },
+  {
+    "path": "generated/bumper-a-v1-original.png",
+    "bytes": 75216,
+    "sha256": "055c2628dd32dd97eabc8c976f3f22d40bb5a7152044423c0a9d82e714318b36"
+  },
+  {
+    "path": "generated/bumper-b-v1-original.png",
+    "bytes": 80894,
+    "sha256": "43aca660e0ce6992a92de2b80da3e665300d7cd432e00187b2be927dac122ad1"
+  },
+  {
+    "path": "generated/cutout-v1-original.png",
+    "bytes": 1109312,
+    "sha256": "eef048d806f9aa896bf31307d6f91db9413cf0193c1453e44baf226973c9f195"
+  },
+  {
+    "path": "generated/light-a-v1-original.png",
+    "bytes": 88002,
+    "sha256": "9f556cae75570da6b120ce7e481d86f350add17bc13ea6581117d55026e3a854"
+  },
+  {
+    "path": "generated/light-a-v2-original.png",
+    "bytes": 2337654,
+    "sha256": "3d5b2dd801bd597b9accdad9cddca07003aea6ad353700b84b0d5010401f36a9"
+  },
+  {
+    "path": "generated/light-b-v1-original.png",
+    "bytes": 69651,
+    "sha256": "8bccd23eb9fa76be73c2c7f0a61b0ec08d630a017b3ca424f05d8d4961044756"
+  },
+  {
+    "path": "generated/light-b-v2-original.png",
+    "bytes": 2252439,
+    "sha256": "f433cd6bebae59e07d70f301522320ba33ed5be2f63a1222e5c6bf2d12902430"
+  },
+  {
+    "path": "generated/manifest.json",
+    "bytes": 10363,
+    "sha256": "2a4dcc1a9a78122401a6ac97329ba28e625a87b202a13e37e2d02adf6f487337"
+  },
+  {
+    "path": "generated/paint-mask-v1-original.png",
+    "bytes": 570081,
+    "sha256": "5aabbf114dd3ad16965b74de797474fd654313dce5e81bcaaae6ea72ce4f427d"
+  },
+  {
+    "path": "generated/prompts.json",
+    "bytes": 15420,
+    "sha256": "7884e6ebd5fd1776e14042ff36fcc7518e8ef30de64b6ebc85c28a12cb51d71e"
+  },
+  {
+    "path": "generated/steel-v1-original.png",
+    "bytes": 190069,
+    "sha256": "0ddb0deb4435904e3afa53424c2ebd230e66871d6a435d3a062b8e8246b88766"
+  },
+  {
+    "path": "generated/steel-v2-original.png",
+    "bytes": 1880155,
+    "sha256": "e7a131e1565251a0a436ccf61f273abd4dffbc84fed8046580f918f99b724b2f"
+  },
+  {
+    "path": "generation-log.json",
+    "bytes": 1948,
+    "sha256": "71238e07872af84bec779d2aa9c31892df9e72fed1294814ceb23bb54a4a2497"
+  },
+  {
+    "path": "layers/bumper-face-a-registered.svg",
+    "bytes": 100908,
+    "sha256": "a6362120cef34a65cbfc1b6050614533ecd03f20b3b090a7266ed31d121e546e"
+  },
+  {
+    "path": "layers/bumper-face-b-registered.svg",
+    "bytes": 108473,
+    "sha256": "b1522b2b6a84e2ef6a7755567f76ed5a5fc5ad2c2859f68023837ef0980aa69d"
+  },
+  {
+    "path": "layers/headlamp-a-registered.svg",
+    "bytes": 3117406,
+    "sha256": "002219d581612514866b493e2a6fcf6d07d9c09b754ed695dabf380c99c820f3"
+  },
+  {
+    "path": "layers/headlamp-b-registered.svg",
+    "bytes": 3003786,
+    "sha256": "00dd17d0d0dbcccb576f3e201d54226861411c831480c39cb9b5f3fccbf035c6"
+  },
+  {
+    "path": "layers/rims-alloy-registered.svg",
+    "bytes": 2664735,
+    "sha256": "c4f25d2fa9588cf6388281b92a33076a4839773efa2cdf19ff1fa63afaa41f74"
+  },
+  {
+    "path": "layers/rims-steel-registered.svg",
+    "bytes": 2507199,
+    "sha256": "f78d1d6d22e5f1c1fda2acef1e1c99771e72b27d4ea91653ac85fdf61888e63b"
+  },
+  {
+    "path": "MODULAR_PREVIEW.html",
+    "bytes": 4923,
+    "sha256": "3bf5e99fd6ede809f134bf55f940712fefec630a117ca694205ccf5f002a8b6e"
+  },
+  {
+    "path": "prepare_checkpoint.py",
+    "bytes": 4561,
+    "sha256": "b6c39c88a972e256bd8855cd78c020d285e611a53c12353dab84bd9231a3078b"
+  },
+  {
+    "path": "PRODUCTION_HANDOFF.md",
+    "bytes": 7535,
+    "sha256": "ce37cb350872a9f0bb670463e4069359240ffb18a9c53c4de8c08a1719c16bff"
+  },
+  {
+    "path": "qa/alloy-v1-overlay.png",
+    "bytes": 819570,
+    "sha256": "c964d431317d1d0afefe6660cd42fbf10536a02a48f3fdf919e447a2678db502"
+  },
+  {
+    "path": "qa/anchors.provisional.json",
+    "bytes": 1885,
+    "sha256": "197ebbe57914d2895ac3b8e275c78b94acc1aed8b26935fadeddafc645eeca3c"
+  },
+  {
+    "path": "qa/cutout-mask-review.png",
+    "bytes": 1112723,
+    "sha256": "98fed482936b1d92ddf4dab9f0276a4ab9b7d79eb0921af317858378cd12fc41"
+  },
+  {
+    "path": "qa/insert-mounts.json",
+    "bytes": 6050,
+    "sha256": "a89f0cdec39e3e1e54fde8546c2ed35c055adbb45269e968bb267db3a06a34d6"
+  },
+  {
+    "path": "qa/inserts-mounted-review.png",
+    "bytes": 808711,
+    "sha256": "64a393e7b15d0978af592dd7484b2d2f672b999143868c6fe9c894162f351807"
+  },
+  {
+    "path": "qa/raw-components-fit-review.png",
+    "bytes": 985378,
+    "sha256": "90f766b9ceb34ae4549f67e68baf6e7969a6aa3ac61fae6b0898ec29fc6f5637"
+  },
+  {
+    "path": "qa/rims-v2-mounted-review.png",
+    "bytes": 1845936,
+    "sha256": "dc5a3b9cc8b1d02144ba6c228fb93298182c65842657fc0ad7c791cada7892e3"
+  },
+  {
+    "path": "qa/source-coordinate-review.png",
+    "bytes": 1623384,
+    "sha256": "d401731182bbea3d015984cce264ec8c4e5a95faf07324faad8ecf7e9df36bd7"
+  },
+  {
+    "path": "qa/sprite-mounts.json",
+    "bytes": 1523,
+    "sha256": "f3bd3733815327fbe5a7fed487e41e81f81f0e9e8190d1b9c6b241f66694f532"
+  },
+  {
+    "path": "qa/verification.json",
+    "bytes": 747,
+    "sha256": "02ca485829842ded3bf5db60cdc96afe618c02a2ddabfcb96ad87f8f7a22d371"
+  },
+  {
+    "path": "qa/visual-review.json",
+    "bytes": 1652,
+    "sha256": "92981e75891a892dbe21d66eddafce046a7324d5ce3a00c579fe17b909ee25b8"
+  },
+  {
+    "path": "review-metadata.json",
+    "bytes": 2733,
+    "sha256": "b3eb228d7360d986603718833963f8ff8921e2cde6edc3d3feb99a109e0b4b90"
+  },
+  {
+    "path": "SELECCION.md",
+    "bytes": 3458,
+    "sha256": "d77b9e57dd44e684b58e09a9503ec020bf0951ae3195fe023f4d7afb5b96f3ef"
+  },
+  {
+    "path": "sources/proposal-01.jpg",
+    "bytes": 1870329,
+    "sha256": "d90beadb8e8038027f5bea7dc2fb335d3d05c338ec369f1ec3490b502b1bfcd7"
+  },
+  {
+    "path": "sources/proposal-02.jpg",
+    "bytes": 1895122,
+    "sha256": "7ae19a22642ffbaea7ed7bda39fe6ce0cb662f9a9d0eda3a1ba0b2b001e48176"
+  },
+  {
+    "path": "sources/proposal-03.jpg",
+    "bytes": 1845264,
+    "sha256": "4f20abd73ac00e41f6f9882738714f21ec9fd57c47ddb50b2503f24c424504a9"
+  },
+  {
+    "path": "sources/proposal-04.png",
+    "bytes": 1078558,
+    "sha256": "f89d2699bf39a8c05412d1a1dff627231c4124ac379d62d81248bd575a643e18"
+  }
+]

@@ -1,0 +1,404 @@
+{
+  "images_generated": 12,
+  "records": [
+    {
+      "id": "alloy-v1-original",
+      "path": "generated/alloy-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "1b08ed352ddb1c6c28d5d97e0dcb130de86ff0370134e1737ea5631dfe21da03",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1513323,
+      "components": [
+        {
+          "bbox_xywh": [
+            249,
+            581,
+            187,
+            191
+          ],
+          "area": 27902,
+          "alpha_centroid": [
+            341.6200989176403,
+            675.842305211096
+          ]
+        },
+        {
+          "bbox_xywh": [
+            1176,
+            581,
+            186,
+            191
+          ],
+          "area": 27871,
+          "alpha_centroid": [
+            1268.3198665279322,
+            675.8939758171576
+          ]
+        }
+      ]
+    },
+    {
+      "id": "alloy-v2-original",
+      "path": "generated/alloy-v2-original.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "2772f4b03ca9d0a6e9d8993434392140ee9c7ba82fa92831796519298949f6d6",
+      "status": "reference_for_verified_prototype_layer",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 555068,
+      "components": [
+        {
+          "bbox_xywh": [
+            56,
+            64,
+            1132,
+            1143
+          ],
+          "area": 1004538,
+          "alpha_centroid": [
+            621.1307496580517,
+            634.9689877336647
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bumper-a-v1-original",
+      "path": "generated/bumper-a-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "055c2628dd32dd97eabc8c976f3f22d40bb5a7152044423c0a9d82e714318b36",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1559201,
+      "components": [
+        {
+          "bbox_xywh": [
+            84,
+            547,
+            136,
+            124
+          ],
+          "area": 11594,
+          "alpha_centroid": [
+            145.71450750388132,
+            600.5414007245126
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bumper-b-v1-original",
+      "path": "generated/bumper-b-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "43aca660e0ce6992a92de2b80da3e665300d7cd432e00187b2be927dac122ad1",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1556895,
+      "components": [
+        {
+          "bbox_xywh": [
+            83,
+            549,
+            153,
+            125
+          ],
+          "area": 12914,
+          "alpha_centroid": [
+            152.9373548087347,
+            601.6121263744773
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cutout-v1-original",
+      "path": "generated/cutout-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "eef048d806f9aa896bf31307d6f91db9413cf0193c1453e44baf226973c9f195",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 870990,
+      "components": [
+        {
+          "bbox_xywh": [
+            82,
+            171,
+            1533,
+            646
+          ],
+          "area": 689738,
+          "alpha_centroid": [
+            911.6700558762892,
+            484.13786829201814
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-a-v1-original",
+      "path": "generated/light-a-v1-original.png",
+      "dimensions": [
+        1679,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "9f556cae75570da6b120ce7e481d86f350add17bc13ea6581117d55026e3a854",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1559550,
+      "components": [
+        {
+          "bbox_xywh": [
+            500,
+            448,
+            39,
+            22
+          ],
+          "area": 796,
+          "alpha_centroid": [
+            519.0439698492462,
+            458.3291457286432
+          ]
+        },
+        {
+          "bbox_xywh": [
+            103,
+            450,
+            113,
+            94
+          ],
+          "area": 9209,
+          "alpha_centroid": [
+            157.9692691931806,
+            496.8501465957216
+          ]
+        },
+        {
+          "bbox_xywh": [
+            100,
+            556,
+            42,
+            34
+          ],
+          "area": 1207,
+          "alpha_centroid": [
+            120.91549295774648,
+            572.5186412593206
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-a-v2-original",
+      "path": "generated/light-a-v2-original.png",
+      "dimensions": [
+        1692,
+        930
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "3d5b2dd801bd597b9accdad9cddca07003aea6ad353700b84b0d5010401f36a9",
+      "status": "reference_for_verified_prototype_layer",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 286370,
+      "components": [
+        {
+          "bbox_xywh": [
+            38,
+            64,
+            1617,
+            809
+          ],
+          "area": 1225740,
+          "alpha_centroid": [
+            867.9785990503696,
+            476.25223701600663
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-b-v1-original",
+      "path": "generated/light-b-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "8bccd23eb9fa76be73c2c7f0a61b0ec08d630a017b3ca424f05d8d4961044756",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1566051,
+      "components": [
+        {
+          "bbox_xywh": [
+            113,
+            452,
+            84,
+            71
+          ],
+          "area": 5242,
+          "alpha_centroid": [
+            153.28214421976344,
+            485.7144219763449
+          ]
+        }
+      ]
+    },
+    {
+      "id": "light-b-v2-original",
+      "path": "generated/light-b-v2-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "f433cd6bebae59e07d70f301522320ba33ed5be2f63a1222e5c6bf2d12902430",
+      "status": "reference_for_verified_prototype_layer",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 440403,
+      "components": [
+        {
+          "bbox_xywh": [
+            22,
+            106,
+            1629,
+            727
+          ],
+          "area": 1107045,
+          "alpha_centroid": [
+            838.510745272324,
+            477.48365423266443
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paint-mask-v1-original",
+      "path": "generated/paint-mask-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGB",
+      "sha256": "5aabbf114dd3ad16965b74de797474fd654313dce5e81bcaaae6ea72ce4f427d",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "gray_values_count": 256,
+      "exact_binary": false,
+      "issue": "Generated mask contains intermediate values and needs exact contour registration; do not use as final paint mask."
+    },
+    {
+      "id": "steel-v1-original",
+      "path": "generated/steel-v1-original.png",
+      "dimensions": [
+        1678,
+        937
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "0ddb0deb4435904e3afa53424c2ebd230e66871d6a435d3a062b8e8246b88766",
+      "status": "pending_correction",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 1519868,
+      "components": [
+        {
+          "bbox_xywh": [
+            257,
+            593,
+            172,
+            174
+          ],
+          "area": 23557,
+          "alpha_centroid": [
+            342.6766141698858,
+            679.4683533556904
+          ]
+        },
+        {
+          "bbox_xywh": [
+            1188,
+            593,
+            173,
+            174
+          ],
+          "area": 23705,
+          "alpha_centroid": [
+            1274.0372917106097,
+            679.431343598397
+          ]
+        }
+      ]
+    },
+    {
+      "id": "steel-v2-original",
+      "path": "generated/steel-v2-original.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "mode": "RGBA",
+      "sha256": "e7a131e1565251a0a436ccf61f273abd4dffbc84fed8046580f918f99b724b2f",
+      "status": "reference_for_verified_prototype_layer",
+      "provider": "ChatGPT built-in image_gen; not Flow or Higgsfield",
+      "has_real_alpha": true,
+      "transparent_pixels": 573910,
+      "components": [
+        {
+          "bbox_xywh": [
+            63,
+            70,
+            1113,
+            1135
+          ],
+          "area": 986165,
+          "alpha_centroid": [
+            619.5393225271633,
+            637.1222655437984
+          ]
+        }
+      ]
+    }
+  ],
+  "visual_decisions": "qa/visual-review.json"
+}
