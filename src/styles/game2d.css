@@ -200,10 +200,9 @@
 /* chest */
 .chest2d svg { display:block; width:100%; height:auto; overflow:visible }
 .chest2d-ready .chest2d-glow, .chest2d .chest2d-glow { animation:g2-glow 2.2s ease-in-out infinite }
-.chest2d-ready .chest2d-lid { animation:g2-rattle 2.4s ease-in-out infinite }
-.chest2d-opening .chest2d-lid, .chest2d-open .chest2d-lid { transform:rotate(-24deg) translateY(-10px) }
-.chest2d-opening .chest2d-lid { animation:g2-lid .7s var(--ease,ease) both }
-.chest2d-opening .chest2d-rays { transform-origin:80px 60px; transform-box:view-box; animation:g2-rays 7s linear infinite, g2-fade .6s ease both }
+.chest2d-ready svg { animation:g2-rattle 2.4s ease-in-out infinite; transform-origin:50% 85% }
+.chest2d-opening svg { animation:g2-pop .5s var(--ease,ease) both }
+.chest2d-opening .chest2d-rays { transform-origin:center; transform-box:fill-box; animation:g2-rays 7s linear infinite, g2-fade .6s ease both }
 .chest2d-sparkles path { animation:g2-twinkle 1.6s ease-in-out infinite; transform-box:fill-box; transform-origin:center }
 .chest2d-sparkles path:nth-child(2) { animation-delay:.4s } .chest2d-sparkles path:nth-child(3) { animation-delay:.8s } .chest2d-sparkles path:nth-child(4) { animation-delay:1.2s }
 .chest2d-mythic.chest2d-opening, .chest2d-relic.chest2d-opening { animation:g2-shake .5s ease 1 }
