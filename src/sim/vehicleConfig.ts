@@ -10,9 +10,9 @@ import { player } from './world';
 /** Family assets: whether the body family has approved art at all. */
 export type AssetState = 'available' | 'missing';
 /**
- * Part art: `layer` = a separate, aligned layer that can change on its own (today: the two wheels, and ride height,
- * which moves the body layer against them); `base` = the part exists only inside the base body layer (it is drawn,
- * but it cannot be swapped or removed separately yet); `missing` = no art at all.
+ * Part art: `layer` = a verified, swappable variant: either the base drawing of the slot's default, or a layer from
+ * public/flow/gt01/parts (drawn on the approved geometry, checked by composition: nothing changes outside its region);
+ * `base` = the part exists only inside the base body layer and has no alternative yet; `missing` = no art at all.
  */
 export type PartArt = 'layer' | 'base' | 'missing';
 export interface BodyFamily {
@@ -52,18 +52,18 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'body-sport-kit', slot: 'bodykit', es: 'Kit deportivo (faldones)', en: 'Sport kit (skirts)', asset: 'missing' },
   ],
   bumpers: [
-    { id: 'bumper-front-standard', slot: 'bumperFront', es: 'Paragolpes delantero estándar', en: 'Standard front bumper', asset: 'base', thumb: [86, 395, 160, 145] },
-    { id: 'bumper-front-sport', slot: 'bumperFront', es: 'Paragolpes delantero deportivo', en: 'Sport front bumper', asset: 'missing' },
+    { id: 'bumper-front-standard', slot: 'bumperFront', es: 'Paragolpes delantero estándar', en: 'Standard front bumper', asset: 'layer', thumb: [80, 400, 175, 145] },
+    { id: 'bumper-front-sport', slot: 'bumperFront', es: 'Paragolpes delantero deportivo', en: 'Sport front bumper', asset: 'layer', thumb: [80, 400, 175, 145] },
     { id: 'grille-standard', slot: 'grille', es: 'Parrilla de panal', en: 'Honeycomb grille', asset: 'base', thumb: [88, 410, 70, 100] },
   ],
   lights: [
-    { id: 'headlamp-led-slim', slot: 'headlamps', es: 'Faros LED finos', en: 'Slim LED headlamps', asset: 'base', thumb: [110, 360, 112, 52] },
-    { id: 'headlamp-matrix', slot: 'headlamps', es: 'Faros matriciales', en: 'Matrix headlamps', asset: 'missing' },
+    { id: 'headlamp-led-slim', slot: 'headlamps', es: 'Faros LED finos', en: 'Slim LED headlamps', asset: 'layer', thumb: [100, 348, 130, 72] },
+    { id: 'headlamp-matrix', slot: 'headlamps', es: 'Faros matriciales', en: 'Matrix headlamps', asset: 'layer', thumb: [100, 348, 130, 72] },
     { id: 'taillamp-blade', slot: 'taillamps', es: 'Pilotos traseros en cuchilla', en: 'Blade tail lamps', asset: 'base', thumb: [1178, 318, 104, 74] },
   ],
   handles: [
-    { id: 'handle-conventional', slot: 'handles', es: 'Manijas convencionales', en: 'Conventional handles', asset: 'base', thumb: [664, 338, 88, 40] },
-    { id: 'handle-flush', slot: 'handles', es: 'Manijas enrasadas', en: 'Flush handles', asset: 'missing' },
+    { id: 'handle-conventional', slot: 'handles', es: 'Manijas convencionales', en: 'Conventional handles', asset: 'layer', thumb: [655, 322, 110, 56] },
+    { id: 'handle-flush', slot: 'handles', es: 'Manijas enrasadas', en: 'Flush handles', asset: 'layer', thumb: [655, 322, 110, 56] },
   ],
   mirrors: [
     { id: 'mirror-standard', slot: 'mirrors', es: 'Espejos de carrocería', en: 'Body-colour mirrors', asset: 'base', thumb: [532, 276, 76, 64] },
@@ -71,7 +71,7 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
   ],
   wheels: [
     { id: 'wheel-gt01-twin5', slot: 'wheels', es: 'Llantas de cinco radios dobles', en: 'Twin five-spoke wheels', asset: 'layer', thumb: [226, 383, 192, 192] },
-    { id: 'wheel-multispoke', slot: 'wheels', es: 'Llantas multirradio', en: 'Multi-spoke wheels', asset: 'missing' },
+    { id: 'wheel-multispoke', slot: 'wheels', es: 'Llantas multirradio', en: 'Multi-spoke wheels', asset: 'layer', thumb: [226, 383, 192, 192] },
     { id: 'wheel-fivespoke', slot: 'wheels', es: 'Llantas de cinco radios', en: 'Five-spoke wheels', asset: 'missing' },
   ],
   suspension: [
@@ -80,8 +80,8 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'ride-raised', slot: 'rideHeight', es: 'Altura elevada (+2 cm)', en: 'Raised (+2 cm)', asset: 'layer' },
   ],
   roof: [
-    { id: 'roof-fixed', slot: 'roof', es: 'Techo fijo', en: 'Fixed roof', asset: 'base', thumb: [430, 190, 620, 120] },
-    { id: 'roof-panoramic', slot: 'roof', es: 'Techo panorámico', en: 'Panoramic roof', asset: 'missing' },
+    { id: 'roof-fixed', slot: 'roof', es: 'Techo fijo', en: 'Fixed roof', asset: 'layer', thumb: [540, 192, 520, 110] },
+    { id: 'roof-panoramic', slot: 'roof', es: 'Techo panorámico', en: 'Panoramic roof', asset: 'layer', thumb: [540, 192, 520, 110] },
     { id: 'roof-canvas-sunroof', slot: 'roof', es: 'Techo de lona', en: 'Canvas sunroof', asset: 'missing' },
     { id: 'roof-soft-top', slot: 'roof', es: 'Descapotable de lona', en: 'Soft top', asset: 'missing', family: 'gt01-open' },
     { id: 'roof-retractable-hardtop', slot: 'roof', es: 'Techo rígido retráctil', en: 'Retractable hard top', asset: 'missing', family: 'gt01-open' },
@@ -92,6 +92,10 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'aero-ducktail', slot: 'spoiler', es: 'Alerón ducktail', en: 'Ducktail spoiler', asset: 'missing' },
     { id: 'aero-wing', slot: 'spoiler', es: 'Alerón de competición', en: 'Racing wing', asset: 'missing' },
   ],
+};
+/** Variant id → its layer in public/flow/gt01/parts.json (the slot's default is the base drawing itself). */
+export const PART_LAYER: Record<string, string> = {
+  'wheel-multispoke': 'wheel-multispoke', 'headlamp-matrix': 'headlamp-matrix', 'handle-flush': 'handle-flush', 'bumper-front-sport': 'bumper-front-sport', 'roof-panoramic': 'roof-panoramic',
 };
 export const ROOF_OF: Record<string, RoofType> = { 'roof-fixed': 'fixed', 'roof-panoramic': 'panoramic', 'roof-canvas-sunroof': 'canvas-sunroof', 'roof-soft-top': 'soft-top', 'roof-retractable-hardtop': 'retractable-hardtop' };
 

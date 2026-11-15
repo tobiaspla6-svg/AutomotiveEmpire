@@ -90,8 +90,8 @@ export function FlowStudio() {
       <div className="fs-stage">
         {cat === 'interior' ? <InteriorView cfg={cfg} setInt={setInt} l={l} /> : <Scene bg="taller" label={l('Vista previa del vehículo', 'Vehicle preview')}>
           {family
-            ? <GT01Car className="fs-car" paint={cfg.paint} ride={cfg.parts.rideHeight} label={model?.name ?? 'GT-01'} />
-            : model && <div className="fs-car vector"><Car2D body={model.spec.body} year={model.designYear} color={cfg.paint} /></div>}
+            ? <GT01Car className="fs-car" paint={cfg.paint} ride={cfg.parts.rideHeight} parts={cfg.parts} finish={cfg.finish} label={model?.name ?? 'GT-01'} />
+            : model && <div className="fs-car vector"><Car2D body={model.spec.body} year={model.designYear} color={cfg.paint} illustrated /></div>}
           {!family && <p className="fs-note">{l(`Representación vectorial provisional: no hay asset aprobado para «${body}» en ${year}. Solo el GT-01 fastback (2005+) tiene capas.`, `Provisional vector drawing: no approved asset for "${body}" in ${year}. Only the GT-01 fastback (2005+) has layers.`)}</p>}
           {family && unseen.length > 0 && <p className="fs-note" data-pending>{l('Elegido pero sin dibujar (falta asset): ', 'Chosen but not drawn (asset missing): ')}{unseen.map((u) => l(u.es, u.en)).join(', ')}</p>}
         </Scene>}
@@ -106,7 +106,7 @@ export function FlowStudio() {
           <div className="fs-chiprow" style={{ marginTop: 12 }} role="group" aria-label={l('Acabado', 'Finish')}>
             {(Object.keys(FINISH) as (keyof typeof FINISH)[]).map((f) => <button type="button" key={f} className="fs-chip" aria-pressed={cfg.finish === f} onClick={() => set({ ...cfg, finish: f })}>{FINISH[f][lang === 'es' ? 0 : 1]}</button>)}
           </div>
-          {cfg.finish !== 'metallic' && <p className="fs-soft" style={{ marginTop: 8 }}>{l('El acabado se guarda; la capa original es metalizada y todavía no hay versión mate, sólida ni perlada.', 'The finish is saved; the original layer is metallic and there is no matte, solid or pearl version yet.')}</p>}
+          <p className="fs-soft" style={{ marginTop: 8 }}>{l('El acabado cambia los reflejos de la pintura sobre la carrocería y las piezas; vidrios, gomas y ópticas no se tiñen.', 'The finish changes the paint reflections on the body and parts; glass, rubber and lamps are not tinted.')}</p>
         </div>
         <div className="fs-panel">
           <h3>{model?.name ?? l('Próximo diseño', 'Next design')}</h3>
@@ -125,9 +125,9 @@ export function FlowStudio() {
           const why = incompatibility(cfg, o, { electric }, lang);
           const on = cfg.parts[o.slot] === o.id;
           return <button type="button" key={o.id} className="fs-opt" aria-pressed={on} disabled={!!why} data-part={o.id} onClick={() => choose(o)}>
-            <div className={'fs-thumbbox' + (o.thumb ? '' : ' missing')}>{o.thumb ? <GT01Crop rect={o.thumb} paint={cfg.paint} /> : o.slot === 'rideHeight' ? <span className="fs-soft">{l(o.es, o.en)}</span> : <span className="fs-pending">{l('Falta asset', 'Asset missing')}</span>}</div>
+            <div className={'fs-thumbbox' + (o.thumb ? '' : ' missing')}>{o.thumb ? <GT01Crop rect={o.thumb} paint={cfg.paint} finish={cfg.finish} parts={{ ...cfg.parts, [o.slot]: o.id }} /> : o.slot === 'rideHeight' ? <span className="fs-soft">{l(o.es, o.en)}</span> : <span className="fs-pending">{l('Falta asset', 'Asset missing')}</span>}</div>
             <b>{l(o.es, o.en)}</b>
-            <small>{why ?? (o.asset === 'layer' ? l('Capa separada: cambia en la vista', 'Separate layer: changes the view') : o.asset === 'base' ? l('Dibujada en la carrocería base; no intercambiable todavía', 'Drawn in the base body; not swappable yet') : l('Se guarda; sin representación todavía', 'Saved; not drawn yet'))}</small>
+            <small>{why ?? (o.asset === 'layer' ? l('Variante verificada: cambia en la vista', 'Verified variant: changes the view') : o.asset === 'base' ? l('Dibujada en la carrocería base; sin alternativa todavía', 'Drawn in the base body; no alternative yet') : l('Se guarda; sin representación todavía', 'Saved; not drawn yet'))}</small>
           </button>;
         })}
         {cat === 'paint' && <p className="fs-soft">{l('Elegí color y acabado en el panel de pintura. El repintado usa la máscara de carrocería: no tiñe cristales, neumáticos ni ópticas.', 'Choose colour and finish in the paint panel. The repaint uses the body mask: it does not tint glass, tyres or lamps.')}</p>}
