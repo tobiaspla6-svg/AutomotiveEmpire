@@ -1,0 +1,143 @@
+/*
+ * Automotive Empire — 2D art direction pass.
+ * A single coherent cinema-grade palette for menu and guided play screens.
+ * SVG assets stay resolution independent; no WebGL, no full-frame raster
+ * textures, no font downloads or animation loops on reduced-motion devices.
+ */
+
+:root {
+  --ae-art-gold:#e5c187;
+  --ae-art-ice:#9fd6e5;
+  --ae-art-navy:#132235;
+  --ae-art-outline:rgba(173,202,224,.21);
+  --ae-art-shadow:rgba(0,8,20,.65);
+}
+
+.menu2 {
+  background:
+    radial-gradient(ellipse at 84% 18%,rgba(106,159,186,.13),transparent 45%),
+    radial-gradient(ellipse at 8% 104%,rgba(183,128,77,.11),transparent 42%),
+    linear-gradient(137deg,#0a111c 0%,#142235 58%,#080d15 100%);
+}
+.menu2-glow {
+  background:
+    repeating-linear-gradient(90deg,rgba(191,221,237,.012) 0 1px,transparent 1px 72px),
+    linear-gradient(180deg,rgba(255,255,255,.017),transparent 55%);
+  opacity:.72;
+}
+.menu2 .brand2 h1 {letter-spacing:.01em;text-shadow:0 4px 22px #01081380}
+.menu2 .brand2 h1 span {color:#e7c88f}
+.menu2-tag {color:#bdccd8;max-width:52ch;line-height:1.55}
+.menu2 .mode2 {
+  background:linear-gradient(115deg,rgba(67,88,114,.24),rgba(11,24,40,.58)),
+             linear-gradient(180deg,rgba(255,255,255,.025),transparent);
+  border-color:rgba(152,179,198,.22);
+  box-shadow:inset 0 1px rgba(255,255,255,.065),0 7px 24px rgba(1,7,15,.25);
+}
+.menu2 .mode2.on {
+  background:linear-gradient(107deg,rgba(215,173,102,.17),rgba(35,56,81,.46) 65%,rgba(7,16,27,.66));
+  border-color:rgba(236,195,129,.57);
+  box-shadow:inset 0 1px rgba(255,255,255,.07),0 12px 35px rgba(1,7,15,.32);
+}
+.menu2 .m2-icon {background:linear-gradient(145deg,#2c445b,#102034);border:1px solid rgba(198,222,234,.19)}
+.menu2 .mode2.on .m2-icon {background:linear-gradient(145deg,#644a31,#2f3040);border-color:rgba(235,196,130,.48)}
+.menu2 .showroom {
+  background:#0b1522;
+  border:1px solid rgba(156,198,222,.28);
+  box-shadow:
+    0 25px 65px rgba(0,4,12,.66),
+    inset 0 1px rgba(219,239,248,.11);
+}
+.menu2 .showroom::after {
+  box-shadow:
+    inset 0 1px rgba(245,251,252,.055),
+    inset 0 0 70px rgba(2,8,17,.24);
+}
+.menu2 .showroom-view {
+  display:block;
+  height:100%;
+  width:100%;
+  overflow:hidden;
+  background:#111f30;
+}
+.ae-hero-showroom {
+  width:100%;
+  height:100%;
+  display:block;
+  overflow:visible;
+  object-fit:cover;
+  filter:saturate(1.06) contrast(1.035);
+}
+.menu2 .ae-hero-showroom {min-width:100%;min-height:100%}
+.ae-hero-vehicle {transform-origin:50% 78%;transition:transform .7s cubic-bezier(.2,.8,.25,1),filter .7s}
+.menu2 .showroom:hover .ae-hero-vehicle {
+  transform:translateY(-3px) scale(1.008);
+  filter:brightness(1.035);
+}
+.menu2 .showroom-cap {
+  background:linear-gradient(145deg,rgba(7,19,33,.94),rgba(13,28,43,.75));
+  border:1px solid rgba(182,211,229,.25);
+  backdrop-filter:blur(15px);
+  box-shadow:0 13px 38px rgba(0,4,11,.42);
+}
+.menu2 .showroom-cap .eyebrow {letter-spacing:.17em;color:var(--ae-art-gold)}
+.menu2 .showroom-cap b {font-size:clamp(21px,2vw,31px)}
+.menu2 .showroom-gfx {z-index:3}
+.menu2 .menu2-foot {color:#a1afbd}
+.g2-preview .ae-hero-showroom {
+  width:calc(100% + 28px);
+  max-width:none;
+  height:auto;
+  margin:-15px -14px -4px;
+  display:block;
+  border-radius:12px;
+  box-shadow:0 12px 25px rgba(0,5,15,.28);
+}
+.g2-preview .ae-hero-vehicle {transition:filter .25s}
+.g2-preview:hover .ae-hero-vehicle {filter:brightness(1.045)}
+/* Shared graphic-material system on illustrated game panels. */
+.g2-panel, .g2-bench, .g2-preview, .g2-side>section {
+  box-shadow:inset 0 1px rgba(226,241,246,.065),0 10px 25px rgba(2,8,18,.22);
+}
+.g2-campus {
+  box-shadow:0 27px 65px rgba(1,6,15,.55),inset 0 1px rgba(245,253,255,.09);
+}
+.g2-campus::after {
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  inset:0;
+  border-radius:inherit;
+  box-shadow:inset 0 2px rgba(235,249,255,.12),inset 0 -35px 60px rgba(3,14,29,.16);
+}
+.g2-options button, .g2-option, .g2-model {
+  transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.g2-options button:hover:not(:disabled), .g2-option:hover:not(.locked), .g2-model:hover {
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(2,8,19,.28);
+}
+.g2-steps button.on, .g2-tabs button.on {
+  box-shadow:inset 0 1px rgba(255,255,255,.10),0 3px 12px rgba(2,8,17,.18);
+}
+.g2-btn.gold, .ae2d-portal {
+  box-shadow:inset 0 1px rgba(255,255,255,.28),0 3px 0 rgba(106,73,36,.62);
+}
+.g2-btn.gold:focus-visible, .ae2d-portal:focus-visible, .g2-pin:focus-visible {
+  outline:3px solid #a7e0ee;
+  outline-offset:3px;
+}
+@media(max-width:1120px) {
+  .menu2 .showroom .ae-hero-showroom {min-height:325px}
+  .menu2 .showroom {min-height:335px}
+}
+@media(max-width:550px) {
+  .menu2 .showroom {min-height:275px}
+  .menu2 .showroom .ae-hero-showroom {min-height:270px}
+  .menu2 .showroom-cap {max-width:58%;right:auto}
+  .menu2 .showroom-gfx {right:10px;bottom:12px;max-width:38%}
+  .g2-preview .ae-hero-showroom {width:100%;margin:0}
+}
+@media(prefers-reduced-motion:reduce) {
+  .ae-hero-vehicle,.menu2 .showroom,.menu2 .mode2,.g2-model,.g2-option {animation:none!important;transition:none!important}
+}
