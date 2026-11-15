@@ -10,13 +10,15 @@ import { useT } from '../../i18n';
 import { money } from '../../i18n/format';
 import type { VehicleModel } from '../../sim/types';
 import {
-  BODY_FAMILIES, INTERIOR, PAINTS, PARTS, PART_CATEGORIES, configOf, isElectrified, familyFor, incompatibility, partById, saveVehicleConfig,
+  BODY_FAMILIES, INTERIOR, ORIGINAL_PAINT, PAINTS, PART_CATEGORIES, configOf, isElectrified, familyFor, incompatibility, partById, partsFor, saveVehicleConfig,
   type InteriorConfig, type PartCategory, type PartOption, type VehicleConfig,
 } from '../../sim/vehicleConfig';
 import { Icon, type IconName } from '../ds/icons';
 import { Car2D } from '../art2d/Car2D';
 import { sfx } from '../game2d/sfx';
 import { GT01Car, GT01Crop, Scene } from './Scene';
+import { ModularCar, ModularCrop } from './ModularCar';
+import { ART_FAMILIES } from '../../data/artFamilies';
 import { FlowBar, FlowNav, useL } from './FlowHQ';
 import { useStudio } from './studioStore';
 
@@ -64,7 +66,14 @@ export function FlowStudio() {
   const setInt = <K extends keyof InteriorConfig>(k: K, v: InteriorConfig[K]) => set({ ...cfg, interior: { ...cfg.interior, [k]: v } });
   const famName = BODY_FAMILIES.find((f) => f.id === cfg.bodyFamilyId);
 
-  const tray = (cat === 'paint' || cat === 'interior' || cat === 'powertrain') ? null : PARTS[cat];
+  // a family drawn from data (Phase 6: the 1990 SUV) or the GT-01 layers; options are those drawn for the family
+  const art = family ? ART_FAMILIES[family.id] : undefined;
+  const tray = (cat === 'paint' || cat === 'interior' || cat === 'powertrain') ? null : partsFor(cfg.bodyFamilyId, cat);
+  const orig = ORIGINAL_PAINT[cfg.bodyFamilyId];
+  const paints = orig ? [orig, ...PAINTS.filter((c) => c !== orig)] : PAINTS;
+  const crop = (rect: [number, number, number, number], parts: Record<string, string>) => art
+    ? <ModularCrop family={art} rect={rect} paint={cfg.paint} finish={cfg.finish} parts={parts} />
+    : <GT01Crop rect={rect} paint={cfg.paint} finish={cfg.finish} parts={parts} />;
   return <section className="fs-screen fs-studio-screen">
     <FlowBar title={l('Taller de diseño', 'Design workshop')}>
       <span className="fs-toolbar">
@@ -89,10 +98,11 @@ export function FlowStudio() {
 
       <div className="fs-stage">
         {cat === 'interior' ? <InteriorView cfg={cfg} setInt={setInt} l={l} /> : <Scene bg="taller" label={l('Vista previa del vehículo', 'Vehicle preview')}>
-          {family
+          {art ? <ModularCar family={art} className="fs-car" paint={cfg.paint} parts={cfg.parts} finish={cfg.finish} label={model?.name ?? l(art.name.es, art.name.en)} />
+            : family
             ? <GT01Car className="fs-car" paint={cfg.paint} ride={cfg.parts.rideHeight} parts={cfg.parts} finish={cfg.finish} label={model?.name ?? 'GT-01'} />
             : model && <div className="fs-car vector"><Car2D body={model.spec.body} year={model.designYear} color={cfg.paint} illustrated /></div>}
-          {!family && <p className="fs-note">{l(`Representación vectorial provisional: no hay asset aprobado para «${body}» en ${year}. Solo el GT-01 fastback (2005+) tiene capas.`, `Provisional vector drawing: no approved asset for "${body}" in ${year}. Only the GT-01 fastback (2005+) has layers.`)}</p>}
+          {!family && <p className="fs-note">{l(`Representación vectorial provisional: no hay asset aprobado para «${body}» en ${year}. Tienen capas el GT-01 fastback (2005+) y el SUV 1990 (1984–2004).`, `Provisional vector drawing: no approved asset for "${body}" in ${year}. Layers exist for the GT-01 fastback (2005+) and the 1990 SUV (1984–2004).`)}</p>}
           {family && unseen.length > 0 && <p className="fs-note" data-pending>{l('Elegido pero sin dibujar (falta asset): ', 'Chosen but not drawn (asset missing): ')}{unseen.map((u) => l(u.es, u.en)).join(', ')}</p>}
         </Scene>}
       </div>
@@ -101,7 +111,7 @@ export function FlowStudio() {
         <div className="fs-panel">
           <h3>{l('Pintura', 'Paint')}</h3>
           <div className="fs-swatches" role="group" aria-label={l('Color de pintura', 'Paint colour')}>
-            {PAINTS.map((c) => <button type="button" key={c} className="fs-swatch" style={{ background: c }} aria-pressed={cfg.paint === c} aria-label={c} onClick={() => set({ ...cfg, paint: c })} />)}
+            {paints.map((c) => <button type="button" key={c} className="fs-swatch" style={{ background: c }} aria-pressed={cfg.paint === c} aria-label={c === orig ? l(`${c} (original)`, `${c} (original)`) : c} data-original={c === orig ? '1' : undefined} onClick={() => set({ ...cfg, paint: c })} />)}
           </div>
           <div className="fs-chiprow" style={{ marginTop: 12 }} role="group" aria-label={l('Acabado', 'Finish')}>
             {(Object.keys(FINISH) as (keyof typeof FINISH)[]).map((f) => <button type="button" key={f} className="fs-chip" aria-pressed={cfg.finish === f} onClick={() => set({ ...cfg, finish: f })}>{FINISH[f][lang === 'es' ? 0 : 1]}</button>)}
@@ -125,11 +135,12 @@ export function FlowStudio() {
           const why = incompatibility(cfg, o, { electric }, lang);
           const on = cfg.parts[o.slot] === o.id;
           return <button type="button" key={o.id} className="fs-opt" aria-pressed={on} disabled={!!why} data-part={o.id} onClick={() => choose(o)}>
-            <div className={'fs-thumbbox' + (o.thumb ? '' : ' missing')}>{o.thumb ? <GT01Crop rect={o.thumb} paint={cfg.paint} finish={cfg.finish} parts={{ ...cfg.parts, [o.slot]: o.id }} /> : o.slot === 'rideHeight' ? <span className="fs-soft">{l(o.es, o.en)}</span> : <span className="fs-pending">{l('Falta asset', 'Asset missing')}</span>}</div>
+            <div className={'fs-thumbbox' + (o.thumb ? '' : ' missing')}>{o.thumb ? crop(o.thumb, { ...cfg.parts, [o.slot]: o.id }) : o.slot === 'rideHeight' ? <span className="fs-soft">{l(o.es, o.en)}</span> : <span className="fs-pending">{l('Falta asset', 'Asset missing')}</span>}</div>
             <span className="fs-opt-text"><b>{l(o.es, o.en)}</b>
             <small>{why ?? (o.asset === 'layer' ? l('Variante verificada: cambia en la vista', 'Verified variant: changes the view') : o.asset === 'base' ? l('Dibujada en la carrocería base; sin alternativa todavía', 'Drawn in the base body; no alternative yet') : l('Se guarda; sin representación todavía', 'Saved; not drawn yet'))}</small></span>
           </button>;
         })}
+        {tray && tray.length === 0 && <p className="fs-soft" data-empty-tray>{l(`${famName ? famName.es : 'Esta familia'}: sin variantes de esta categoría todavía. Se conserva la pieza del dibujo original.`, `${famName ? famName.en : 'This family'}: no variants in this category yet. The original drawing's part is kept.`)}</p>}
         {cat === 'paint' && <p className="fs-soft">{l('Elegí color y acabado en el panel de pintura. El repintado usa la máscara de carrocería: no tiñe cristales, neumáticos ni ópticas.', 'Choose colour and finish in the paint panel. The repaint uses the body mask: it does not tint glass, tyres or lamps.')}</p>}
         {cat === 'interior' && <p className="fs-soft">{l('Configuración del interior a la izquierda. No hay lienzo de interior aprobado: se guardan los datos y se muestran como muestras de material.', 'Interior configuration on the left. There is no approved interior canvas: the data is saved and shown as material samples.')}</p>}
         {cat === 'powertrain' && <div className="fs-toolbar">

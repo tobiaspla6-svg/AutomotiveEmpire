@@ -25,6 +25,10 @@ beforeAll(() => {
   (globalThis as Record<string, unknown>).localStorage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); }, removeItem: (k: string) => { mem.delete(k); } };
 });
 
+/** A model whose configuration is the GT-01 record: drawn by the GT-01 family, or by no family (vector art). Since
+ *  Phase 6 a 1984–2004 SUV is drawn by the suv90-green family and takes only its parts. */
+const gtModels = (g: ReturnType<typeof ceo>) => player(g).models.filter((x) => { const f = familyFor(x.spec.body, x.designYear); return !f || f.id === 'gt01-fastback'; });
+
 /** Width, height and alpha flag of a WebP (VP8X extended header) or the size of a PNG. */
 function webpInfo(file: string) {
   const b = readFileSync(file);
@@ -108,10 +112,10 @@ describe('modular vehicle configuration', () => {
     expect(new Set(allParts().map((p) => p.id)).size).toBe(allParts().length);
   });
   it('art states are honest: layers only where a verified variant exists (Phase 5D); base parts come from the original', () => {
-    const layers = allParts().filter((p) => p.asset === 'layer').map((p) => p.slot);
+    const layers = allParts().filter((p) => p.asset === 'layer' && !p.fits).map((p) => p.slot);   // GT-01 parts (SUV parts: tests/suv90-modular-6.test.ts)
     expect([...new Set(layers)].sort()).toEqual(['bumperFront', 'handles', 'headlamps', 'rideHeight', 'roof', 'wheels']);
     for (const p of allParts()) if (p.asset === 'base') expect(p.thumb, p.id).toBeTruthy();
-    expect(PARTS.wheels.filter((p) => p.asset !== 'missing').map((p) => p.id)).toEqual(['wheel-gt01-twin5', 'wheel-multispoke']);
+    expect(PARTS.wheels.filter((p) => p.asset !== 'missing' && !p.fits).map((p) => p.id)).toEqual(['wheel-gt01-twin5', 'wheel-multispoke']);   // GT-01 parts
     expect(PARTS.wheels.find((p) => p.id === 'wheel-fivespoke')?.asset).toBe('missing');
     for (const id of ['roof-canvas-sunroof', 'roof-soft-top', 'roof-retractable-hardtop', 'roof-solar']) expect(PARTS.roof.find((p) => p.id === id)?.asset, id).toBe('missing');
   });
@@ -140,7 +144,7 @@ describe('modular vehicle configuration', () => {
     expect(familyFor('roadster', 2020)).toBeNull();          // its open-top family has no asset yet
   });
   it('is saved per vehicle as data, survives JSON round trips and is checked when a save loads', () => {
-    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = p.models[0];
+    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = gtModels(g)[0];
     const c = { ...defaultConfig('#315b45'), parts: { ...DEFAULT_PARTS, rideHeight: 'ride-low', wheels: 'wheel-multispoke' } };
     expect(saveVehicleConfig(g, m.id, c)).toBeNull();
     expect(saveVehicleConfig(g, 'nope', c)).toBe('Unknown vehicle.');
@@ -155,7 +159,7 @@ describe('modular vehicle configuration', () => {
     expect(configOf(player(old), 'draft').paint).toBe('#2a4f86');
   });
   it('saving a configuration never touches money, the specification or the simulation', () => {
-    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = p.models[0];
+    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = gtModels(g)[0];
     const before = JSON.stringify({ cash: p.cash, spec: m.spec, stats: m.stats });
     saveVehicleConfig(g, m.id, defaultConfig('#c8352e'));
     expect(JSON.stringify({ cash: p.cash, spec: m.spec, stats: m.stats })).toBe(before);

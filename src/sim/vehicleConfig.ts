@@ -19,6 +19,8 @@ export interface BodyFamily {
   id: string; es: string; en: string; anchorVersion: string | null; asset: AssetState;
   /** body types (simulation) this family can represent */
   bodies: BodyType[]; minYear: number;
+  /** last design year it represents (Phase 6: the 1990 SUV drawing stops at 2004) */
+  maxYear?: number;
   /** roof constructions this family's structure supports */
   roofs: RoofType[];
 }
@@ -28,8 +30,13 @@ export type RoofType = 'fixed' | 'panoramic' | 'soft-top' | 'canvas-sunroof' | '
 export const BODY_FAMILIES: BodyFamily[] = [
   { id: 'gt01-fastback', es: 'GT-01 fastback cuatro puertas', en: 'GT-01 four-door fastback', anchorVersion: 'gt01-native-1', asset: 'available', bodies: ['sedan', 'coupe'], minYear: 2005, roofs: ['fixed', 'panoramic', 'canvas-sunroof'] },
   { id: 'gt01-open', es: 'GT-01 descapotable (estructura propia)', en: 'GT-01 open top (own structure)', anchorVersion: null, asset: 'missing', bodies: ['roadster'], minYear: 2005, roofs: ['soft-top', 'retractable-hardtop'] },
+  // Phase 6: the 1990 SUV from the art branch (data in src/data/artFamilies.ts)
+  { id: 'suv90-green', es: 'SUV 1990 cuatro puertas', en: '1990 four-door SUV', anchorVersion: 'suv90-canvas-1', asset: 'available', bodies: ['suv'], minYear: 1984, maxYear: 2004, roofs: ['fixed'] },
 ];
-export const familyFor = (body: BodyType, year: number): BodyFamily | null => BODY_FAMILIES.find((f) => f.asset === 'available' && f.bodies.includes(body) && year >= f.minYear) ?? null;
+export const familyFor = (body: BodyType, year: number): BodyFamily | null =>
+  BODY_FAMILIES.find((f) => f.asset === 'available' && f.bodies.includes(body) && year >= f.minYear && year <= (f.maxYear ?? Infinity)) ?? null;
+/** Families drawn by the GT-01 parts (options without an explicit `fits` list belong to them). */
+export const GT_FAMILIES = ['gt01-fastback', 'gt01-open'];
 
 export type PartCategory = 'body' | 'bumpers' | 'lights' | 'handles' | 'mirrors' | 'wheels' | 'suspension' | 'paint' | 'roof' | 'interior' | 'powertrain' | 'aero';
 export const PART_CATEGORIES: PartCategory[] = ['body', 'bumpers', 'lights', 'handles', 'mirrors', 'wheels', 'suspension', 'paint', 'roof', 'interior', 'powertrain', 'aero'];
@@ -40,9 +47,12 @@ export interface PartOption {
   family?: string;
   /** only for electrified powertrains */
   needsElectric?: boolean;
-  /** cut-out of the original used as a thumbnail (native px of the GT-01 original), for parts that exist in it */
+  /** cut-out of the original used as a thumbnail (native px of the family canvas), for parts that exist in it */
   thumb?: [number, number, number, number];
+  /** body families this option is drawn for; absent = the GT-01 families */
+  fits?: string[];
 }
+const SUV: string[] = ['suv90-green'];
 
 /** Every visual part the studio knows, with the state of its art (see PartArt). Options without art exist in the
  *  data model and can be recorded, but the studio says they are not drawn; nothing is faked. */
@@ -55,11 +65,16 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'bumper-front-standard', slot: 'bumperFront', es: 'Paragolpes delantero estándar', en: 'Standard front bumper', asset: 'layer', thumb: [80, 400, 175, 145] },
     { id: 'bumper-front-sport', slot: 'bumperFront', es: 'Paragolpes delantero deportivo', en: 'Sport front bumper', asset: 'layer', thumb: [80, 400, 175, 145] },
     { id: 'grille-standard', slot: 'grille', es: 'Parrilla de panal', en: 'Honeycomb grille', asset: 'base', thumb: [88, 410, 70, 100] },
+    // SUV 1990: the trial bumper faces were rejected in QA (seams, double outline); only the original exists
+    { id: 'bumper-suv90-standard', slot: 'bumperFront', es: 'Paragolpes negro de serie', en: 'Standard black bumper', asset: 'base', thumb: [60, 330, 130, 110], fits: SUV },
   ],
   lights: [
     { id: 'headlamp-led-slim', slot: 'headlamps', es: 'Faros LED finos', en: 'Slim LED headlamps', asset: 'layer', thumb: [100, 348, 130, 72] },
     { id: 'headlamp-matrix', slot: 'headlamps', es: 'Faros matriciales', en: 'Matrix headlamps', asset: 'layer', thumb: [100, 348, 130, 72] },
     { id: 'taillamp-blade', slot: 'taillamps', es: 'Pilotos traseros en cuchilla', en: 'Blade tail lamps', asset: 'base', thumb: [1178, 318, 104, 74] },
+    { id: 'headlamp-suv90-original', slot: 'headlamps', es: 'Ópticas originales', en: 'Original headlamps', asset: 'layer', thumb: [78, 250, 96, 70], fits: SUV },
+    { id: 'headlamp-suv90-halogen-a', slot: 'headlamps', es: 'Halógeno estriado (A)', en: 'Fluted halogen (A)', asset: 'layer', thumb: [78, 250, 96, 70], fits: SUV },
+    { id: 'headlamp-suv90-halogen-b', slot: 'headlamps', es: 'Halógeno con reflector (B)', en: 'Reflector halogen (B)', asset: 'layer', thumb: [78, 250, 96, 70], fits: SUV },
   ],
   handles: [
     { id: 'handle-conventional', slot: 'handles', es: 'Manijas convencionales', en: 'Conventional handles', asset: 'layer', thumb: [655, 322, 110, 56] },
@@ -73,6 +88,9 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'wheel-gt01-twin5', slot: 'wheels', es: 'Llantas de cinco radios dobles', en: 'Twin five-spoke wheels', asset: 'layer', thumb: [226, 383, 192, 192] },
     { id: 'wheel-multispoke', slot: 'wheels', es: 'Llantas multirradio', en: 'Multi-spoke wheels', asset: 'layer', thumb: [226, 383, 192, 192] },
     { id: 'wheel-fivespoke', slot: 'wheels', es: 'Llantas de cinco radios', en: 'Five-spoke wheels', asset: 'missing' },
+    { id: 'wheel-suv90-steel5', slot: 'wheels', es: 'Acero de serie, 5 tuercas', en: 'Stock steel, 5 nuts', asset: 'layer', thumb: [170, 334, 226, 226], fits: SUV },
+    { id: 'wheel-suv90-steel6', slot: 'wheels', es: 'Acero, 6 tuercas', en: 'Steel, 6 nuts', asset: 'layer', thumb: [170, 334, 226, 226], fits: SUV },
+    { id: 'wheel-suv90-alloy6', slot: 'wheels', es: 'Aleación de 6 rayos', en: '6-spoke alloy', asset: 'layer', thumb: [170, 334, 226, 226], fits: SUV },
   ],
   suspension: [
     { id: 'ride-low', slot: 'rideHeight', es: 'Altura rebajada (−2 cm)', en: 'Lowered (−2 cm)', asset: 'layer' },
@@ -127,18 +145,30 @@ export const DEFAULT_PARTS: Record<string, string> = {
   bodykit: 'body-standard', bumperFront: 'bumper-front-standard', grille: 'grille-standard', headlamps: 'headlamp-led-slim', taillamps: 'taillamp-blade',
   handles: 'handle-conventional', mirrors: 'mirror-standard', wheels: 'wheel-gt01-twin5', rideHeight: 'ride-stock', roof: 'roof-fixed', spoiler: 'aero-none',
 };
-export function defaultConfig(paint = '#2a4f86', family = 'gt01-fastback'): VehicleConfig {
+/** Default (master drawing) part of each slot, per family. */
+export const FAMILY_DEFAULT_PARTS: Record<string, Record<string, string>> = {
+  'suv90-green': { wheels: 'wheel-suv90-steel5', headlamps: 'headlamp-suv90-original', bumperFront: 'bumper-suv90-standard' },
+};
+export const defaultPartsFor = (family: string) => FAMILY_DEFAULT_PARTS[family] ?? DEFAULT_PARTS;
+/** The original paint of a family's master drawing: shown as is, without any repaint layer. */
+export const ORIGINAL_PAINT: Record<string, string> = { 'gt01-fastback': '#2a4f86', 'suv90-green': '#526a54' };
+export function defaultConfig(paint?: string, family = 'gt01-fastback'): VehicleConfig {
   const f = BODY_FAMILIES.find((x) => x.id === family)!;
-  return { version: 1, bodyFamilyId: f.id, anchorVersion: f.anchorVersion ?? 'none', parts: { ...DEFAULT_PARTS }, paint, finish: 'metallic',
+  return { version: 1, bodyFamilyId: f.id, anchorVersion: f.anchorVersion ?? 'none', parts: { ...defaultPartsFor(f.id) }, paint: paint ?? ORIGINAL_PAINT[f.id] ?? '#2a4f86', finish: 'metallic',
     interior: { seats: 'comfort', steering: 'round', dashboard: 'digital', console: 'standard', upholstery: 'leather', trim: 'aluminium', colour: '#1b1d22' } };
 }
 
 export const allParts = () => Object.values(PARTS).flat();
 export const partById = (id: string) => allParts().find((p) => p.id === id);
+/** Whether an option is drawn for (belongs to) a body family. */
+export const fitsFamily = (p: PartOption, family: string) => (p.fits ?? GT_FAMILIES).includes(family);
+/** Options of a category for a family (the studio's tray). */
+export const partsFor = (family: string, cat: keyof typeof PARTS) => PARTS[cat].filter((p) => fitsFamily(p, family));
 
 /** Why an option cannot be fitted to this configuration (null = it can). Asset availability is reported separately. */
 export function incompatibility(cfg: VehicleConfig, part: PartOption, ctx: { electric: boolean }, lang: 'es' | 'en' = 'es'): string | null {
   const es = lang === 'es';
+  if (!fitsFamily(part, cfg.bodyFamilyId) && !part.family) return es ? 'Es de otra familia de carrocería.' : 'Belongs to another body family.';
   if (part.family && part.family !== cfg.bodyFamilyId) {
     const fam = BODY_FAMILIES.find((f) => f.id === part.family);
     return es ? `Necesita otra estructura: ${fam?.es ?? part.family}${fam?.asset === 'missing' ? ' (sin asset todavía)' : ''}.` : `Needs another structure: ${fam?.en ?? part.family}${fam?.asset === 'missing' ? ' (no asset yet)' : ''}.`;
@@ -160,7 +190,11 @@ export function validateConfig(cfg: unknown): string | null {
   if (!fam) return 'unknown body family';
   if (fam.anchorVersion && c.anchorVersion !== fam.anchorVersion) return 'anchor version does not match the family';
   if (!c.parts || typeof c.parts !== 'object') return 'no parts';
-  for (const [slot, id] of Object.entries(c.parts)) { const p = partById(id); if (!p || p.slot !== slot) return `part ${id} is not a ${slot}`; }
+  for (const [slot, id] of Object.entries(c.parts)) {
+    const p = partById(id);
+    if (!p || p.slot !== slot) return `part ${id} is not a ${slot}`;
+    if (!fitsFamily(p, c.bodyFamilyId)) return `part ${id} does not belong to ${c.bodyFamilyId}`;
+  }
   const hex = /^#[0-9a-f]{6}$/i;
   if (!hex.test(c.paint)) return 'bad paint';
   if (!['metallic', 'solid', 'pearl', 'matte'].includes(c.finish)) return 'bad finish';
@@ -187,12 +221,19 @@ export function fitProblems(cfg: VehicleConfig, model?: VehicleModel): Record<st
 export type DesignKey = string;
 export function configOf(c: { designs?: Record<string, VehicleConfig> }, key: DesignKey, model?: VehicleModel): VehicleConfig {
   const saved = c.designs?.[key];
+  // the family that draws this model (null: no approved art; the GT-01 default is kept as the data record)
+  const expected = model ? familyFor(model.spec.body, model.designYear) : null;
   if (saved && !validateConfig(saved)) {
+    // a configuration saved for another family (e.g. a 1990s SUV customised before its own art existed, Phase 5C/5D)
+    // is shown on the right family: its paint, finish and interior carry over, the parts start from that family's
+    // originals. The save itself is not rewritten until the player saves again.
+    if (expected && saved.bodyFamilyId !== expected.id) return { ...defaultConfig(saved.paint, expected.id), finish: saved.finish, interior: saved.interior };
     // a part that no longer fits (e.g. the model lost its hybrid system) falls back to the slot default; the rest is kept
     const bad = Object.keys(fitProblems(saved, model));
-    return bad.length ? { ...saved, parts: { ...saved.parts, ...Object.fromEntries(bad.map((s) => [s, DEFAULT_PARTS[s]])) } } : saved;
+    const defs = defaultPartsFor(saved.bodyFamilyId);
+    return bad.length ? { ...saved, parts: { ...saved.parts, ...Object.fromEntries(bad.map((s) => [s, defs[s]])) } } : saved;
   }
-  return defaultConfig(model?.spec.color && /^#[0-9a-f]{6}$/i.test(model.spec.color) ? model.spec.color : undefined);
+  return defaultConfig(model?.spec.color && /^#[0-9a-f]{6}$/i.test(model.spec.color) ? model.spec.color : undefined, expected?.id);
 }
 
 /** Save a configuration for a model of the player (or the draft). Visual only: no money, no simulation effect. */
@@ -201,8 +242,11 @@ export function saveVehicleConfig(g: GameState, key: DesignKey, cfg: VehicleConf
   if (key !== 'draft' && !c.models.some((m) => m.id === key)) return 'Unknown vehicle.';
   const err = validateConfig(cfg);
   if (err) return `Invalid configuration: ${err}.`;
+  const m = c.models.find((x) => x.id === key);
+  const expected = m ? familyFor(m.spec.body, m.designYear) : null;
+  if (expected && cfg.bodyFamilyId !== expected.id) return `Invalid configuration: ${m!.name} is drawn by ${expected.id}, not ${cfg.bodyFamilyId}.`;
   // structural rules are enforced here too, not only by the disabled buttons: no open roof without its body family
-  const fit = Object.entries(fitProblems(cfg, c.models.find((m) => m.id === key)));
+  const fit = Object.entries(fitProblems(cfg, m));
   if (fit.length) return `Incompatible part (${fit[0][0]}): ${fit[0][1]}`;
   c.designs ??= {};
   c.designs[key] = JSON.parse(JSON.stringify(cfg));

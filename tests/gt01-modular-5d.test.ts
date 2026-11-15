@@ -23,6 +23,10 @@ beforeAll(() => {
   const mem = new Map<string, string>();
   (globalThis as Record<string, unknown>).localStorage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => { mem.set(k, v); }, removeItem: (k: string) => { mem.delete(k); } };
 });
+
+/** A model whose configuration is the GT-01 record: drawn by the GT-01 family, or by no family (vector art). Since
+ *  Phase 6 a 1984–2004 SUV is drawn by the suv90-green family and takes only its parts. */
+const gtModels = (g: ReturnType<typeof ceo>) => player(g).models.filter((x) => { const f = familyFor(x.spec.body, x.designYear); return !f || f.id === 'gt01-fastback'; });
 type Box = [number, number, number, number];
 const inside = ([x, y, w, h]: Box, [W, H]: [number, number]) => x >= 0 && y >= 0 && w > 0 && h > 0 && x + w <= W && y + h <= H;
 const contains = (outer: Box, [x, y, w, h]: Box) => x >= outer[0] && y >= outer[1] && x + w <= outer[0] + outer[2] && y + h <= outer[1] + outer[3];
@@ -66,7 +70,7 @@ describe('GT-01 variant layers (manifest and composition QA)', () => {
       expect(Object.keys(manifest.layers).some((k) => k === layer || k.startsWith(layer + '-')), id).toBe(true);
     }
     // the remaining layer parts are the defaults (the base drawing) or ride heights
-    for (const p of allParts().filter((x) => x.asset === 'layer' && !PART_LAYER[x.id])) expect(p.slot === 'rideHeight' || DEFAULT_PARTS[p.slot] === p.id, p.id).toBe(true);
+    for (const p of allParts().filter((x) => x.asset === 'layer' && !PART_LAYER[x.id] && !x.fits)) expect(p.slot === 'rideHeight' || DEFAULT_PARTS[p.slot] === p.id, p.id).toBe(true);
   });
 });
 
@@ -98,7 +102,7 @@ describe('GT01Car renders the chosen parts', () => {
 describe('modular configuration saved per vehicle', () => {
   it('two vehicles keep their own parts and finish through a JSON round trip, and the save stays loadable', () => {
     const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g);
-    const [a, b] = p.models;
+    const [a, b] = gtModels(g);
     const ca = { ...defaultConfig('#c8352e'), finish: 'pearl' as const, parts: { ...DEFAULT_PARTS, wheels: 'wheel-multispoke', headlamps: 'headlamp-matrix' } };
     const cb = { ...defaultConfig('#315b45'), finish: 'matte' as const, parts: { ...DEFAULT_PARTS, bumperFront: 'bumper-front-sport', roof: 'roof-panoramic', handles: 'handle-flush' } };
     expect(saveVehicleConfig(g, a.id, ca)).toBeNull();
@@ -109,7 +113,7 @@ describe('modular configuration saved per vehicle', () => {
     if (b) expect(configOf(player(copy), b.id, b)).toEqual(cb);
   });
   it('open roofs are refused by the simulation while their body family has no asset', () => {
-    const g = ceo({ makerId: 'toyota', year: 2020 }), m = player(g).models[0];
+    const g = ceo({ makerId: 'toyota', year: 2020 }), m = gtModels(g)[0];
     for (const roof of ['roof-soft-top', 'roof-retractable-hardtop']) {
       const err = saveVehicleConfig(g, m.id, { ...defaultConfig(), parts: { ...DEFAULT_PARTS, roof } });
       expect(err, roof).toMatch(/Incompatible part \(roof\).*estructura/);
@@ -118,7 +122,7 @@ describe('modular configuration saved per vehicle', () => {
     expect(player(g).designs?.[m.id]).toBeUndefined();         // nothing was stored
   });
   it('the solar roof needs an electrified model; a stored part that stops fitting falls back to the slot default', () => {
-    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = p.models[0];
+    const g = ceo({ makerId: 'toyota', year: 2020 }), p = player(g), m = gtModels(g)[0];
     const solar = { ...defaultConfig(), parts: { ...DEFAULT_PARTS, roofAccessory: 'roof-solar' } };
     m.spec.engine.layout = 'I4'; m.spec.engine.hybridKw = 0;
     expect(saveVehicleConfig(g, m.id, solar)).toMatch(/eléctrico/);
@@ -135,7 +139,7 @@ describe('studio and garage show the saved parts', () => {
   it('the studio and the garage both show a vehicle with its saved variants and finish', () => {
     setLang('es');
     const g = ceo({ makerId: 'toyota', year: 2020 });
-    const m = player(g).models.find((x) => x.status === 'production' && familyFor(x.spec.body, x.designYear))!;   // a modern saloon: drawn as GT-01
+    const m = player(g).models.find((x) => x.status === 'production' && familyFor(x.spec.body, x.designYear)?.id === 'gt01-fastback')!;   // a modern saloon: drawn as GT-01
     expect(m).toBeTruthy();
     saveVehicleConfig(g, m.id, { ...defaultConfig('#c8352e'), finish: 'matte', parts: { ...DEFAULT_PARTS, wheels: 'wheel-multispoke', bumperFront: 'bumper-front-sport' } });
     useStore.getState().start(g); useStudio.getState().open(m.id);

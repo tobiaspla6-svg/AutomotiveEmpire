@@ -7,6 +7,8 @@ import { useT } from '../../i18n';
 import { money, num } from '../../i18n/format';
 import type { VehicleModel } from '../../sim/types';
 import { configOf, familyFor } from '../../sim/vehicleConfig';
+import { ModularCar } from './ModularCar';
+import { ART_FAMILIES } from '../../data/artFamilies';
 import { SEGMENTS } from '../../data/world';
 import { Icon } from '../ds/icons';
 import { Car2D } from '../art2d/Car2D';
@@ -23,7 +25,9 @@ export const garageModels = (models: VehicleModel[]) => models.filter((m) => m.s
 export function VehicleArt({ m, className }: { m: VehicleModel; className?: string }) {
   const { p } = useGame();
   const cfg = configOf(p, m.id, m);
-  return familyFor(m.spec.body, m.designYear)
+  const fam = familyFor(m.spec.body, m.designYear), art = fam && ART_FAMILIES[fam.id];
+  if (art) return <ModularCar family={art} className={className} paint={cfg.paint} parts={cfg.parts} finish={cfg.finish} label={m.name} />;
+  return fam
     ? <GT01Car className={className} paint={cfg.paint} ride={cfg.parts.rideHeight} parts={cfg.parts} finish={cfg.finish} label={m.name} />
     : <div className={(className ?? '') + ' vector'} role="img" aria-label={m.name}><Car2D body={m.spec.body} year={m.designYear} color={cfg.paint} illustrated /></div>;
 }
@@ -51,7 +55,7 @@ export function FlowGarage() {
         <h2>{l('Garaje', 'Garage')}<small>{l('Colección', 'Collection')}</small></h2>
         {m && s ? <div className="fs-gcard" data-model={m.id}>
           <h3>{m.name}</h3>
-          <div className="fs-tags"><span>{seg}</span><span>{m.designYear}</span><span>{m.status === 'production' ? l('En producción', 'In production') : m.status === 'ready' ? l('Listo', 'Ready') : l('Retirado', 'Retired')}</span><span>{familyFor(m.spec.body, m.designYear) ? l('Arte: familia GT-01', 'Art: GT-01 family') : l('Arte vectorial provisional', 'Provisional vector art')}</span></div>
+          <div className="fs-tags"><span>{seg}</span><span>{m.designYear}</span><span>{m.status === 'production' ? l('En producción', 'In production') : m.status === 'ready' ? l('Listo', 'Ready') : l('Retirado', 'Retired')}</span><span data-art-family={familyFor(m.spec.body, m.designYear)?.id ?? 'vector'}>{(() => { const f = familyFor(m.spec.body, m.designYear); return f ? l(`Arte: ${f.es}`, `Art: ${f.en}`) : l('Arte vectorial provisional', 'Provisional vector art'); })()}</span></div>
           <div className="fs-bars">{bars.map((b) => <label key={b.k}><span>{b.k}<em>{b.txt}</em></span>
             <span className="fs-meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(Math.max(0, Math.min(1, b.v)) * 100)} aria-label={`${b.k} ${b.txt}, ${l('escala', 'scale')} ${b.scale}`}><em style={{ width: `${Math.max(2, Math.min(1, b.v) * 100)}%` }} /></span></label>)}</div>
           <p className="fs-soft" style={{ margin: 0 }}>{num(m.cumulativeUnits, lang)} {l('fabricados', 'built')} · {m.price ? money(m.price, lang) : '—'}</p>
