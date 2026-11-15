@@ -19,7 +19,12 @@ const errors = []; const metrics = {};
     const page = await ctx.newPage(); page.setDefaultTimeout(20000);
     page.on('pageerror', (e) => errors.push(`[${tag}] ${e}`)); page.on('console', (m) => { if (m.type() === 'error') errors.push(`[${tag}] ${m.text()}`); });
     const shot = async (name) => { await sleep(450); await page.screenshot({ path: path.join(OUT, `${name}-${tag}.png`) }); };
-    const go = async (v) => { await page.evaluate((view) => document.querySelector(`.nav [data-view="${view}"]`)?.click(), v); await sleep(300); await page.evaluate(() => { const m = document.querySelector('.main'); if (m) m.scrollTop = 0; }); };
+    // time from the click to the second frame after it, DOM size and JS heap of each screen (Chromium's performance.memory)
+    const go = async (v) => {
+      const ms = await page.evaluate(async (view) => { const t = performance.now(); document.querySelector(`.nav [data-view="${view}"]`)?.click(); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); return Math.round(performance.now() - t); }, v);
+      await sleep(300); await page.evaluate(() => { const m = document.querySelector('.main'); if (m) m.scrollTop = 0; });
+      if (!mobile) (metrics[tag].screens ??= {})[v] = { switchMs: ms, ...(await page.evaluate(() => ({ domNodes: document.querySelectorAll('*').length, heapMB: Math.round(((performance).memory?.usedJSHeapSize ?? 0) / 1048576) }))) };
+    };
     const t0 = Date.now();
     await page.goto(BASE); await page.locator('.menu2').waitFor(); await page.waitForLoadState('networkidle');
     metrics[tag] = { menuLoadMs: Date.now() - t0 };
@@ -41,6 +46,8 @@ const errors = []; const metrics = {};
     await go('chests2d'); await page.waitForLoadState('networkidle'); await shot('06-cofres-cerrado');
     if (await page.locator('[data-action="open-chest"]:not([disabled])').count()) { await page.locator('[data-action="open-chest"]').click(); await sleep(1100); await shot('06-cofres'); }
     await page.locator('.topbar [data-action="settings"]').first().click(); await page.locator('.fs-settings').waitFor(); await shot('07-configuracion');
+    metrics[tag].flowBytes = await page.evaluate(() => performance.getEntriesByType('resource').filter((r) => r.name.includes('/flow/')).reduce((a, r) => a + (r.encodedBodySize || 0), 0));
+    metrics[tag].jsBytes = await page.evaluate(() => performance.getEntriesByType('resource').filter((r) => /\.js($|\?)/.test(r.name)).reduce((a, r) => a + (r.encodedBodySize || 0), 0));
     await ctx.close();
   }
   await browser.close(); server.kill();

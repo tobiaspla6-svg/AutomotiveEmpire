@@ -42,7 +42,7 @@ export function FlowStudio() {
   const target = useStudio((s) => s.target), open = useStudio((s) => s.open);
   const model: VehicleModel | undefined = p.models.find((m) => m.id === target);
   const key = model ? model.id : 'draft';
-  const savedCfg = useMemo(() => configOf(p, key, model), [p, key, model]);
+  const savedCfg = configOf(p, key, model);   // read every render: saving mutates the game in place
   const [h, setH] = useState<History>({ past: [], now: savedCfg, future: [] });
   useEffect(() => { setH({ past: [], now: savedCfg, future: [] }); }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const [cat, setCat] = useState<PartCategory>('wheels');

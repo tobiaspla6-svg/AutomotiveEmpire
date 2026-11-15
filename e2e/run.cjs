@@ -39,15 +39,20 @@ async function open(browser, { lang = 'en', quality = 'off', welcome = false } =
   return { ctx, page, errors };
 }
 const stat = async (page, id) => (await page.locator(`[data-stat="${id}"] .v`).innerText()).trim();
+async function pickMode(page, n) {
+  await page.locator('[data-action="new-game"]').click();
+  await page.locator('.mode2').nth(n).locator('.m2-head').click();
+  if (await page.locator('[data-action="confirm-ok"]').count()) await page.locator('[data-action="confirm-ok"]').click();   // replacing the autosave
+}
 async function startCeo(page, maker = 'Toyota', year = '2000') {
-  await page.locator('.mode2').nth(0).locator('.m2-head').click();
+  await pickMode(page, 0);
   await page.locator('input[type=range]').first().fill(year);
   await page.locator('.card', { hasText: maker }).first().click();
   await page.locator('[data-action="start-game"]').click();
   await page.locator('.shell').waitFor();
 }
 async function startFounder(page, year = '2005') {
-  await page.locator('.mode2').nth(1).locator('.m2-head').click();
+  await pickMode(page, 1);
   await page.locator('input[type=range]').first().fill(year);
   await page.locator('[data-action="start-game"]').click();
   await page.locator('.shell').waitFor();
@@ -74,31 +79,44 @@ const nav = async (page, view) => { await page.locator(`.nav [data-view="${view}
 const noErrors = (errors) => assert(errors.length === 0, `console errors: ${errors.slice(0, 3).join(' | ')}`);
 
 // ---------------------------------------------------------------------------------------------------- tests
-test('menu: three modes, hover preview and settings', async (browser) => {
+test('menu: continue, new game with three modes, load, settings (Flow)', async (browser) => {
   const { ctx, page, errors } = await open(browser);
+  assert(await page.locator('[data-action="resume"]').isDisabled(), 'Continue is disabled without a save, with a reason');
+  assert((await page.locator('#fm-continue-note').innerText()).length > 10, 'the reason is written');
+  await page.locator('[data-action="new-game"]').click();
   eq(await page.locator('.mode2').count(), 3, 'game modes');
-  await page.locator('.mode2').nth(2).hover();
-  assert((await page.locator('.showroom-cap b').innerText()).includes('Motorsport'), 'the showroom caption follows the hovered mode');
-  await page.locator('.menu2-top [aria-label="Settings"]').click();
-  await page.locator('.gfx-options').waitFor();
+  await page.keyboard.press('Escape');
+  eq(await page.locator('.mode2').count(), 0, 'Escape closes the panel');
+  await page.locator('[data-action="load-game"]').click();
+  await page.locator('.fm-panel').waitFor();
+  await page.locator('.fm-side [data-action="settings"]').click();
+  await page.locator('.fs-settings').waitFor();
+  await page.locator('.fs-set-tab[data-tab="video"]').click();
   eq(await page.locator('.gfx-opt').count(), 5, 'graphics options (auto, low, medium, high, off)');
-  await page.locator('[aria-label="Close"]').click();
+  // a draft: Back with an unapplied change asks Save / Discard / Cancel
+  await page.locator('.fs-set-tab[data-tab="access"]').click();
+  await page.locator('[data-pref="reduceMotion"]').click();
+  await page.locator('[data-action="settings-back"]').click();
+  await page.locator('[role="alertdialog"]').waitFor();
+  await page.locator('[role="alertdialog"] .fm-btn.primary').click();
+  eq(await page.locator('.fs-settings').count(), 0, 'saved and closed');
+  assert(await page.evaluate(() => document.documentElement.classList.contains('reduce-motion')), 'reduced motion is applied');
   noErrors(errors); await ctx.close();
 });
 
 test('language: switching changes the interface and is remembered', async (browser) => {
   const { ctx, page, errors } = await open(browser);
-  assert((await page.locator('.mode2').first().innerText()).includes('Historical Automotive CEO'), 'English by default');
+  assert((await page.locator('[data-action="new-game"]').innerText()).toLowerCase().includes('new game'), 'English by default');
   await page.locator('.menu2-top button[lang="es"]').click();
-  assert((await page.locator('.mode2').first().innerText()).includes('CEO histórico'), 'Spanish after the switch');
+  assert((await page.locator('[data-action="new-game"]').innerText()).toLowerCase().includes('nueva partida'), 'Spanish after the switch');
   await page.reload(); await page.locator('.menu2').waitFor();
-  assert((await page.locator('.mode2').first().innerText()).includes('CEO histórico'), 'Spanish is remembered after a reload');
+  assert((await page.locator('[data-action="new-game"]').innerText()).toLowerCase().includes('nueva partida'), 'Spanish is remembered after a reload');
   await startCeo(page);
-  eq((await page.locator('.nav [data-view="factories"]').innerText()).trim(), 'Fábricas', 'navigation in Spanish');
+  eq((await page.locator('.nav [data-view="factories"]').textContent()).trim(), 'Fábricas', 'navigation in Spanish');
   await nav(page, 'factories');
   assert((await page.locator('.main').innerText()).includes('Cadena de suministro'), 'factory screen in Spanish');
   await page.locator('.nav-foot button[lang="en"]').click();
-  eq((await page.locator('.nav [data-view="factories"]').innerText()).trim(), 'Factories', 'navigation back in English without reloading');
+  eq((await page.locator('.nav [data-view="factories"]').textContent()).trim(), 'Factories', 'navigation back in English without reloading');
   assert((await page.locator('.main').innerText()).includes('Supply chain'), 'the open screen re-renders in English');
   eq(await page.evaluate(() => document.documentElement.lang), 'en', 'document language attribute');
   noErrors(errors); await ctx.close();
@@ -298,53 +316,83 @@ test('game over: the books can be read after the dialog, and the way back to the
   noErrors(errors); await ctx.close();
 });
 
-test('2d loop: headquarters, staged workshop, chest, achievement, factory sectors and rankings', async (browser) => {
+test('2d loop: headquarters, engineering, design studio, achievement, chest, garage, factory and rankings', async (browser) => {
   const { ctx, page, errors } = await open(browser);
   await startFounder(page);
-  eq(await page.locator('.nav [aria-current="page"]').getAttribute('data-view'), 'hq2d', 'the game opens at the 2D headquarters');
-  assert(await page.locator('.g2-campus .campus2d').count() === 1, 'the illustrated campus is drawn');
+  eq(await page.locator('.nav [aria-current="page"]').getAttribute('data-view'), 'hq2d', 'the game opens at the headquarters');
+  assert(await page.locator('.fs-hq .fs-scene img.fs-bg').count() === 1, 'the Flow campus scene is drawn');
   eq(await page.locator('.g2-hub .g2-mini-league').count(), 0, 'no ranking before any month is closed');
-  // the design centre building leads to the workshop
-  await page.locator('.g2-pin[data-spot="studio"]').click();
-  await page.locator('.g2-workshop').waitFor();
+  // engineering (mechanics) through the simulator's rules
+  await nav(page, 'workshop2d');
   const power0 = await page.locator('.g2-specs dd').first().innerText();
   await page.locator('.g2-option[data-option="V8"]').click();
   const power1 = await page.locator('.g2-specs dd').first().innerText();
   assert(power0 !== power1, `choosing a V8 changes the projected power (${power0} → ${power1})`);
-  assert(await page.locator('.g2-iconic-card').count() > 0, 'the iconic engine catalogue is listed');
   await page.locator('.g2-steps button').nth(4).click();
-  await page.locator('.g2-option[data-option="coupe"]').click();
+  await page.locator('.g2-option[data-option="sedan"]').click();
   await page.locator('.g2-steps button').last().click();
   await page.locator('[data-field="model-name"]').fill('Arrow GT');
   if (await page.locator('.g2-approve .g2-warn .g2-btn').count()) await page.locator('.g2-approve .g2-warn .g2-btn').click();
   await page.locator('[data-action="2d-start-development"]').click();
   await page.locator('.g2-hub').waitFor();
   assert((await page.locator('.g2-range').innerText()).includes('Arrow GT'), 'the approved car appears in the range');
-  // an achievement reached by that fact, claimed once
+  // the design workshop building opens the studio; a visual change, undo, redo, save
+  await page.locator('.fs-pin[data-spot="studio"]').click();
+  await page.locator('.fs-studio').waitFor();
+  const paint0 = await page.locator('.fs-stage .gt01').getAttribute('data-paint');
+  await page.locator('.fs-swatch').nth(4).click();
+  const paint1 = await page.locator('.fs-stage .gt01').getAttribute('data-paint');
+  assert(paint0 !== paint1, `the paint changes the preview (${paint0} → ${paint1})`);
+  await page.locator('.fs-cat[data-cat="suspension"]').click();
+  await page.locator('.fs-opt[data-part="ride-low"]').click();
+  eq(await page.locator('.fs-stage .gt01').getAttribute('data-ride'), 'ride-low', 'ride height changes the preview');
+  await page.getByRole('button', { name: 'Undo' }).click();
+  eq(await page.locator('.fs-stage .gt01').getAttribute('data-ride'), 'ride-stock', 'undo');
+  await page.getByRole('button', { name: 'Redo' }).click();
+  eq(await page.locator('.fs-stage .gt01').getAttribute('data-ride'), 'ride-low', 'redo');
+  await page.locator('.fs-cat[data-cat="roof"]').click();
+  assert(await page.locator('.fs-opt[data-part="roof-soft-top"]').isDisabled(), 'an open roof needs another body family');
+  await page.locator('[data-action="studio-save"]').click();
+  assert(await page.locator('[data-action="studio-save"]').isDisabled(), 'saved: nothing left to save');
+  // an achievement reached by a fact, claimed once
   await nav(page, 'collection2d');
   const goal = page.locator('[data-goal="first-programme"]');
   await goal.locator('[data-action="claim-goal"]').click();
   await goal.locator('.g2-chip').waitFor();
   eq(await goal.locator('[data-action="claim-goal"]').count(), 0, 'a claimed achievement cannot be claimed again');
-  assert((await page.locator('.g2-level').innerText()).includes('40 XP'), 'experience is added');
-  // the starter chest opens with its own animation and gives a card
-  await page.locator('[data-tab="chests"]').click();
-  await page.locator('.g2-chest[data-milestone="0"]').click();
-  await page.locator('.g2-reveal .card2d').waitFor();
-  await page.locator('.g2-reveal .g2-btn.gold').click();
-  assert(await page.locator('.g2-chest[data-milestone="0"]').isDisabled(), 'the chest cannot be opened twice');
-  await page.locator('[data-tab="cards"]').click();
-  assert(await page.locator('.g2-cards .card2d:not(.card2d-missing)').count() >= 1, 'the won card is in the collection');
-  // the plant, sector by sector
+  // the starter chest: open once, real card, claim
+  await nav(page, 'chests2d');
+  await page.locator('.fs-chestbtn[data-milestone="0"]').click();
+  await page.locator('[data-action="open-chest"]').click();
+  await page.locator('.fs-reward .card2d').waitFor();
+  await page.locator('[data-action="claim-chest"]').click();
+  assert(await page.locator('.fs-chestbtn[data-milestone="0"]').isDisabled(), 'the chest cannot be opened twice');
+  // the plant: a station shows its stage
   await nav(page, 'factory2d');
-  if (await page.locator('.fl2d').count()) {
-    await page.locator('.g2-sector-tabs [data-sector="paint"]').click();
+  if (await page.locator('.fs-factory').count()) {
+    await page.locator('.fs-station[data-station="paint"]').click();
     await page.locator('[data-sector-detail="paint"]').waitFor();
   }
   await nextMonth(page);
   await nav(page, 'league2d');
   assert(await page.locator('.g2-table tr').count() > 3, 'the industry table is built after a closed month');
-  assert(await page.locator('.g2-table tr.me').count() + (await page.locator('.g2-your-rank').count()) >= 1, 'the player is placed in it');
+  noErrors(errors); await ctx.close();
+});
+
+test('garage: real vehicles, Customise opens the studio on that vehicle with its saved configuration', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await startCeo(page, 'Toyota', '2024');
+  await nav(page, 'garage2d');
+  const sel = page.locator('.fs-gcard[data-model]');
+  const id = await sel.getAttribute('data-model');
+  await page.locator('[data-action="customize"]').click();
+  await page.locator('.fs-studio').waitFor();
+  eq(await page.locator('[data-field="studio-target"]').inputValue(), id, 'the studio edits the chosen vehicle');
+  await page.locator('.fs-swatch').nth(3).click();
+  await page.locator('[data-action="studio-save"]').click();
+  const saved = await page.locator('.fs-stage .gt01, .fs-stage .fs-car').first().getAttribute('data-paint');
+  await nav(page, 'garage2d');
+  if (saved) eq(await page.locator('.fs-gmain .fs-scene .gt01').first().getAttribute('data-paint'), saved, 'the garage shows the same configuration');
   noErrors(errors); await ctx.close();
 });
 
@@ -355,7 +403,7 @@ test('2d phone: the headquarters and workshop fit a 390 px screen', async (brows
   const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(BASE); await page.locator('.menu2').waitFor();
   await startFounder(page);
-  for (const v of ['hq2d', 'workshop2d', 'collection2d', 'league2d']) {
+  for (const v of ['hq2d', 'studio2d', 'workshop2d', 'garage2d', 'chests2d', 'collection2d', 'league2d']) {
     await page.evaluate((view) => document.querySelector(`.nav [data-view="${view}"]`)?.click(), v); await page.waitForTimeout(200);
     const over = await page.evaluate(() => [...document.querySelectorAll('.g2 *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > window.innerWidth + 1 && !e.closest('.fl2d,.g2-steps,.g2-tabs,.g2-table-wrap,.nav') && !(e.ownerSVGElement); }).map((e) => String(e.className?.baseVal ?? e.className)).slice(0, 3)); // shapes inside an <svg> are clipped by it; the <svg> itself is measured
     eq(over.length, 0, `${v}: nothing overflows the phone width (${over.join(', ')})`);

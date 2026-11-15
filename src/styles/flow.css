@@ -249,12 +249,17 @@ html.high-contrast { --fl-soft: #dfe5e6; --fl-line-soft: rgba(238, 236, 229, 0.5
   .fs-garage { grid-template-columns: 1fr; }
   .fs-gside { border-radius: 8px 8px 0 0; order: 2; }
 }
+.fs-pinlist { display: none; }
 @media (max-width: 760px) {
-  .fs-pin { padding-right: 8px; font-size: 12px; min-height: 32px; } .fs-pin i { width: 32px; height: 32px; } .fs-pin small { display: none; }
+  .fs-pin { padding: 0; min-height: 34px; transform: translate(-50%, calc(-100% - 8px)) !important; } .fs-pin i { width: 34px; height: 34px; border-radius: 4px; } .fs-pin > span { display: none; }
+  .fs-pin::after, .fs-pin.flip::after { left: 50%; right: auto; margin-left: -5px; }
+  .fs-pinlist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .fs-pinlist .fs-thumb { width: 100%; min-height: 56px; }
   .fs-pin::after { left: 14px; bottom: -7px; width: 10px; height: 10px; }
   .fs-tab { min-width: 0; flex: 1 1 30%; font-size: 16px; }
   .fs-station { padding: 4px 6px; } .fs-station small { display: none; }
   .fs-floorlabel { display: none; }
+  .fs-chest-title, .fs-scene-back { display: none; }
   .fs-opt { width: 150px; }
 }
 @media (prefers-reduced-motion: reduce) { .fs-spark, .fs-mist, .fs-burst, .fs-reward { animation: none !important; } .gt01-move { transition: none; } }

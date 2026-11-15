@@ -86,6 +86,10 @@ export function FlowCampus({ g, p }: { g: GameState; p: Company }) {
         </button>;
       })}
     </Scene>
+    {/* on a phone the pins are icons only: the same destinations, named, under the scene */}
+    <ul className="fs-pinlist" aria-label={l('Edificios', 'Buildings')}>
+      {(Object.keys(SPOTS) as Spot[]).map((k) => <li key={k}><button type="button" className="fs-thumb" onClick={() => { sfx.click(); setView(SPOTS[k].view); }}><b>{st[k].name}</b><small>{st[k].status}</small></button></li>)}
+    </ul>
     <FlowNav current="hq2d" />
   </div>;
 }

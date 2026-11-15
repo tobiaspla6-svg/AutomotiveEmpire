@@ -49,7 +49,7 @@ export function ChestRoom({ withNav = false }: { withNav?: boolean }) {
     <Scene bg="cofres" label={l('Sala de cofres', 'Chest room')}>
       <div className={'fs-dimmer' + (reward ? ' lit' : '')} />
       <div className="fs-chest-title"><small>Automotive Empire</small><b>{l('Cofres', 'Chests')}</b></div>
-      {withNav && <button type="button" className="fm-btn small secondary" style={{ position: 'absolute', right: '2%', top: '3%' }} onClick={() => setView('hq2d')}>← {l('Volver', 'Back')}</button>}
+      {withNav && <button type="button" className="fm-btn small secondary fs-scene-back" style={{ position: 'absolute', right: '2%', top: '3%' }} onClick={() => setView('hq2d')}>← {l('Volver', 'Back')}</button>}
       {reward && r && <>
         {!skip && <span className="fs-burst" style={{ background: `radial-gradient(closest-side, ${RARITY[r].color}cc, ${RARITY[r].color}00)` }} />}
         <div className="fs-reward" style={{ ...at('cofres', 394, 112, 176, 276), animation: skip ? 'none' : undefined }} role="dialog" aria-label={l('Recompensa', 'Reward')}>
