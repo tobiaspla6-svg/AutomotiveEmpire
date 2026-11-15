@@ -10,13 +10,14 @@
   245.0,
   239.0
  ],
- "transparentPixels": 735224,
- "partialAlphaPixels": 1284,
- "paintMaskPixels": 180152,
+ "transparentPixels": 736285,
+ "partialAlphaPixels": 892,
+ "paintMaskPixels": 173467,
  "recomposition": {
-  "meanAbsDiff": 0.261,
-  "p99AbsDiff": 2.0,
-  "pixelsOver16": 755
+  "meanAbsDiff": 0.42,
+  "p99AbsDiff": 4.33,
+  "pixelsOver16": 1859
  },
+ "partialBodyPixelsUnderSills": 0,
  "note": "Layers derived from the original by thresholding, flood fill and circular cuts; no pixels were generated. The wheel layers are the original wheels: there are still no approved alternative wheels."
 }

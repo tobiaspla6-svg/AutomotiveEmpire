@@ -10,7 +10,7 @@ import { useStore } from '../../store/game';
 import { addLine } from '../../sim/actions';
 import { lineShareUsed, toolingCost } from '../../sim/company';
 import { useState } from 'react';
-import { Car2D } from '../art2d/Car2D';
+import { VehicleArt } from './FlowGarage';
 import { Scene, at } from './Scene';
 import { useL } from './FlowHQ';
 
@@ -74,7 +74,7 @@ export function FlowQueue({ p, f }: { g?: GameState; p: Company; f: Factory }) {
 function QueueItem({ m, on, line, onClick }: { m: VehicleModel; on: boolean; line: number | null; onClick: () => void }) {
   const { lang } = useT(); const l = useL();
   return <button type="button" className="fs-thumb" aria-pressed={on} onClick={onClick} data-model={m.id}>
-    <Car2D body={m.spec.body} year={m.designYear} color={m.spec.color} />
+    <VehicleArt m={m} />
     <b>{m.name}</b><small>{line !== null ? l(`En línea · ${num(line, lang)}/mes`, `On line · ${num(line, lang)}/mo`) : l('Listo para producir', 'Ready to build')}</small>
   </button>;
 }

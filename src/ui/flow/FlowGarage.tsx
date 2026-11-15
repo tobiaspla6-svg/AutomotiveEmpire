@@ -24,8 +24,8 @@ export function VehicleArt({ m, className }: { m: VehicleModel; className?: stri
   const { p } = useGame();
   const cfg = configOf(p, m.id, m);
   return familyFor(m.spec.body, m.designYear)
-    ? <GT01Car className={className} paint={cfg.paint} ride={cfg.parts.rideHeight} label={m.name} />
-    : <div className={(className ?? '') + ' vector'} role="img" aria-label={m.name}><Car2D body={m.spec.body} year={m.designYear} color={cfg.paint} /></div>;
+    ? <GT01Car className={className} paint={cfg.paint} ride={cfg.parts.rideHeight} parts={cfg.parts} finish={cfg.finish} label={m.name} />
+    : <div className={(className ?? '') + ' vector'} role="img" aria-label={m.name}><Car2D body={m.spec.body} year={m.designYear} color={cfg.paint} illustrated /></div>;
 }
 
 export function FlowGarage() {

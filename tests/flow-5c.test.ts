@@ -107,12 +107,13 @@ describe('modular vehicle configuration', () => {
     for (const [slot, id] of Object.entries(DEFAULT_PARTS)) expect(partById(id)?.slot, id).toBe(slot);
     expect(new Set(allParts().map((p) => p.id)).size).toBe(allParts().length);
   });
-  it('art states are honest: only the wheels (and ride height) are separate layers; base parts come from the original', () => {
+  it('art states are honest: layers only where a verified variant exists (Phase 5D); base parts come from the original', () => {
     const layers = allParts().filter((p) => p.asset === 'layer').map((p) => p.slot);
-    expect([...new Set(layers)].sort()).toEqual(['rideHeight', 'wheels']);
+    expect([...new Set(layers)].sort()).toEqual(['bumperFront', 'handles', 'headlamps', 'rideHeight', 'roof', 'wheels']);
     for (const p of allParts()) if (p.asset === 'base') expect(p.thumb, p.id).toBeTruthy();
-    expect(PARTS.wheels.filter((p) => p.asset !== 'missing')).toHaveLength(1);
-    expect(PARTS.roof.find((p) => p.id === 'roof-panoramic')?.asset).toBe('missing');
+    expect(PARTS.wheels.filter((p) => p.asset !== 'missing').map((p) => p.id)).toEqual(['wheel-gt01-twin5', 'wheel-multispoke']);
+    expect(PARTS.wheels.find((p) => p.id === 'wheel-fivespoke')?.asset).toBe('missing');
+    for (const id of ['roof-canvas-sunroof', 'roof-soft-top', 'roof-retractable-hardtop', 'roof-solar']) expect(PARTS.roof.find((p) => p.id === id)?.asset, id).toBe('missing');
   });
   it('structural roofs need another body family; solar needs electrification and a closed roof', () => {
     const c = defaultConfig();

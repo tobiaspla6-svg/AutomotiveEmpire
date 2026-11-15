@@ -29,6 +29,11 @@ if (section === 'showroom') {
   ];
   modes.forEach((car) => cell(car.label, h(HeroShowroom2D, { body:car.body, color:car.color, label:car.label })));
 }
+if (section === 'illustrated') {
+  const bodies: BodyType[] = ['hatch', 'sedan', 'wagon', 'coupe', 'roadster', 'supercar', 'suv', 'pickup'];
+  const colors = ['#c8352e', '#2f6db3', '#e2a92b', '#3d8a5a', '#e9e7df', '#22262e', '#7b3fb0', '#d86a2a'];
+  for (const y of [1955, 1972, 1990]) bodies.forEach((b, i) => { cell(`${b} ${y} plano`, h(Car2D, { body: b, year: y, color: colors[i] })); cell(`${b} ${y} ilustrado`, h(Car2D, { body: b, year: y, color: colors[i], illustrated: true })); });
+}
 if (section === 'cars') {
   const bodies: BodyType[] = ['hatch', 'sedan', 'wagon', 'coupe', 'roadster', 'supercar', 'suv', 'pickup'];
   const colors = ['#c8352e', '#2f6db3', '#e2a92b', '#3d8a5a', '#e9e7df', '#22262e', '#7b3fb0', '#d86a2a'];

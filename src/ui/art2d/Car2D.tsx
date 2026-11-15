@@ -42,11 +42,13 @@ export interface Car2DProps {
   wheels?: WheelLook; electric?: boolean; sporty?: boolean;
   /** spin the wheels and add a speed streak */
   moving?: boolean; facing?: 'left' | 'right'; className?: string; label?: string; ground?: boolean;
+  /** brochure-illustration treatment for the Flow scenes: ink contour, panel volume and reflections, real tyres */
+  illustrated?: boolean;
 }
 
 const W = 420, G = 150, K = 70; // viewBox width, ground line, pixels per metre
 
-export const Car2D = memo(function Car2D({ body = 'sedan', year = 2015, color = '#3f6fb4', equipped, wheels, electric = false, sporty = false, moving = false, facing = 'right', className, label, ground = true }: Car2DProps) {
+export const Car2D = memo(function Car2D({ body = 'sedan', year = 2015, color = '#3f6fb4', equipped, wheels, electric = false, sporty = false, moving = false, facing = 'right', className, label, ground = true, illustrated = false }: Car2DProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const era = eraOf(year), E = ERA[era];
   const base = BODY[body] ?? BODY.sedan;
@@ -118,8 +120,14 @@ export const Car2D = memo(function Car2D({ body = 'sedan', year = 2015, color = 
           <radialGradient id={`t${uid}`} cx="50%" cy="45%" r="55%"><stop offset="0.72" stopColor="#1b1d22" /><stop offset="1" stopColor="#050506" /></radialGradient>
           <linearGradient id={`m${uid}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f4f6f8" /><stop offset="0.5" stopColor="#9aa4b1" /><stop offset="1" stopColor="#d7dde4" /></linearGradient>
           <clipPath id={`c${uid}`}><path d={bodyPath} /></clipPath>
+          {illustrated && <>
+            <linearGradient id={`v${uid}`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" stopOpacity="0.42" /><stop offset="0.12" stopColor="#000" stopOpacity="0" /><stop offset="0.86" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity="0.38" /></linearGradient>
+            <linearGradient id={`h${uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset="0.5" stopColor="#fff" stopOpacity="0.34" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+            <radialGradient id={`w${uid}`} cx="50%" cy="50%" r="50%"><stop offset="0.6" stopColor="#2a2d33" /><stop offset="0.86" stopColor="#3b3f47" /><stop offset="0.93" stopColor="#15171b" /><stop offset="1" stopColor="#08090b" /></radialGradient>
+          </>}
         </defs>
         {ground && <ellipse cx={W / 2} cy={G + 3} rx={L * 0.56} ry={8} fill={`url(#s${uid})`} />}
+        {ground && illustrated && [fx, rx].map((x) => <ellipse key={'cs' + x} cx={x} cy={G + 1} rx={R * 0.95} ry={3.4} fill="#000" opacity="0.55" />)}
         {moving && <g className="car2d-streaks" stroke="#ffffff" strokeOpacity="0.25" strokeLinecap="round">{[0, 1, 2].map((i) => <line key={i} x1={X(-0.02) - 10 - i * 14} x2={X(-0.02) - 50 - i * 26} y1={Y(P.belt - 0.15 - i * 0.18)} y2={Y(P.belt - 0.15 - i * 0.18)} strokeWidth={3 - i} />)}</g>}
 
         {/* wing uprights behind the body */}
@@ -142,11 +150,17 @@ export const Car2D = memo(function Car2D({ body = 'sedan', year = 2015, color = 
           {/* livery */}
           {kit === 'endurance' && <><rect x={x0} y={Y(P.belt - 0.12)} width={L} height={0.09 * K} fill="#f2f2ea" opacity="0.92" /><circle cx={X((P.wb + bx) / 2)} cy={Y(P.belt - 0.28)} r={0.17 * K} fill="#f2f2ea" stroke="#111" strokeWidth="1.5" /><text x={X((P.wb + bx) / 2)} y={Y(P.belt - 0.28) + 6} textAnchor="middle" fontSize="16" fontWeight="800" fill="#111" fontFamily="system-ui, sans-serif">7</text></>}
           {accent && <path d={`M${f(X(0.04))} ${f(Y(P.sill + 0.12))}L${f(X(0.96))} ${f(Y(P.sill + 0.12))}`} stroke={accent} strokeWidth="2.5" opacity="0.9" />}
+          {illustrated && <>
+            {/* panel volume: rounded ends, a soft horizon reflection band and a lower reflected-ground shade */}
+            <rect x={x0 - 4} y={0} width={L + 8} height={170} fill={`url(#v${uid})`} />
+            <rect x={x0} y={Y(P.belt - 0.09)} width={L} height={0.2 * K} fill={`url(#h${uid})`} />
+            <path d={roundPath([[X(0.03), Y(P.belt - 0.33), 0], [X(0.5), Y(P.belt - 0.3), 60], [X(0.97), Y(P.nose - 0.06), 0]], false)} fill="none" stroke="#000" strokeOpacity="0.22" strokeWidth="3" />
+          </>}
         </g>
         {/* wheel-arch lips */}
         {[fx, rx].map((x) => <path key={'a' + x} d={`M${f(x - R * 1.16)} ${f(Math.min(cy + R * 0.25, Y(P.sill)))}A${f(R * 1.16)} ${f(R * 1.16)} 0 0 1 ${f(x + R * 1.16)} ${f(Math.min(cy + R * 0.25, Y(P.sill)))}`} fill="none" stroke={shade(color, -0.55)} strokeWidth="2" />)}
-        {/* body outline light rim */}
-        <path d={bodyPath} fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />
+        {/* body outline: a light rim, or an ink contour in the illustrated style */}
+        {illustrated ? <path d={bodyPath} fill="none" stroke="#0a0e13" strokeWidth="1.5" strokeLinejoin="round" /> : <path d={bodyPath} fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="1" />}
 
         {/* glass */}
         {glassPath && <>
@@ -198,20 +212,21 @@ export const Car2D = memo(function Car2D({ body = 'sedan', year = 2015, color = 
         {engineKit === 'twinturbo' && <g fill="#0d1014">{[0, 1, 2].map((i) => <rect key={i} x={X(0.72) + i * 6} y={Y(P.belt - 0.17)} width={3} height={9} rx={1} />)}</g>}
 
         {/* wheels */}
-        {[rx, fx].map((x) => <Wheel key={x} x={x} y={cy} R={R} rimShare={E.rim} look={look} era={era} caliper={sporty || look === 'forged' ? '#d2342c' : null} spin={moving} uid={uid} />)}
+        {[rx, fx].map((x) => <Wheel key={x} x={x} y={cy} R={R} rimShare={E.rim} look={look} era={era} caliper={sporty || look === 'forged' ? '#d2342c' : null} spin={moving} uid={uid} illustrated={illustrated} />)}
       </svg>
     </div>
   );
 });
 
 /** One wheel: tyre, rim of the chosen design, brake disc behind it. Exported for the parts cards. */
-export function Wheel({ x, y, R, rimShare = 0.62, look, era = 'modern', caliper = null, spin = false, uid }: { x: number; y: number; R: number; rimShare?: number; look: WheelLook; era?: Era; caliper?: string | null; spin?: boolean; uid: string }) {
+export function Wheel({ x, y, R, rimShare = 0.62, look, era = 'modern', caliper = null, spin = false, uid, illustrated = false }: { x: number; y: number; R: number; rimShare?: number; look: WheelLook; era?: Era; caliper?: string | null; spin?: boolean; uid: string; illustrated?: boolean }) {
   const rr = R * rimShare;
   const spokes = look === 'fivespoke' ? 5 : look === 'multispoke' ? 10 : look === 'forged' ? 7 : look === 'turbine' ? 12 : look === 'aero' ? 5 : 0;
   return (
     <g>
-      <circle cx={x} cy={y} r={R} fill={`url(#t${uid})`} />
+      <circle cx={x} cy={y} r={R} fill={illustrated ? `url(#w${uid})` : `url(#t${uid})`} stroke={illustrated ? '#05070a' : undefined} strokeWidth={illustrated ? 1.2 : undefined} />
       <circle cx={x} cy={y} r={R - 2.2} fill="none" stroke="#2b2e35" strokeWidth="1.2" />
+      {illustrated && <path d={`M${f(x - R * 0.8)} ${f(y - R * 0.45)}A${f(R * 0.92)} ${f(R * 0.92)} 0 0 1 ${f(x + R * 0.2)} ${f(y - R * 0.9)}`} fill="none" stroke="#fff" strokeOpacity="0.16" strokeWidth={R * 0.07} strokeLinecap="round" />}
       {(era === 'fifties') && <circle cx={x} cy={y} r={R * 0.74} fill="none" stroke="#efefe8" strokeWidth={R * 0.12} />}
       <circle cx={x} cy={y} r={rr * 0.82} fill="#3a3f47" />
       {caliper && <path d={`M${f(x + rr * 0.35)} ${f(y - rr * 0.62)}a${f(rr * 0.72)} ${f(rr * 0.72)} 0 0 1 ${f(rr * 0.35)} ${f(rr * 0.5)}`} stroke={caliper} strokeWidth={rr * 0.22} fill="none" strokeLinecap="round" />}
@@ -226,7 +241,9 @@ export function Wheel({ x, y, R, rimShare = 0.62, look, era = 'modern', caliper 
             const ex = x + Math.cos(a) * rr * 0.95, ey = y + Math.sin(a) * rr * 0.95;
             if (look === 'turbine') { const b = a + 0.5; return <path key={i} d={`M${f(x)} ${f(y)}Q${f(x + Math.cos(b) * rr * 0.6)} ${f(y + Math.sin(b) * rr * 0.6)} ${f(ex)} ${f(ey)}`} stroke="#b9c1cc" strokeWidth={rr * 0.1} fill="none" />; }
             if (look === 'forged') { const s = 0.18; return <g key={i} stroke="#d6dce4" strokeWidth={w} strokeLinecap="round"><line x1={x} y1={y} x2={x + Math.cos(a - s) * rr * 0.94} y2={y + Math.sin(a - s) * rr * 0.94} /><line x1={x} y1={y} x2={x + Math.cos(a + s) * rr * 0.94} y2={y + Math.sin(a + s) * rr * 0.94} /></g>; }
-            return <line key={i} x1={x} y1={y} x2={ex} y2={ey} stroke={look === 'aero' ? '#c3cad3' : '#c9d0d8'} strokeWidth={w} strokeLinecap="round" />;
+            return illustrated
+              ? <g key={i}><line x1={x} y1={y} x2={ex} y2={ey} stroke="#14171c" strokeWidth={w + 1.4} strokeLinecap="round" /><line x1={x} y1={y} x2={ex} y2={ey} stroke={look === 'aero' ? '#b7bec8' : '#bcc4cd'} strokeWidth={w} strokeLinecap="round" /></g>
+              : <line key={i} x1={x} y1={y} x2={ex} y2={ey} stroke={look === 'aero' ? '#c3cad3' : '#c9d0d8'} strokeWidth={w} strokeLinecap="round" />;
           })}
           {look === 'aero' && <circle cx={x} cy={y} r={rr * 0.92} fill="none" stroke="#7f8996" strokeWidth={rr * 0.06} />}
           <circle cx={x} cy={y} r={rr * 0.2} fill="#2a2f37" stroke="#9aa4b1" strokeWidth="1" />

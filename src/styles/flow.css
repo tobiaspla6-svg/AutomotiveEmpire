@@ -127,16 +127,20 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 .fs-opt[aria-pressed="true"] { border-color: var(--fl-gold); background: #233344; }
 .fs-opt[aria-pressed="true"]::after { content: "✓"; position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; border-radius: 50%; background: var(--fl-gold); color: var(--fl-ink); display: grid; place-items: center; font: 700 15px/1 var(--fl-text); }
 .fs-opt:disabled { cursor: not-allowed; opacity: 0.7; }
+.fs-opt-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .fs-opt b { font: 600 16px/1.25 var(--fl-text); }
 .fs-opt small { font: 400 14px/1.35 var(--fl-text); color: var(--fl-soft); }
 .fs-thumbbox { height: 104px; border-radius: 4px; background: #eeece5; display: grid; place-items: center; overflow: hidden; }
 .fs-thumbbox.missing { background: repeating-linear-gradient(135deg, #1b2a35 0 10px, #16232d 10px 20px); border: 1px dashed var(--fl-soft); }
 :where(.gt01) { position: relative; width: 100%; }
 .gt01-move { position: absolute; inset: 0; transition: transform 0.18s; }
-.gt01-layer, .gt01-wheel { position: absolute; display: block; }
+.gt01-layer, .gt01-wheel, .gt01-overlay, .gt01-paint { position: absolute; display: block; }
+.gt01-paint { pointer-events: none; }
 .gt01-layer { inset: 0; width: 100%; height: 100%; }
 :where(.gt01-crop) { position: relative; width: 100%; overflow: hidden; }
-.fs-thumbbox .gt01-crop { max-height: 100%; width: auto; height: 100%; }
+/* the crop is contained in its box whatever its shape (a wide roof strip or a tall bumper corner): nothing is cut off */
+.fs-thumbbox { container-type: size; }
+.fs-thumbbox .gt01-crop { width: min(100cqw, 100cqh * var(--ar, 1)); height: auto; }
 .fs-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .fs-dirty { font: 500 15px/1.2 var(--fl-text); color: var(--fl-gold-hi); }
 .fs-interior { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 18px; border-radius: 8px; background: var(--fl-ink); }
@@ -273,4 +277,40 @@ html.high-contrast { --fl-soft: #dfe5e6; --fl-line-soft: rgba(238, 236, 229, 0.5
   .shell.flow-focus .nav-group button { justify-content: center; padding: 11px 0; }
   .shell.flow-focus .nav-group button.on::before { left: -8px; }
   .shell.flow-focus .main { padding: 16px 20px 40px; }
+}
+
+/* ------------------------------------------------------------------ studio fits the window on desktop (Phase 5D)
+   The whole studio (bar, categories, stage, inspector, parts tray) stays inside the viewport: the stage scales with
+   container units at the scene's own aspect ratio, the side columns scroll inside themselves. */
+@media (min-width: 1101px) {
+  .fs-studio-screen { height: calc(100dvh - 122px); min-height: 540px; gap: 10px; }
+  .fs-studio-screen .fs-bar { padding: 8px 16px; flex-wrap: nowrap; }
+  .fs-studio-screen .fs-bar h2 { font-size: clamp(26px, 2.3vw, 46px); white-space: nowrap; }
+  .fs-studio-screen .fs-res { flex-wrap: nowrap; }
+  .fs-studio-screen .fs-studio { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr) auto; }
+  .fs-studio-screen .fs-cats { height: auto; min-height: 0; max-height: 100%; overflow-y: auto; }
+  .fs-studio-screen .fs-inspector { min-height: 0; max-height: 100%; overflow-y: auto; }
+  .fs-studio-screen .fs-stage { container-type: size; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .fs-studio-screen .fs-stage > .fs-scene { width: min(100cqw, calc(100cqh * 1060 / 516)); flex: none; }
+  .fs-studio-screen .fs-stage > .fs-interior { width: 100%; max-height: 100%; overflow-y: auto; align-self: stretch; }
+  .fs-studio-screen > .fs-nav { display: none; }
+  /* a fixed tray height keeps the car the same size whichever category is open */
+  .fs-studio-screen .fs-tray { height: 196px; align-items: flex-start; overflow-y: auto; }
+  /* in a fixed-height tray the option is a horizontal card: thumbnail left, name and state (or the reason it cannot be
+     fitted) right, so even the longest reason fits without being cut */
+  .fs-studio-screen .fs-opt { flex-direction: row; align-items: flex-start; width: 340px; gap: 12px; }
+  .fs-studio-screen .fs-thumbbox { flex: 0 0 120px; height: 96px; }
+  .fs-studio-screen .fs-opt[aria-pressed="true"]::after { top: 6px; right: 6px; }
+  .fs-studio-screen .fs-opt b { padding-right: 22px; }
+}
+@media (min-width: 1101px) and (max-width: 1599px) { .fs-studio-screen .fs-brand { display: none; } }
+@media (min-width: 1101px) and (max-height: 860px) {
+  .fs-studio-screen .fs-tray { padding: 8px 10px; gap: 8px; height: 168px; }
+  .fs-studio-screen .fs-opt { width: 300px; padding: 6px; gap: 8px; }
+  .fs-studio-screen .fs-thumbbox { flex-basis: 100px; height: 72px; }
+  .fs-studio-screen .fs-opt b { font-size: 15px; }
+  .fs-studio-screen .fs-opt small { font-size: 13px; line-height: 1.25; }
+  .fs-studio-screen .fs-cat { min-height: 50px; padding: 6px 4px; font-size: 13px; }
+  .fs-studio-screen .fs-swatch { width: 40px; height: 40px; }
+  .fs-studio-screen .fm-btn.small { min-height: 40px; font-size: 16px; padding: 6px 12px; }
 }

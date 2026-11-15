@@ -1,5 +1,5 @@
 {
- "method": "crop; OpenCV inpaint (Telea, radius 9) on small listed rects; structure-guided removal of the reference cars (wall continued from above, floor interpolated per row); no generative model",
+ "method": "crop; OpenCV inpaint (Telea, radius 9) on small listed rects; structure-guided removal of the reference cars (wall texture continued from above and re-lit with an illumination field estimated from the surrounding pixels, floor interpolated per row); no generative model",
  "jobs": {
   "inicio": {
    "source": "01-inicio/E-garaje-refinado.jpg",
@@ -205,14 +205,16 @@
      92
     ],
     "horizon": 462,
-    "wall": "extend"
+    "wall": "extend",
+    "feather": 7,
+    "grow": 25
    },
    "output": "taller.webp",
    "outputSize": [
     1060,
     516
    ],
-   "bytes": 22448,
+   "bytes": 21962,
    "quality": "approximate reconstruction of a large area"
   },
   "fabrica": {
@@ -400,14 +402,43 @@
     ],
     "horizon": 466,
     "wall": "periodic",
-    "period": 44
+    "period": 24,
+    "periods": [
+     [
+      485,
+      668,
+      38
+     ]
+    ],
+    "plainCopy": [
+     [
+      485,
+      668
+     ]
+    ],
+    "rowCopy": [
+     [
+      485,
+      668,
+      "left",
+      322,
+      470
+     ],
+     [
+      1302,
+      1376,
+      "right",
+      300,
+      470
+     ]
+    ]
    },
    "output": "garaje.webp",
    "outputSize": [
     944,
     600
    ],
-   "bytes": 31394,
+   "bytes": 32946,
    "quality": "approximate reconstruction of a large area"
   },
   "cofres": {

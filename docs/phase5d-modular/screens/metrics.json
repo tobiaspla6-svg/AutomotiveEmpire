@@ -1,0 +1,103 @@
+{
+ "390": {
+  "menuLoadMs": 626,
+  "flowBytes": 668607,
+  "jsBytes": 348048
+ },
+ "1280": {
+  "menuLoadMs": 652,
+  "screens": {
+   "hq2d": {
+    "switchMs": 25,
+    "domNodes": 880,
+    "heapMB": 10
+   },
+   "studio2d": {
+    "switchMs": 37,
+    "domNodes": 331,
+    "heapMB": 10
+   },
+   "factory2d": {
+    "switchMs": 22,
+    "domNodes": 1282,
+    "heapMB": 10
+   },
+   "garage2d": {
+    "switchMs": 31,
+    "domNodes": 1251,
+    "heapMB": 10
+   },
+   "chests2d": {
+    "switchMs": 24,
+    "domNodes": 241,
+    "heapMB": 10
+   }
+  },
+  "flowBytes": 668607,
+  "jsBytes": 348048
+ },
+ "1440": {
+  "menuLoadMs": 639,
+  "screens": {
+   "hq2d": {
+    "switchMs": 21,
+    "domNodes": 880,
+    "heapMB": 14
+   },
+   "studio2d": {
+    "switchMs": 46,
+    "domNodes": 331,
+    "heapMB": 14
+   },
+   "factory2d": {
+    "switchMs": 23,
+    "domNodes": 1282,
+    "heapMB": 14
+   },
+   "garage2d": {
+    "switchMs": 31,
+    "domNodes": 1251,
+    "heapMB": 14
+   },
+   "chests2d": {
+    "switchMs": 20,
+    "domNodes": 241,
+    "heapMB": 14
+   }
+  },
+  "flowBytes": 668607,
+  "jsBytes": 348048
+ },
+ "1920": {
+  "menuLoadMs": 665,
+  "screens": {
+   "hq2d": {
+    "switchMs": 25,
+    "domNodes": 880,
+    "heapMB": 10
+   },
+   "studio2d": {
+    "switchMs": 31,
+    "domNodes": 331,
+    "heapMB": 10
+   },
+   "factory2d": {
+    "switchMs": 27,
+    "domNodes": 1282,
+    "heapMB": 10
+   },
+   "garage2d": {
+    "switchMs": 30,
+    "domNodes": 1251,
+    "heapMB": 10
+   },
+   "chests2d": {
+    "switchMs": 19,
+    "domNodes": 241,
+    "heapMB": 10
+   }
+  },
+  "flowBytes": 668607,
+  "jsBytes": 348048
+ }
+}

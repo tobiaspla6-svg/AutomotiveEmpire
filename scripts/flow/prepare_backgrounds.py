@@ -30,7 +30,7 @@ JOBS = {
     'taller': {'src': '03-taller/A.jpg', 'crop': [104, 94, 1060, 516], 'inpaint': [], 'approximate': True,
         # the reference sedan, removed so the GT-01 layers can stand there: wall extended upward-to-down, floor by row
         'remove': {'poly': [(306, 378), (330, 358), (400, 338), (480, 316), (560, 306), (660, 306), (760, 323), (840, 348), (950, 383), (1040, 408), (1070, 428), (1070, 497), (1002, 514), (998, 544), (878, 544), (868, 514), (542, 514), (538, 544), (406, 544), (402, 507), (318, 497), (304, 462)],
-                   'floorRect': [296, 462, 790, 92], 'horizon': 462, 'wall': 'extend'}},
+                   'floorRect': [296, 462, 790, 92], 'horizon': 462, 'wall': 'extend', 'feather': 7, 'grow': 25}},
     'fabrica': {'src': '04-fabrica/A.jpg', 'crop': [0, 76, 1376, 556], 'inpaint': [
         [88, 284, 230, 70], [412, 284, 228, 70], [748, 284, 206, 46], [1048, 284, 260, 70],   # station titles and bars
         [110, 584, 156, 34], [428, 584, 190, 34], [764, 584, 186, 34], [1084, 584, 222, 34],  # floor labels
@@ -39,7 +39,10 @@ JOBS = {
     'garaje': {'src': '05-garaje/A.jpg', 'crop': [432, 0, 944, 600], 'inpaint': [], 'approximate': True,
         # the reference car, removed so the selected vehicle can stand there: brick tiled from above, platform by row
         'remove': {'poly': [(510, 398), (560, 368), (700, 323), (800, 293), (880, 278), (1000, 280), (1150, 298), (1287, 338), (1308, 380), (1303, 482), (1202, 502), (1192, 534), (1058, 534), (1040, 502), (732, 502), (722, 534), (588, 534), (578, 502), (518, 492), (507, 460)],
-                   'floorRect': [500, 466, 815, 84], 'horizon': 466, 'wall': 'periodic', 'period': 44}},
+                   # periods measured by autocorrelation: brick 2×12 px courses (staggered), tool cabinet 2×19 px drawers
+                   'floorRect': [500, 466, 815, 84], 'horizon': 466, 'wall': 'periodic', 'period': 24, 'periods': [(485, 668, 38)], 'plainCopy': [(485, 668)],
+                   # (x0, x1, clean side, y0, y1): the tool cabinet and the tyre rack, continued along their rows
+                   'rowCopy': [(485, 668, 'left', 322, 470), (1302, 1376, 'right', 300, 470)]}},
     'cofres': {'src': '06-cofres/B.jpg', 'crop': [0, 0, 1376, 636], 'inpaint': [
         [520, 12, 340, 108],    # title
         [1240, 22, 100, 40], [1335, 5, 30, 30], [12, 5, 30, 30],   # BACK and corner icons
@@ -50,47 +53,80 @@ JOBS = {
     ], 'approximate': True, 'blur': 9},
 }
 
+def illumination(img, known, sigma):
+    """Smooth lighting field estimated only from known pixels (normalised convolution): blur(img·m) / blur(m).
+    Deep inside a large hole the small-scale estimate has no support, so coarser scales fill in (×3, ×9)."""
+    m = known.astype(np.float32)
+    out, have = None, None
+    for s in (sigma, sigma * 3, sigma * 9):
+        num = cv2.GaussianBlur(img.astype(np.float32) * m[..., None], (0, 0), s)
+        den = cv2.GaussianBlur(m, (0, 0), s)
+        est = num / np.maximum(den, 1e-6)[..., None]
+        w = np.clip(den / 0.15, 0, 1)[..., None]                 # confidence of this scale
+        if out is None: out, have = est * w, w
+        else: out, have = out + est * w * (1 - have), have + w * (1 - have)
+    return out / np.maximum(have, 1e-6)
+
 def remove_object(img, spec):
-    """Structure-guided removal of a large object: wall pixels are continued from the clean band above the hole
-    (tiled with the masonry period, or extended for plain walls) with a falloff towards the floor; floor pixels are
-    interpolated along each row between the clean floor on both sides. Returns the image and the hole mask."""
+    """Structure-guided removal of a large object (Phase 5D method).
+    1. a smooth illumination field is estimated from the pixels around the hole (normalised convolution);
+    2. wall texture is taken from the clean band above the hole — tiled with the masonry period for brick, or the
+       last clean rows extended for plain walls and steel columns — and divided by the illumination at its source;
+    3. the texture is re-lit with the illumination at its destination, so the light falls off the way it does
+       around the hole, with no diagonal bands from the hole's sloping outline;
+    4. floor rows are interpolated between the clean floor on both sides; the seam is feathered.
+    Returns the image and the hole mask."""
     H, W = img.shape[:2]
     hole = np.zeros((H, W), np.uint8)
     cv2.fillPoly(hole, [np.array(spec['poly'], np.int32)], 255)
-    hole = cv2.dilate(hole, np.ones((9, 9), np.uint8))
+    g = spec.get('grow', 9)                                          # outline pixels of the removed object must be inside the hole
+    hole = cv2.dilate(hole, np.ones((g, g), np.uint8))
     fx, fy, fw, fh = spec['floorRect']
     hole[fy:fy + fh, fx:fx + fw] = 255
     hz = spec['horizon']
-    res = img.astype(np.float32).copy()
+    known = hole == 0
+    light = illumination(img, known, spec.get('sigma', 30))
+    f = img.astype(np.float32)
+    res = f.copy()
     for x in range(W):
         col = np.where(hole[:hz, x] > 0)[0]
         if not len(col):
             continue
         top = col.min()
-        span = max(1, hz - top)
         for y in col:
             if spec['wall'] == 'periodic':
-                P = spec['period']
-                sy = top - P + ((y - top) % P)
+                # shift up by a whole number of periods, the same phase in every column, so courses and drawers line up
+                P = next((pp for (a, b, pp) in spec.get('periods', []) if a <= x < b), spec['period'])
+                sy = y - P * ((y - top) // P + 1)
             else:
-                sy = top - 2
-            fall = 1 - 0.32 * ((y - top) / span) ** 1.3
-            res[y, x] = img[max(0, sy), x].astype(np.float32) * fall
+                sy = top - 2 - ((y - top) % 3)          # a 3-row band avoids copying one row's noise down
+            sy = max(0, sy)
+            rc = next((r for r in spec.get('rowCopy', []) if r[0] <= x < r[1] and r[3] <= y < r[4]), None)
+            if rc is not None:
+                # horizontal furniture (a tool cabinet, a tyre rack): continue the same row from its clean side
+                xs = np.where(~hole[y, rc[0]:rc[1]].astype(bool))[0] + rc[0]
+                xs = xs[xs < x] if rc[2] == 'left' else xs[xs > x]
+                if len(xs):
+                    res[y, x] = f[y, xs.max() if rc[2] == 'left' else xs.min()]
+                    continue
+            if any(a <= x < b for (a, b) in spec.get('plainCopy', [])):
+                res[y, x] = f[sy, x]                     # dark furniture: its own shading, not the wall's light
+            else:
+                res[y, x] = f[sy, x] / np.maximum(light[sy, x], 1.0) * light[y, x]
     for y in range(hz, H):
         xs = np.where(hole[y] > 0)[0]
         if not len(xs):
             continue
         x0, x1 = max(0, xs.min() - 1), min(W - 1, xs.max() + 1)
-        a, b = img[y, max(0, x0 - 6):x0 + 1].astype(np.float32).mean(0), img[y, x1:x1 + 7].astype(np.float32).mean(0)
+        a, b = f[y, max(0, x0 - 6):x0 + 1].mean(0), f[y, x1:x1 + 7].mean(0)
         t = (xs - x0) / max(1, x1 - x0)
         res[y, xs] = a[None, :] * (1 - t[:, None]) + b[None, :] * t[:, None]
-    # feather the seam: blend a lightly blurred result over the original near the hole border
-    soft = cv2.GaussianBlur(hole.astype(np.float32) / 255, (0, 0), 3)
-    blurred = cv2.GaussianBlur(res, (0, 0), 1.2)
-    out = img.astype(np.float32) * (1 - soft[..., None]) + blurred * soft[..., None]
+    soft = cv2.GaussianBlur(hole.astype(np.float32) / 255, (0, 0), spec.get('feather', 3))
+    blurred = cv2.GaussianBlur(res, (0, 0), 0.8)
+    out = f * (1 - soft[..., None]) + blurred * soft[..., None]
     return np.clip(out, 0, 255).astype(np.uint8), hole
 
-prov = {'method': 'crop; OpenCV inpaint (Telea, radius 9) on small listed rects; structure-guided removal of the reference cars (wall continued from above, floor interpolated per row); no generative model', 'jobs': {}}
+prov = {'method': 'crop; OpenCV inpaint (Telea, radius 9) on small listed rects; structure-guided removal of the reference cars (wall texture continued from above and re-lit with an illumination field estimated from the surrounding pixels, floor interpolated per row); no generative model', 'jobs': {}}
 for name, job in JOBS.items():
     path = os.path.join(src_dir, job['src'])
     raw = open(path, 'rb').read()
