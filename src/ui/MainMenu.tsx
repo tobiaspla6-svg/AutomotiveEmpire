@@ -9,6 +9,7 @@ import { importFromFile, loadSlot, localSaves, type SaveMeta } from '../store/sa
 import { useGraphics } from '../three/quality';
 import { Emblem, Icon, type IconName } from './ds/icons';
 import { CarPoster, type PosterKind } from './ds/poster';
+import { HeroShowroom2D } from './art2d/HeroShowroom2D';
 import { LanguageSwitch } from './LanguageSwitch';
 import { SettingsButton, SettingsDialog } from './SettingsDialog';
 
@@ -99,7 +100,9 @@ export function MainMenu() {
         <div className="menu2-right">
           <div className="showroom">
             <div className="showroom-view ae2d-showroom-poster" data-3d="off">
-              <CarPoster kind={m.poster} color={m.color} label={t(mk(mode, 'car'))} className="poster-hero" />
+              {mode === 'motorsport'
+                ? <CarPoster kind={m.poster} color={m.color} label={t(mk(mode, 'car'))} className="poster-hero" />
+                : <HeroShowroom2D color={m.color} body={mode === 'ceo' ? 'coupe' : 'sedan'} label={t(mk(mode, 'car'))} />}
             </div>
             <div className="showroom-cap">
               <span className="eyebrow">{t('menu.mode', { n: MODES.findIndex((x) => x.id === mode) + 1 })}</span>
