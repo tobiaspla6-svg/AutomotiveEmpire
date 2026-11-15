@@ -90,6 +90,11 @@
     "sha256": "71238e07872af84bec779d2aa9c31892df9e72fed1294814ceb23bb54a4a2497"
   },
   {
+    "path": "layers/body-source-masked.svg",
+    "bytes": 3973486,
+    "sha256": "652a692c91c248cd667b42e1cffe062d122e0f24b11d5c7ade868a8112302f08"
+  },
+  {
     "path": "layers/bumper-face-a-registered.svg",
     "bytes": 100908,
     "sha256": "a6362120cef34a65cbfc1b6050614533ecd03f20b3b090a7266ed31d121e546e"
@@ -108,6 +113,11 @@
     "path": "layers/headlamp-b-registered.svg",
     "bytes": 3003786,
     "sha256": "00dd17d0d0dbcccb576f3e201d54226861411c831480c39cb9b5f3fccbf035c6"
+  },
+  {
+    "path": "layers/paint-selection-source.svg",
+    "bytes": 2494950,
+    "sha256": "482518a24b51b59cd053ab561b4f019db28f2ac5fd49692ff5a2934d36040923"
   },
   {
     "path": "layers/rims-alloy-registered.svg",
@@ -130,9 +140,14 @@
     "sha256": "b6c39c88a972e256bd8855cd78c020d285e611a53c12353dab84bd9231a3078b"
   },
   {
+    "path": "prepare_native_masks.py",
+    "bytes": 5023,
+    "sha256": "a4ece825d06316294875cf635dd5012f224c11615483f763dc1f7a224f5cc09c"
+  },
+  {
     "path": "PRODUCTION_HANDOFF.md",
-    "bytes": 7535,
-    "sha256": "ce37cb350872a9f0bb670463e4069359240ffb18a9c53c4de8c08a1719c16bff"
+    "bytes": 8801,
+    "sha256": "c0cb261a155b8c2da7d8276c1385c8a7831761b3d890d29f0fa1304ab12a9902"
   },
   {
     "path": "qa/alloy-v1-overlay.png",
@@ -158,6 +173,16 @@
     "path": "qa/inserts-mounted-review.png",
     "bytes": 808711,
     "sha256": "64a393e7b15d0978af592dd7484b2d2f672b999143868c6fe9c894162f351807"
+  },
+  {
+    "path": "qa/native-masks-review.png",
+    "bytes": 1012803,
+    "sha256": "65f039e7305bb4de7936d8d1b0ac291a1ab114a02eee450a139f1fe43b8d2f80"
+  },
+  {
+    "path": "qa/native-masks.json",
+    "bytes": 1892,
+    "sha256": "c8db66ba1a56765d91ceb667953031cb79fd751c8eaeb588cb9b547704860f0e"
   },
   {
     "path": "qa/raw-components-fit-review.png",

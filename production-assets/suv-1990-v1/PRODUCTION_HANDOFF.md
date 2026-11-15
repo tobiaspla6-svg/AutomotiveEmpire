@@ -63,3 +63,12 @@ Pendiente antes de llamar a esto un kit modular definitivo: recorte de carrocer�
 `build_modular_review.py` produce las mediciones, capas de llantas y pruebas de superposición desde los archivos existentes. Después, `assemble_inserts.py` construye las capas de lentes, los ensayos de paragolpes y la vista local. No hace falta volver a generar imágenes. Estos scripts no redibujan el automóvil ni modifican los PNG originales.
 
 `ASSET_HANDOFF.md` conserva el registro del checkpoint anterior; para el estado actual prevalece este documento.
+
+## Ensayos adicionales de máscaras nativas — todavía no aprobados para el juego
+
+`prepare_native_masks.py` prepara dos alternativas SVG a partir de archivos existentes, sin nuevas generaciones ni alteración del JPEG:
+
+- `layers/body-source-masked.svg`: aplica el alfa del recorte generado a los píxeles del original, con una sola escala uniforme y erosión de 1 px de fuente. La revisión en `qa/native-masks-review.png` todavía revela un borde claro sobre azul oscuro: **pendiente de limpieza**, no maestra final.
+- `layers/paint-selection-source.svg`: selecciona el verde directamente sobre la fuente, mediante umbrales de canales sRGB y exclusiones de ventanas. La prueba de color azul muestra el registro sobre la carrocería y la exclusión de vidrio, ruedas, luces y plásticos. Es una selección específica de esta fuente verde, no un procedimiento general para otros vehículos. **Pendiente de validar el render SVG real en navegador y de exportar/verificar una máscara PNG de producción**.
+
+`qa/native-masks.json` registra reglas y límites. La figura es una composición de diagnóstico que reproduce los filtros; no se presenta como una captura del navegador. Estos dos ensayos no amplían la lista de cuatro capas aprobadas para el prototipo.

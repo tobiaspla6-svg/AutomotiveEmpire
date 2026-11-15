@@ -1,0 +1,98 @@
+{
+  "body": {
+    "path": "layers/body-source-masked.svg",
+    "source_rgb": "unchanged original JPEG pixels",
+    "alpha_from": "generated/cutout-v1-original.png",
+    "single_uniform_scale": 1.6400476758045293,
+    "source_pixel_erosion": 1,
+    "status": "pending_visible_light_edge_on_dark_background"
+  },
+  "paint": {
+    "path": "layers/paint-selection-source.svg",
+    "canvas": [
+      2752,
+      1536
+    ],
+    "rule": "source sRGB G-R >= 12 AND G-B >= 9 approximately, fixed exclusion polygons for glass",
+    "window_exclusions": [
+      [
+        [
+          1070,
+          624
+        ],
+        [
+          1133,
+          519
+        ],
+        [
+          1210,
+          434
+        ],
+        [
+          1294,
+          382
+        ],
+        [
+          1370,
+          360
+        ],
+        [
+          1502,
+          350
+        ],
+        [
+          1490,
+          626
+        ]
+      ],
+      [
+        [
+          1547,
+          346
+        ],
+        [
+          1922,
+          347
+        ],
+        [
+          1933,
+          623
+        ],
+        [
+          1536,
+          625
+        ]
+      ],
+      [
+        [
+          1979,
+          348
+        ],
+        [
+          2391,
+          350
+        ],
+        [
+          2430,
+          380
+        ],
+        [
+          2440,
+          580
+        ],
+        [
+          2397,
+          609
+        ],
+        [
+          1983,
+          618
+        ]
+      ]
+    ],
+    "selected_pixels": 665486,
+    "status": "diagnostic_registration_reviewed_browser_render_and_png_export_pending",
+    "limitation": "specific green source; do not rederive from recolored render or apply to another body"
+  },
+  "important": "Diagnostic plot simulates native SVG masks; browser rendering remains untested."
+}
