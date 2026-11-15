@@ -298,6 +298,71 @@ test('game over: the books can be read after the dialog, and the way back to the
   noErrors(errors); await ctx.close();
 });
 
+test('2d loop: headquarters, staged workshop, chest, achievement, factory sectors and rankings', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await startFounder(page);
+  eq(await page.locator('.nav [aria-current="page"]').getAttribute('data-view'), 'hq2d', 'the game opens at the 2D headquarters');
+  assert(await page.locator('.g2-campus .campus2d').count() === 1, 'the illustrated campus is drawn');
+  eq(await page.locator('.g2-hub .g2-mini-league').count(), 0, 'no ranking before any month is closed');
+  // the design centre building leads to the workshop
+  await page.locator('.g2-pin[data-spot="studio"]').click();
+  await page.locator('.g2-workshop').waitFor();
+  const power0 = await page.locator('.g2-specs dd').first().innerText();
+  await page.locator('.g2-option[data-option="V8"]').click();
+  const power1 = await page.locator('.g2-specs dd').first().innerText();
+  assert(power0 !== power1, `choosing a V8 changes the projected power (${power0} → ${power1})`);
+  assert(await page.locator('.g2-iconic-card').count() > 0, 'the iconic engine catalogue is listed');
+  await page.locator('.g2-steps button').nth(4).click();
+  await page.locator('.g2-option[data-option="coupe"]').click();
+  await page.locator('.g2-steps button').last().click();
+  await page.locator('[data-field="model-name"]').fill('Arrow GT');
+  if (await page.locator('.g2-approve .g2-warn .g2-btn').count()) await page.locator('.g2-approve .g2-warn .g2-btn').click();
+  await page.locator('[data-action="2d-start-development"]').click();
+  await page.locator('.g2-hub').waitFor();
+  assert((await page.locator('.g2-range').innerText()).includes('Arrow GT'), 'the approved car appears in the range');
+  // an achievement reached by that fact, claimed once
+  await nav(page, 'collection2d');
+  const goal = page.locator('[data-goal="first-programme"]');
+  await goal.locator('[data-action="claim-goal"]').click();
+  await goal.locator('.g2-chip').waitFor();
+  eq(await goal.locator('[data-action="claim-goal"]').count(), 0, 'a claimed achievement cannot be claimed again');
+  assert((await page.locator('.g2-level').innerText()).includes('40 XP'), 'experience is added');
+  // the starter chest opens with its own animation and gives a card
+  await page.locator('[data-tab="chests"]').click();
+  await page.locator('.g2-chest[data-milestone="0"]').click();
+  await page.locator('.g2-reveal .card2d').waitFor();
+  await page.locator('.g2-reveal .g2-btn.gold').click();
+  assert(await page.locator('.g2-chest[data-milestone="0"]').isDisabled(), 'the chest cannot be opened twice');
+  await page.locator('[data-tab="cards"]').click();
+  assert(await page.locator('.g2-cards .card2d:not(.card2d-missing)').count() >= 1, 'the won card is in the collection');
+  // the plant, sector by sector
+  await nav(page, 'factory2d');
+  if (await page.locator('.fl2d').count()) {
+    await page.locator('.g2-sector-tabs [data-sector="paint"]').click();
+    await page.locator('[data-sector-detail="paint"]').waitFor();
+  }
+  await nextMonth(page);
+  await nav(page, 'league2d');
+  assert(await page.locator('.g2-table tr').count() > 3, 'the industry table is built after a closed month');
+  assert(await page.locator('.g2-table tr.me').count() + (await page.locator('.g2-your-rank').count()) >= 1, 'the player is placed in it');
+  noErrors(errors); await ctx.close();
+});
+
+test('2d phone: the headquarters and workshop fit a 390 px screen', async (browser) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });
+  const page = await ctx.newPage(); page.setDefaultTimeout(20000);
+  const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(BASE); await page.locator('.menu2').waitFor();
+  await startFounder(page);
+  for (const v of ['hq2d', 'workshop2d', 'collection2d', 'league2d']) {
+    await page.evaluate((view) => document.querySelector(`.nav [data-view="${view}"]`)?.click(), v); await page.waitForTimeout(200);
+    const over = await page.evaluate(() => [...document.querySelectorAll('.g2 *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > window.innerWidth + 1 && !e.closest('.fl2d,.g2-steps,.g2-tabs,.g2-table-wrap,.nav'); }).map((e) => e.className).slice(0, 3));
+    eq(over.length, 0, `${v}: nothing overflows the phone width (${over.join(', ')})`);
+  }
+  noErrors(errors); await ctx.close();
+});
+
 // ---------------------------------------------------------------------------------------------------- runner
 (async () => {
   const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore' });

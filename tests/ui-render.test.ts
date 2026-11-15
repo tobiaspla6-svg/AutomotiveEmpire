@@ -69,6 +69,6 @@ describe('CEO dashboard', () => {
     setLang('en');
     const html = (live(), renderToString(createElement(Shell)));
     expect(html).not.toContain('<canvas');
-    for (const s of ['My empire', '2D workshop', 'Advanced analysis', 'Finance', 'Market']) expect(text(html), s).toContain(s);
+    for (const s of ['My empire', 'Workshop', 'Achievements & garage', 'Rankings', 'Advanced analysis', 'Finance', 'Market']) expect(text(html), s).toContain(s);
   });
 });
