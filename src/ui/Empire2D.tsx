@@ -18,16 +18,20 @@ import { REGION_IDS, REGIONS, SEGMENTS } from '../data/world';
 import { standings } from '../sim/racing/season';
 import { player } from '../sim/world';
 import { ICONIC_ENGINES, type IconicEngine } from '../data/iconicEngines';
-import { BLUEPRINTS, MILESTONES, RARITY, REDEEM_LEVEL, effectiveOdds, availableMilestones, equipPart, fixedPrice, lifetimeSales, openSalesChest, redeemPart, type ChestResult, type PartSlot } from '../sim/progression';
+import { BLUEPRINTS, REDEEM_LEVEL, availableMilestones, equipPart, fixedPrice, lifetimeSales, redeemPart, type PartSlot } from '../sim/progression';
 import { ACHIEVEMENTS, achievementViews, claimAchievement, companyLevel, LEVELS, nextLevelXp, type AchievementView } from '../sim/achievements';
 import { Car2D, type WheelLook } from './art2d/Car2D';
 import { HeroShowroom2D } from './art2d/HeroShowroom2D';
 import { Engine2D } from './art2d/Engine2D';
 import { Chassis2D, Gearbox2D, Suspension2D, Brake2D, Tyre2D } from './art2d/Parts2D';
-import { Campus2D, OFFICE_H, SPOT_ANCHOR, spotPos, type CampusSpot, type CampusState } from './art2d/Campus2D';
-import { FactoryLine2D, SECTORS, type Sector, type SectorLoad } from './art2d/FactoryLine2D';
-import { Chest2D, PartCard, RARITY_ORDER } from './art2d/Rewards2D';
+import type { CampusState } from './art2d/Campus2D';
+import { SECTORS, type Sector, type SectorLoad } from './art2d/FactoryLine2D';
+import { FlowFactoryScene, FlowQueue } from './flow/FlowFactory';
+import { PartCard } from './art2d/Rewards2D';
 import { GettingStarted } from './Guide';
+import { FlowBar, FlowCampus } from './flow/FlowHQ';
+import { ChestRoom } from './flow/FlowChests';
+import { configOf, saveVehicleConfig } from '../sim/vehicleConfig';
 import { useTx, type TxKey } from './game2d/text';
 import { sfx } from './game2d/sfx';
 
@@ -106,49 +110,16 @@ function GoalRow({ v, onClaim }: { v: AchievementView; onClaim: (v: AchievementV
 export function EmpireHub2D() {
   const { g, p } = useGame(), tx = useTx(), { lang } = useT();
   const setView = useStore((s) => s.setView);
-  const [hover, setHover] = useState<CampusSpot | null>(null);
   const claim = useClaim();
-  const cs = campusState(g, p);
   const sold = lifetimeSales(p), credits = p.arcade?.credits ?? 0;
   const ranked = g.companies.filter((c) => c.alive).sort((a, b) => annualUnits(b) - annualUnits(a));
   const hasData = ranked.some((c) => c.ledger.length > 0);
   const myRank = ranked.findIndex((c) => c.id === p.id) + 1;
-  const cap = p.factories.reduce((a, f) => a + f.capacity, 0);
-  const building = p.factories.filter((f) => f.capacity <= 0 || f.expansion).length;
-  const reach = REGION_IDS.reduce((a, r) => a + p.reach[r], 0);
-  const lead = Object.values(p.tech).reduce((a, v) => a + v, 0) / 5;
   const goals = achievementViews(g, p).filter((v) => !v.claimed).sort((a, b) => Number(b.done) - Number(a.done) || b.value / b.target - a.value / a.target).slice(0, 4);
-  const spots: { id: CampusSpot; view: string; name: TxKey; status: string; show: boolean }[] = [
-    { id: 'office', view: 'dashboard', name: 'spot.office', status: tx('spot.office.s'), show: true },
-    { id: 'studio', view: 'workshop2d', name: 'spot.studio', status: tx('spot.studio.s', { n: p.engineers }), show: true },
-    { id: 'lab', view: 'skills2d', name: 'spot.lab', status: tx('spot.lab.s', { v: lead.toFixed(1) }), show: true },
-    { id: 'factory', view: 'factory2d', name: 'spot.factory', status: p.factories.length ? tx('spot.factory.s', { n: p.factories.length, cap: num(cap, lang) }) + (building ? tx('spot.factory.building', { n: building }) : '') : tx('spot.factory.none'), show: true },
-    { id: 'showroom', view: 'campaign2d', name: 'spot.showroom', status: tx('spot.showroom.s', { n: num(reach, lang) }), show: true },
-    { id: 'billboard', view: 'campaign2d', name: 'spot.billboard', status: p.marketingBudget > 0 ? tx('spot.billboard.s', { v: money(p.marketingBudget, lang) }) : tx('spot.billboard.off'), show: true },
-    { id: 'track', view: 'motorsport', name: 'spot.track', status: tx('spot.track.s'), show: cs.track },
-    { id: 'trophies', view: 'collection2d', name: 'spot.trophies', status: tx('spot.trophies.s', { n: cs.trophies }), show: true },
-  ];
   const range = p.models.filter((m) => m.status !== 'retired').slice(0, 6);
   return <section className="g2 g2-hub">
-    <div className="g2-hub-top">
-      <div><span className="g2-kicker">{tx('hub.kicker')} · {p.name}</span><h2>{tx('hub.title')}</h2><p>{tx('hub.sub')}</p></div>
-      <div className="g2-hub-stats">
-        <LevelBadge p={p} />
-        <div className="g2-stat"><span>{tx('hub.sold')}</span><b>{num(sold, lang)}</b></div>
-        <div className="g2-stat"><span>{tx('hub.credits')}</span><b>{num(credits, lang)}</b></div>
-        <div className="g2-stat"><span>{tx('hub.rank')}</span><b>{hasData ? `#${myRank}` : '—'}</b></div>
-      </div>
-    </div>
-    <div className="g2-campus" onMouseLeave={() => setHover(null)}>
-      <Campus2D s={cs} active={hover} extraPlants={Math.max(0, p.factories.length - 4)} />
-      {spots.filter((s) => s.show).map((s) => {
-        const [x, y, z0] = SPOT_ANCHOR[s.id], z = s.id === 'office' ? OFFICE_H[cs.officeTier] + 1 : z0;
-        return <button type="button" key={s.id} className={'g2-pin' + (hover === s.id ? ' on' : '')} data-spot={s.id} style={spotPos(x, y, z)}
-          onMouseEnter={() => setHover(s.id)} onFocus={() => setHover(s.id)} onBlur={() => setHover(null)} onClick={() => { sfx.click(); setView(s.view); }}>
-          <b>{tx(s.name)}</b><small>{s.status}</small>
-        </button>;
-      })}
-    </div>
+    <FlowCampus g={g} p={p} />
+    <div className="g2-hub-stats"><LevelBadge p={p} /><div className="g2-stat"><span>{tx('hub.sold')}</span><b>{num(sold, lang)}</b></div><div className="g2-stat"><span>{tx('hub.credits')}</span><b>{num(credits, lang)}</b></div><div className="g2-stat"><span>{tx('hub.rank')}</span><b>{hasData ? `#${myRank}` : '—'}</b></div></div>
     <div className="g2-hub-grid">
       <div className="g2-panel g2-range">
         <div className="g2-panel-head"><h3>{tx('hub.range')}</h3><button type="button" className="g2-btn gold" onClick={() => setView('workshop2d')}>{tx('hub.openWorkshop')}</button></div>
@@ -241,7 +212,8 @@ function OptionCard({ o, spec, selected, onPick, evalSpec, lockedReason }: { o: 
 export function Workshop2D() {
   const { g, p } = useGame(), tx = useTx(), { lang, t } = useT();
   const tm = (k: string) => t(k as MessageKey);
-  const [spec, setSpec] = useState<VehicleSpec>(() => ({ ...(g.mode === 'founder' ? starterVehicle(g.year, p.specialization) : defaultVehicle(g.year)), color: p.color }));
+  // the design studio's draft paint (if any) carries over to the engineering design
+  const [spec, setSpec] = useState<VehicleSpec>(() => ({ ...(g.mode === 'founder' ? starterVehicle(g.year, p.specialization) : defaultVehicle(g.year)), color: p.designs?.draft?.paint ?? p.color }));
   const [name, setName] = useState('');
   const [step, setStep] = useState<Step>('engine');
   const [decade, setDecade] = useState<number | null>(null);
@@ -259,7 +231,15 @@ export function Workshop2D() {
     return <OptionCard key={o.key} o={o} spec={spec} selected={JSON.stringify(o.apply(spec)) === JSON.stringify(spec)} onPick={() => set(o.apply(spec))} evalSpec={evalSpec} lockedReason={reason} />;
   })}</div>;
   const approve = () => {
-    if (act((gg) => startDevelopment(gg, name, spec, seg), tx('ws.approved', { name }))) { sfx.claim(); void save('autosave'); setView('hq2d'); }
+    const before = new Set(p.models.map((m) => m.id));
+    if (act((gg) => {
+      const err = startDevelopment(gg, name, spec, seg);
+      if (err) return err;
+      // the visual configuration of the draft follows the new model (paint = the approved colour)
+      const c = player(gg), nu = c.models.find((m) => !before.has(m.id));
+      if (nu) { const draft = configOf(c, 'draft'); saveVehicleConfig(gg, nu.id, { ...draft, paint: /^#[0-9a-f]{6}$/i.test(spec.color) ? spec.color : draft.paint }); }
+      return null;
+    }, tx('ws.approved', { name }))) { sfx.claim(); void save('autosave'); setView('hq2d'); }
   };
   const decades = [...new Set(ICONIC_ENGINES.map((e) => e.decade))];
   const shownDecade = decade ?? decades.filter((d) => d <= g.year).slice(-1)[0] ?? decades[0];
@@ -398,13 +378,14 @@ export function FactoryFloor2D() {
   const expCost = factoryBuildCost(Math.round(f.capacity * 0.5), f.automation, g.year) * 0.85;
   const lines = f.lines.map((l) => ({ m: p.models.find((x) => x.id === l.modelId), units: f.capacity * l.share }));
   return <section className="g2 g2-factory">
-    <Heading kicker={tx('fa.kicker')} title={tx('fa.title')} sub={tx('fa.sub')} />
+    <FlowBar title={lang === 'es' ? 'Fábrica' : 'Factory'}><span>{tx('fa.capacity')} {tx('fa.perMonth', { n: num(f.capacity, lang) })}</span><span>{tx('fa.output')} {num(out, lang)}</span><span>{tx('fa.automation')} {Math.round(f.automation * 100)}%</span></FlowBar>
     {p.factories.length > 1 && <div className="g2-tabs" role="tablist">{p.factories.map((x) => <button type="button" role="tab" key={x.id} aria-selected={x.id === f.id} className={x.id === f.id ? 'on' : ''} onClick={() => setFid(x.id)}>{x.name}</button>)}</div>}
     <div className="g2-plant-head">
       <div><b>{f.name}</b><small>{f.country} · {tx('fa.capacity')} {tx('fa.perMonth', { n: num(f.capacity, lang) })} · {tx('fa.automation')} {Math.round(f.automation * 100)}%</small></div>
       {f.expansion && <span className="g2-chip warn">{tx('fa.expansion', { n: num(f.expansion.add, lang), m: f.expansion.monthsLeft })}</span>}
     </div>
-    <FactoryLine2D load={load} automation={f.automation} color={p.color} active={sector} onPick={(s) => { sfx.click(); setSector(s); }} labels={labels} />
+    <FlowFactoryScene load={load} active={sector} onPick={(s) => { sfx.click(); setSector(s); }} producing={out > 0} />
+    <FlowQueue g={g} p={p} f={f} />
     <div className="g2-sector-tabs" role="tablist" aria-label={tx('fa.kicker')}>{SECTORS.map((s) => <button type="button" role="tab" key={s} aria-selected={sector === s} className={(sector === s ? 'on' : '') + (load[s].bottleneck ? ' bn' : '')} data-sector={s} onClick={() => setSector(s)}>{labels[s]}</button>)}</div>
     <div className="g2-sector-grid">
       <div className="g2-panel g2-sector" data-sector-detail={sector}>
@@ -441,15 +422,10 @@ export function Collection2D({ initialTab = 'goals' }: { initialTab?: CoTab } = 
   const { g, p } = useGame(), tx = useTx(), { lang } = useT();
   const act = useStore((s) => s.act), save = useStore((s) => s.save);
   const [tab, setTab] = useState<CoTab>(initialTab);
-  const [reveal, setReveal] = useState<ChestResult | null>(null);
   const [slot, setSlot] = useState<PartSlot | 'all'>('all');
   const claim = useClaim();
-  const odds = effectiveOdds(g.year), sales = lifetimeSales(p), inv = p.arcade?.inventory ?? {}, credits = p.arcade?.credits ?? 0, level = companyLevel(p);
+  const sales = lifetimeSales(p), inv = p.arcade?.inventory ?? {}, credits = p.arcade?.credits ?? 0, level = companyLevel(p);
   const views = achievementViews(g, p);
-  const open = (m: number) => {
-    const cap: { v?: ChestResult } = {};
-    if (act((gg) => { const r = openSalesChest(gg, m); if (typeof r === 'string') return r; cap.v = r; return null; }) && cap.v) { sfx.chest(cap.v.part.rarity); setReveal(cap.v); void save('autosave'); }
-  };
   const equip = (id: string) => { if (act((gg) => equipPart(gg, id))) { sfx.click(); void save('autosave'); } };
   const unequip = (s: PartSlot) => { if (act((gg) => { const a = player(gg).arcade; if (a) delete a.equipped[s]; return null; })) void save('autosave'); };
   const owned = BLUEPRINTS.filter((b) => inv[b.id]).length;
@@ -458,18 +434,7 @@ export function Collection2D({ initialTab = 'goals' }: { initialTab?: CoTab } = 
     <div className="g2-hub-stats inline"><LevelBadge p={p} /><div className="g2-stat"><span>{tx('hub.sold')}</span><b>{num(sales, lang)}</b></div><div className="g2-stat"><span>{tx('hub.credits')}</span><b>{num(credits, lang)}</b></div><div className="g2-stat"><span>{tx('tab.cards')}</span><b>{owned}/{BLUEPRINTS.length}</b></div></div>
     <div className="g2-tabs big" role="tablist">{(['goals', 'chests', 'cards', 'shop'] as CoTab[]).map((t) => <button type="button" role="tab" key={t} aria-selected={tab === t} className={tab === t ? 'on' : ''} data-tab={t} onClick={() => setTab(t)}>{tx(`tab.${t}` as TxKey)}{t === 'goals' && views.some((v) => v.done && !v.claimed) ? ' •' : ''}{t === 'chests' && availableMilestones(p).length ? ' •' : ''}</button>)}</div>
     {tab === 'goals' && <ul className="g2-goals grid">{views.map((v) => <GoalRow key={v.a.id} v={v} onClaim={claim} />)}</ul>}
-    {tab === 'chests' && <>
-      <div className="g2-chests">{MILESTONES.map((m, i) => {
-        const claimed = p.arcade?.claimedMilestones.includes(m), ready = sales >= m && !claimed;
-        const r = RARITY_ORDER[Math.min(5, i)];
-        return <button type="button" key={m} className={'g2-chest ' + (claimed ? 'claimed' : ready ? 'ready' : 'locked')} disabled={!ready} data-milestone={m} onClick={() => open(m)}>
-          <Chest2D rarity={r} state={claimed ? 'open' : ready ? 'ready' : 'closed'} />
-          <b>{m === 0 ? tx('co.chest.start') : tx('co.chest.sales', { n: num(m, lang) })}</b>
-          <small>{claimed ? tx('co.chest.opened') : ready ? tx('co.chest.open') : tx('co.chest.locked', { n: num(m - sales, lang) })}</small>
-        </button>;
-      })}</div>
-      <div className="g2-panel g2-odds"><b>{tx('co.odds', { y: g.year })}</b><div>{RARITY_ORDER.map((r) => <span key={r} style={{ color: RARITY[r].color }}>{lang === 'es' ? RARITY[r].es : RARITY[r].en} {odds[r]}%</span>)}</div><p className="g2-soft">{tx('co.odds.note')}</p></div>
-    </>}
+    {tab === 'chests' && <ChestRoom />}
     {tab === 'cards' && <>
       <div className="g2-showcase"><div><span className="g2-kicker">{tx('co.showcase')}</span><p className="g2-soft">{tx('co.showcase.sub')}</p>
         <div className="g2-equipped">{(['body', 'wheels', 'engine', 'chassis'] as PartSlot[]).map((s) => { const id = p.arcade?.equipped[s]; const b = id ? BLUEPRINTS.find((x) => x.id === id) : null; return <span key={s} className="g2-chip">{tx(`slot.${s}` as TxKey)}: {b ? (lang === 'es' ? b.es : b.en) : '—'}{b && <button type="button" aria-label={tx('co.unequip')} onClick={() => unequip(s)}>×</button>}</span>; })}</div></div>
@@ -496,15 +461,6 @@ export function Collection2D({ initialTab = 'goals' }: { initialTab?: CoTab } = 
       })}</div>
       <div className="g2-panel g2-future"><h3>{tx('shop.packs')}</h3><p>{tx('shop.packs.note')}</p><button type="button" className="g2-btn" disabled>{tx('shop.unavailable')}</button></div>
     </>}
-    {reveal && <div className="g2-reveal-bg" role="dialog" aria-modal="true" aria-label={tx('co.reward')}>
-      <div className={`g2-reveal g2-reveal-${reveal.part.rarity}`}>
-        <span className="g2-kicker">{tx('co.reward')}</span>
-        <Chest2D rarity={reveal.part.rarity} state="opening" />
-        <div className="g2-reveal-card"><PartCard part={reveal.part} owned={1} lang={lang} /></div>
-        <b style={{ color: RARITY[reveal.part.rarity].color }}>{reveal.duplicate ? tx('co.dup', { n: reveal.creditsAdded - 40 }) : tx('co.newPart')} · +{reveal.creditsAdded} {tx('hub.credits').toLowerCase()}</b>
-        <div className="g2-actions">{!reveal.duplicate && reveal.part.firstYear <= g.year && <button type="button" className="g2-btn" onClick={() => { equip(reveal.part.id); setReveal(null); }}>{tx('co.equipNow')}</button>}<button type="button" className="g2-btn gold" autoFocus onClick={() => setReveal(null)}>{tx('co.continue')}</button></div>
-      </div>
-    </div>}
   </section>;
 }
 

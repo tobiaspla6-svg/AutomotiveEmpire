@@ -15,7 +15,10 @@ import './styles/corporate.css';
 import './styles/empire2d.css';
 import './styles/game2d.css';
 import './styles/premium2d.css';
+import './styles/flow.css';
 import './styles.css';
 import { App } from './App';
+import { applyPrefs } from './ui/flow/prefs';
+applyPrefs();
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
