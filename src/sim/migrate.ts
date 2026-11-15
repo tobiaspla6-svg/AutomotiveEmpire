@@ -65,6 +65,18 @@ export function saveDamage(g: GameState): string | null {
     if (!hasNums(c.reach, REGION_IDS) || !hasNums(c.awareness, REGION_IDS)) return `${who} has no market reach`;
     if (!hasNums(c.tech, AREAS) || !hasNums(c.rdBudget, AREAS)) return `${who} has no technology levels`;
     for (const k of ['ledger', 'models', 'factories'] as const) if (!Array.isArray(c[k])) return `${who} has no ${k}`;
+    // Phase 5 is optional for old saves, but malformed chest state must never
+    // crash the collection panel or silently invent paid/earned currency.
+    if (c.arcade !== undefined) {
+      const a = c.arcade;
+      if (!isObj(a) || !Array.isArray(a.claimedMilestones) ||
+          !a.claimedMilestones.every((n: unknown) => isNum(n) && n >= 0) ||
+          !isObj(a.inventory) || !Object.values(a.inventory).every((n) => isNum(n) && n >= 0) ||
+          !isObj(a.equipped) || !Object.values(a.equipped).every((id) => typeof id === 'string') ||
+          !isNum(a.credits) || a.credits < 0 ||
+          (a.xp !== undefined && (!isNum(a.xp) || a.xp < 0)) ||
+          (a.achievements !== undefined && (!isObj(a.achievements) || !Object.values(a.achievements).every((v) => isObj(v) && isNum(v.y) && isNum(v.m))))) return `${who} has damaged collectibles`;
+    }
     if (!isObj(c.books) || !isObj(c.books.pending) || !isObj(c.books.close)) return `${who} has no books`;
     for (const m of c.models) {
       if (!isObj(m) || typeof m.id !== 'string' || !isObj(m.spec) || !isObj(m.stats) || !isObj(m.stats.scores)) return `${who} has a vehicle without its specification`;

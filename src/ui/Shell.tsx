@@ -13,17 +13,23 @@ import { DashboardView } from './Dashboard';
 import { CompanyView, NewsView, SavesView } from './Views';
 import { FinanceView, MarketView, ResearchView } from './Corporate';
 import { FactoriesView } from './Factories';
+import { EmpireHub2D, Workshop2D, Collection2D, FactoryFloor2D, Campaigns2D, League2D } from './Empire2D';
+import { SkillTree2D } from './SkillTree2D';
+import { useTx } from './game2d/text';
+import { isMuted, setMuted, sfx } from './game2d/sfx';
 
 // the vehicle studio and motorsport screens carry the 3D viewers: load them on first visit
 const VehiclesView = lazy(() => import('./Vehicles').then((m) => ({ default: m.VehiclesView })));
 const MotorsportView = lazy(() => import('./Motorsport').then((m) => ({ default: m.MotorsportView })));
 
-type NavItem = { id: string; icon: IconName; label: MessageKey; dot?: boolean };
+type NavItem = { id: string; icon: IconName; label: MessageKey; custom?: string; dot?: boolean };
 type NavGroup = { id: MessageKey; items: NavItem[] };
 
 export function Shell() {
   const { g, p } = useGame();
   const { t, lang } = useT();
+  const tx = useTx();
+  const [muted, setMute] = useState(isMuted);
   const view = useStore((s) => s.view), setView = useStore((s) => s.setView), advance = useStore((s) => s.advance), go = useStore((s) => s.go), busy = useStore((s) => s.busy), decide = useStore((s) => s.decide), quit = useStore((s) => s.quit), save = useStore((s) => s.save), notify = useStore((s) => s.notify);
   const race = pendingRound(g, p);
   const last = p.ledger[p.ledger.length - 1];
@@ -32,8 +38,16 @@ export function Shell() {
   const groups: NavGroup[] = ms
     ? [{ id: 'nav.group.racing', items: [{ id: 'motorsport', icon: 'flag', label: 'nav.teamHq', dot: !!race }] }, { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'news', icon: 'news', label: 'nav.news' }] }, { id: 'nav.group.system', items: [{ id: 'saves', icon: 'save', label: 'nav.saves' }] }]
     : [
-      { id: 'nav.group.command', items: [{ id: 'dashboard', icon: 'dashboard', label: 'nav.dashboard' }] },
-      { id: 'nav.group.engineering', items: [{ id: 'vehicles', icon: 'vehicle', label: 'nav.vehicles', dot: ready > 0 }, { id: 'research', icon: 'research', label: 'nav.research' }] },
+      { id: 'nav.group.command', items: [
+        { id: 'hq2d', icon: 'home', label: 'nav.dashboard', custom: tx('nav.hq') },
+        { id: 'workshop2d', icon: 'wrench', label: 'nav.vehicles', custom: tx('nav.workshop') },
+        { id: 'factory2d', icon: 'factory', label: 'nav.factories', custom: tx('nav.factory') },
+        { id: 'skills2d', icon: 'bolt', label: 'nav.research', custom: tx('nav.skills') },
+        { id: 'collection2d', icon: 'box', label: 'nav.company', custom: tx('nav.collection') },
+        { id: 'campaign2d', icon: 'market', label: 'nav.market', custom: tx('nav.campaigns') },
+        { id: 'league2d', icon: 'trophy', label: 'nav.company', custom: tx('nav.league') },
+      ] },
+      { id: 'nav.group.engineering', items: [{ id: 'dashboard', icon: 'dashboard', label: 'nav.dashboard', custom: tx('nav.advanced') }, { id: 'vehicles', icon: 'vehicle', label: 'nav.vehicles', dot: ready > 0 }, { id: 'research', icon: 'research', label: 'nav.research' }] },
       { id: 'nav.group.operations', items: [{ id: 'factories', icon: 'factory', label: 'nav.factories', dot: ready > 0 }, { id: 'market', icon: 'market', label: 'nav.market' }] },
       { id: 'nav.group.corporate', items: [{ id: 'finance', icon: 'finance', label: 'nav.finance' }, { id: 'company', icon: 'company', label: 'nav.company' }, { id: 'motorsport', icon: 'flag', label: 'nav.motorsport', dot: !!race }] },
       { id: 'nav.group.system', items: [{ id: 'news', icon: 'news', label: 'nav.news' }, { id: 'saves', icon: 'save', label: 'nav.saves' }] },
@@ -60,6 +74,7 @@ export function Shell() {
         <div className="grow" />
         <div className="row topbar-actions" style={{ gap: 4 }}>
           <button className="iconbtn" onClick={async () => { await save(`${p.name} ${g.year}`); notify(t('top.saved')); }} aria-label={t('top.save')} title={t('top.save')}><Icon name="save" /></button>
+          <button className="iconbtn" data-action="sound" aria-pressed={!muted} onClick={() => { setMuted(!muted); setMute(!muted); if (muted) sfx.click(); }} aria-label={muted ? tx('sound.off') : tx('sound.on')} title={muted ? tx('sound.off') : tx('sound.on')}><span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>{muted ? '🔇' : '🔊'}</span></button>
           <SettingsButton />
           <button className="iconbtn" data-action="help" onClick={reopenGuide} aria-label={t('guide.help')} title={t('guide.help')}><Icon name="help" /></button>
           <button className="iconbtn" data-action="quit" onClick={() => { void save('autosave'); quit(); }} aria-label={t('top.menu')} title={t('top.menu')}><Icon name="home" /></button>
@@ -77,7 +92,7 @@ export function Shell() {
             <span className="nav-eyebrow">{t(grp.id)}</span>
             {grp.items.map((it) => (
               <button key={it.id} data-view={it.id} className={view === it.id ? 'on' : ''} aria-current={view === it.id ? 'page' : undefined} onClick={() => setView(it.id)}>
-                <Icon name={it.icon} size={18} /><span className="nav-label">{t(it.label)}</span>{it.dot && <i className="dot" title={t('nav.attention')} />}
+                <Icon name={it.icon} size={18} /><span className="nav-label">{it.custom ?? t(it.label)}</span>{it.dot && <i className="dot" title={t('nav.attention')} />}
               </button>
             ))}
           </div>
@@ -91,6 +106,13 @@ export function Shell() {
 
       <main className="main" id="main">
         <Suspense fallback={<div className="screen-loading" role="status">{t('common.loading')}</div>}>
+          {view === 'hq2d' && <EmpireHub2D />}
+          {view === 'workshop2d' && <Workshop2D />}
+          {view === 'factory2d' && <FactoryFloor2D />}
+          {view === 'skills2d' && <SkillTree2D />}
+          {view === 'collection2d' && <Collection2D />}
+          {view === 'campaign2d' && <Campaigns2D />}
+          {view === 'league2d' && <League2D />}
           {view === 'dashboard' && <DashboardView />}
           {view === 'vehicles' && <VehiclesView />}
           {view === 'factories' && <FactoriesView />}

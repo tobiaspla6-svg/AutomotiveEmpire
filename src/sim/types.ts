@@ -341,6 +341,8 @@ export interface Company {
   rdBudget: Record<TechArea, number>; // per month
   engineers: number;
   marketingBudget: number; // per month
+  /** Phase 5: saved, earned-only 2D collectible progression; absent in older saves. */
+  arcade?: import('./progression').ArcadeProgress;
   ledger: MonthLedger[];
   motorsport: MotorsportDivision | null;
   board: { confidence: number; objectives: Objective[]; note: string } | null;

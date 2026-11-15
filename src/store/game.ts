@@ -18,12 +18,12 @@ interface Store {
 }
 let toastId = 0;
 export const useStore = create<Store>((set, get) => ({
-  screen: 'menu', game: null, tick: 0, view: 'dashboard', toast: null, busy: false, confirm: null,
+  screen: 'menu', game: null, tick: 0, view: 'hq2d', toast: null, busy: false, confirm: null,
   ask: (text, yes) => set({ confirm: { text, yes } }),
   answer: (ok) => { const c = get().confirm; set({ confirm: null }); if (ok && c) c.yes(); },
   go: (screen) => set({ screen }),
   setView: (view) => set({ view }),
-  start: (game) => { const p = player(game); set({ game, screen: 'game', view: game.mode === 'motorsport' || (!p.factories.length && !p.models.length && p.motorsport) ? 'motorsport' : 'dashboard', tick: get().tick + 1 }); void get().save('autosave'); },
+  start: (game) => { const p = player(game); set({ game, screen: 'game', view: game.mode === 'motorsport' || (!p.factories.length && !p.models.length && p.motorsport) ? 'motorsport' : 'hq2d', tick: get().tick + 1 }); void get().save('autosave'); },
   quit: () => set({ game: null, screen: 'menu' }),
   notify: (text, bad = false) => { const id = ++toastId; set({ toast: { text, bad, id } }); setTimeout(() => { if (get().toast?.id === id) set({ toast: null }); }, 4200); },
   act: (fn, okText) => {
