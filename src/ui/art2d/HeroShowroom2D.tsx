@@ -20,7 +20,6 @@ type Props = {
   compact?: boolean;
 };
 
-const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
 function ForgedWheel({ x, y, r, skinny = false, tint }: { x: number; y: number; r: number; skinny?: boolean; tint: string }) {
   const ry = r * (skinny ? .76 : .92);
@@ -154,7 +153,7 @@ export const HeroShowroom2D = memo(function HeroShowroom2D({
       <ellipse cx="1028" cy="509" rx="45" ry="62" fill="#04070d" stroke="#202f40" strokeWidth="9"/>
       <ellipse cx="1028" cy="508" rx="28" ry="47" fill="#647c91" stroke="#121c2a" strokeWidth="5"/>
       {/* Coupe/sedan upper fender metal and rear haunch. */}
-      <path d={'M205 452Q240 423 346 418L411 407L428 '+(rearRoof+26)+' '+roof.slice(1)+
+      <path d={'M205 452Q240 423 346 418L411 407'+roof.replace(/^M/,'L')+
           ' Q892 338 1003 388L1114 428Q1148 442 1144 483L1113 533Q1080 556 992 567L322 554Q232 547 205 521Z'}
         fill={g('paintSide')} stroke={deep} strokeWidth="4" strokeLinejoin="round"/>
       {/* The hood stays one clean shaped uninterrupted metal panel. */}
