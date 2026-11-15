@@ -41,18 +41,24 @@ const lum = (hex: string) => { const n = parseInt(hex.slice(1), 16); return (0.2
 /** Source paint luminance of the original blue (measured on the body panels). */
 const SRC_L = 0.13;
 
-type Finish = 'metallic' | 'solid' | 'pearl' | 'matte';
+export type Finish = 'metallic' | 'solid' | 'pearl' | 'matte';
 interface LayerRec { file: string; box: number[]; paintMask?: string }
 const LAYERS = partsManifest.layers as Record<string, LayerRec>;
 /** Order in which overlay parts are stacked (lower first). */
 const OVERLAY_ORDER = ['roof-panoramic', 'handle-flush', 'bumper-front-sport', 'headlamp-matrix'];
-const pct = (box: number[]): CSSProperties => ({ left: `${(box[0] / GT01.w) * 100}%`, top: `${(box[1] / GT01.h) * 100}%`, width: `${(box[2] / GT01.w) * 100}%`, height: `${(box[3] / GT01.h) * 100}%` });
+/** A box in a canvas's native px as percentages of that canvas (GT-01 canvas by default). */
+export const pctIn = (box: number[], canvas: { w: number; h: number }): CSSProperties => ({ left: `${(box[0] / canvas.w) * 100}%`, top: `${(box[1] / canvas.h) * 100}%`, width: `${(box[2] / canvas.w) * 100}%`, height: `${(box[3] / canvas.h) * 100}%` });
+const pct = (box: number[]) => pctIn(box, GT01);
 
-/** The repaint of one mask: hue from the paint (keeping the original shading), lightness lift or drop, and the finish. */
-function PaintStack({ mask, paint, finish, box }: { mask: string; paint: string; finish: Finish; box?: number[] }) {
+/**
+ * The repaint of one mask: hue from the paint (keeping the original shading), lightness lift or drop, and the finish.
+ * `srcL` is the luma of the original paint under the mask (GT-01 blue 0.13, SUV green 0.39): lighter targets are
+ * lifted, darker ones pulled down, relative to it. Only the masked pixels are affected; there is no global filter.
+ */
+export function PaintStack({ mask, paint, finish, box, canvas = GT01, srcL = SRC_L }: { mask: string; paint: string; finish: Finish; box?: number[]; canvas?: { w: number; h: number }; srcL?: number }) {
   const L = lum(paint);
-  const lift = L > SRC_L ? Math.min(0.9, (L - SRC_L) / (1 - SRC_L)) : 0, drop = L < SRC_L ? Math.min(0.8, (SRC_L - L) / SRC_L) : 0;
-  const m: CSSProperties = { WebkitMaskImage: `url(${flowUrl(mask)})`, maskImage: `url(${flowUrl(mask)})`, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', ...(box ? pct(box) : { inset: 0, width: '100%', height: '100%' }) };
+  const lift = L > srcL ? Math.min(0.9, (L - srcL) / (1 - srcL)) : 0, drop = L < srcL ? Math.min(0.85, (srcL - L) / srcL) : 0;
+  const m: CSSProperties = { WebkitMaskImage: `url(${flowUrl(mask)})`, maskImage: `url(${flowUrl(mask)})`, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', ...(box ? pctIn(box, canvas) : { inset: 0, width: '100%', height: '100%' }) };
   const n = parseInt(paint.slice(1), 16), rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   const towardWhite = (k: number) => `rgb(${rgb.map((v) => Math.round(v + (255 - v) * k)).join(',')})`;
   return <>

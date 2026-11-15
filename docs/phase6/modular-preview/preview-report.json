@@ -1,0 +1,808 @@
+{
+ "runs": [
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "a"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1920,
+    1080
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "b"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 1498,
+   "svgH": 655.375
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "a"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    1280,
+    720
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "b"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 1218,
+   "svgH": 532.875
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "steel",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/steel-v2-original.png",
+     567.89,
+     1112.64,
+     296.1,
+     296.1
+    ],
+    [
+     "generated/steel-v2-original.png",
+     2095.89,
+     1112.64,
+     296.1,
+     296.1
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "original",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 0,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "a",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "alloy",
+    "lamps": "b",
+    "bumper": "original"
+   },
+   "wheels": [
+    [
+     "generated/alloy-v2-original.png",
+     567.29,
+     1113.12,
+     294.03,
+     294.03
+    ],
+    [
+     "generated/alloy-v2-original.png",
+     2095.29,
+     1113.12,
+     294.03,
+     294.03
+    ]
+   ],
+   "lamps": 1,
+   "bumpers": 0,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "a"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 328,
+   "svgH": 143.5
+  },
+  {
+   "viewport": [
+    390,
+    844
+   ],
+   "combo": {
+    "wheels": "original",
+    "lamps": "original",
+    "bumper": "b"
+   },
+   "wheels": [],
+   "lamps": 0,
+   "bumpers": 1,
+   "svgW": 328,
+   "svgH": 143.5
+  }
+ ],
+ "errors-1920": [],
+ "http-1920": [],
+ "errors-1280": [],
+ "http-1280": [],
+ "errors-390": [],
+ "http-390": []
+}

@@ -1,0 +1,117 @@
+{
+ "vehicle": "m28",
+ "carCssWidth": 1094.390625,
+ "carCssHeight": 469.25,
+ "deviceScaleFactor": 2,
+ "errors": [],
+ "states": {
+  "model-colour": {
+   "parts": "",
+   "paint": "#eb0a1e",
+   "repaint": "1"
+  },
+  "base": {
+   "parts": "",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel5__headlamp-suv90-original": {
+   "parts": "",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel5__headlamp-suv90-halogen-a": {
+   "parts": "headlamp-a",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel5__headlamp-suv90-halogen-b": {
+   "parts": "headlamp-b",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-original": {
+   "parts": "wheel-steel-rear wheel-steel-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-halogen-a": {
+   "parts": "headlamp-a wheel-steel-rear wheel-steel-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-halogen-b": {
+   "parts": "headlamp-b wheel-steel-rear wheel-steel-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-original": {
+   "parts": "wheel-alloy-rear wheel-alloy-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-halogen-a": {
+   "parts": "headlamp-a wheel-alloy-rear wheel-alloy-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-halogen-b": {
+   "parts": "headlamp-b wheel-alloy-rear wheel-alloy-front",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "paint-verde": {
+   "parts": "",
+   "paint": "#526a54",
+   "repaint": "0"
+  },
+  "paint-blanco": {
+   "parts": "",
+   "paint": "#eeece5",
+   "repaint": "1"
+  },
+  "paint-negro": {
+   "parts": "",
+   "paint": "#101923",
+   "repaint": "1"
+  },
+  "paint-rojo": {
+   "parts": "",
+   "paint": "#c8352e",
+   "repaint": "1"
+  },
+  "paint-azul": {
+   "parts": "",
+   "paint": "#2a4f86",
+   "repaint": "1"
+  },
+  "paint-gris-metalico": {
+   "parts": "",
+   "paint": "#9aa4b1",
+   "repaint": "1"
+  },
+  "base-again": {
+   "parts": "",
+   "paint": "#526a54",
+   "repaint": "0"
+  }
+ },
+ "bumperOptions": [
+  "bumper-suv90-standard"
+ ],
+ "handlesTrayEmptyMessage": true,
+ "suvFilesLoadedAtGarage": [
+  "paint-mask.png 200",
+  "shadow.webp 200",
+  "body.webp 200"
+ ],
+ "suvFilesLoadedInTotal": [
+  "paint-mask.png 200",
+  "shadow.webp 200",
+  "body.webp 200",
+  "parts/wheel-steel.webp 200",
+  "parts/wheel-alloy.webp 200",
+  "parts/headlamp-a.webp 200",
+  "parts/headlamp-b.webp 200"
+ ]
+}

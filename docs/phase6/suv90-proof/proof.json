@@ -1,0 +1,88 @@
+{
+ "vehicle": "m28",
+ "captureSize": [
+  2192,
+  940
+ ],
+ "errors": [],
+ "combos": {
+  "wheel-suv90-steel5__headlamp-suv90-original": {
+   "changedPixels": 0,
+   "changedOutsideLayers": 0,
+   "domParts": ""
+  },
+  "wheel-suv90-steel5__headlamp-suv90-halogen-a": {
+   "changedPixels": 4537,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-a"
+  },
+  "wheel-suv90-steel5__headlamp-suv90-halogen-b": {
+   "changedPixels": 4670,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-b"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-original": {
+   "changedPixels": 52472,
+   "changedOutsideLayers": 0,
+   "domParts": "wheel-steel-rear wheel-steel-front"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-halogen-a": {
+   "changedPixels": 57009,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-a wheel-steel-rear wheel-steel-front"
+  },
+  "wheel-suv90-steel6__headlamp-suv90-halogen-b": {
+   "changedPixels": 57142,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-b wheel-steel-rear wheel-steel-front"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-original": {
+   "changedPixels": 63677,
+   "changedOutsideLayers": 0,
+   "domParts": "wheel-alloy-rear wheel-alloy-front"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-halogen-a": {
+   "changedPixels": 68214,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-a wheel-alloy-rear wheel-alloy-front"
+  },
+  "wheel-suv90-alloy6__headlamp-suv90-halogen-b": {
+   "changedPixels": 68347,
+   "changedOutsideLayers": 0,
+   "domParts": "headlamp-b wheel-alloy-rear wheel-alloy-front"
+  }
+ },
+ "paint": {
+  "paint-verde": {
+   "changedPixels": 0,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "0"
+  },
+  "paint-blanco": {
+   "changedPixels": 446567,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "1"
+  },
+  "paint-negro": {
+   "changedPixels": 429414,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "1"
+  },
+  "paint-rojo": {
+   "changedPixels": 439749,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "1"
+  },
+  "paint-azul": {
+   "changedPixels": 437958,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "1"
+  },
+  "paint-gris-metalico": {
+   "changedPixels": 438694,
+   "changedOutsidePaintMask": 0,
+   "repaintLayer": "1"
+  }
+ },
+ "baseAgainChangedPixels": 0
+}

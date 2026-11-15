@@ -447,6 +447,68 @@ test('modular GT: variants and finish saved per vehicle, recovered in garage, st
   noErrors(errors); await ctx.close();
 });
 
+test('SUV 1990 family: wheels, lamps and colour saved per vehicle and recovered; only drawn variants offered', async (browser) => {
+  const { ctx, page, errors } = await open(browser, { lang: 'es' });
+  await startCeo(page, 'Toyota', '1995');
+  await nav(page, 'garage2d');
+  const id = await page.locator('.fs-gtray .fs-thumb:has(.mcar[data-family="suv90-green"])').first().getAttribute('data-model');
+  assert(id, 'a 1984–2004 SUV is drawn by the suv90-green family');
+  await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  eq(await page.locator('.fs-gcard [data-art-family]').getAttribute('data-art-family'), 'suv90-green', 'the garage card names the family');
+  await page.locator('[data-action="customize"]').click(); await page.locator('.fs-studio').waitFor();
+  const car = page.locator('.fs-stage .mcar');
+  eq(await car.getAttribute('data-family'), 'suv90-green', 'the studio draws the SUV family');
+  // the tray offers only this family's parts
+  const opts = async (cat) => { await page.locator(`.fs-cat[data-cat="${cat}"]`).click(); return page.locator('.fs-opt').evaluateAll((els) => els.map((e) => e.dataset.part)); };
+  eq((await opts('wheels')).join(' '), 'wheel-suv90-steel5 wheel-suv90-steel6 wheel-suv90-alloy6', 'SUV wheels only');
+  eq((await opts('bumpers')).join(' '), 'bumper-suv90-standard', 'only the original bumper (trial faces rejected)');
+  await page.locator('.fs-cat[data-cat="roof"]').click(); eq(await page.locator('[data-empty-tray]').count(), 1, 'a category without SUV variants says so');
+  await page.locator('.fs-cat[data-cat="wheels"]').click(); await page.locator('.fs-opt[data-part="wheel-suv90-alloy6"]').click();
+  await page.locator('.fs-cat[data-cat="lights"]').click(); await page.locator('.fs-opt[data-part="headlamp-suv90-halogen-b"]').click();
+  await page.locator('.fs-swatch[aria-label^="#c8352e"]').click();
+  eq(await car.getAttribute('data-parts'), 'headlamp-b wheel-alloy-rear wheel-alloy-front', 'the stage shows the chosen layers');
+  eq(await car.getAttribute('data-repaint'), '1', 'a colour other than the original repaints through the mask');
+  await page.locator('[data-action="studio-save"]').click();
+  const check = async (c, where) => { eq(await c.getAttribute('data-parts'), 'headlamp-b wheel-alloy-rear wheel-alloy-front', `${where}: parts`); eq(await c.getAttribute('data-paint'), '#c8352e', `${where}: paint`); };
+  await nav(page, 'garage2d'); await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  await check(page.locator('.fs-gmain .fs-scene .mcar').first(), 'garage');
+  await page.locator('[data-action="quit"]').click(); await page.locator('.menu2').waitFor();
+  await page.reload(); await page.locator('.menu2').waitFor();
+  await page.locator('[data-action="resume"]').click(); await page.locator('.shell').waitFor();
+  await nav(page, 'garage2d'); await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  await check(page.locator('.fs-gmain .fs-scene .mcar').first(), 'garage after reload');
+  // restore the original drawing
+  await page.locator('[data-action="customize"]').click(); await page.locator('.fs-studio').waitFor();
+  await page.locator('.fs-cat[data-cat="wheels"]').click(); await page.locator('.fs-opt[data-part="wheel-suv90-steel5"]').click();
+  await page.locator('.fs-cat[data-cat="lights"]').click(); await page.locator('.fs-opt[data-part="headlamp-suv90-original"]').click();
+  await page.locator('.fs-swatch[data-original="1"]').click();
+  eq(await car.getAttribute('data-parts'), '', 'back to the original drawing: no variant layer');
+  eq(await car.getAttribute('data-repaint'), '0', 'original green: no repaint layer');
+  noErrors(errors); await ctx.close();
+});
+
+test('Tuning Lab (separate page): stage, race, incompatible stage disabled, ECU refuses a map', async (browser) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage(); page.setDefaultTimeout(20000);
+  const errors = []; page.on('pageerror', (e) => errors.push(String(e))); page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto(BASE + 'tuning.html'); await page.locator('.tl').waitFor();
+  assert(await page.locator('[data-stage="m18-stage1"]').isDisabled(), 'a stage for another engine is disabled');
+  assert(await page.locator('[data-field="boost"]').isDisabled(), 'the stock ECU cannot be recalibrated');
+  await page.locator('[data-action="race"]').click(); await page.locator('[data-results]').waitFor();
+  const stock = parseFloat(await page.locator('[data-run="build"] [data-et4]').innerText());
+  await page.locator('[data-stage="k20t-stage2"]').click();
+  for (const [cat, id] of [['clutch', 'clutch-r5-twin'], ['differential', 'diff-r-lsd-41'], ['tyres', 'tyres-16-drag']]) await page.locator(`select[data-cat="${cat}"]`).selectOption(id);
+  await page.locator('[data-action="race"]').click(); await page.locator('[data-results]').waitFor();
+  const built = parseFloat(await page.locator('[data-run="build"] [data-et4]').innerText());
+  assert(built < stock - 1, `the built car is quicker over 1/4 mile (${built} vs ${stock})`);
+  await page.locator('[data-field="boost"]').fill('2.2');
+  assert((await page.locator('.tl-error').allInnerTexts()).join(' ').includes('supera lo que puede dar este turbo'), 'the ECU names the limit');
+  assert(await page.locator('[data-action="race"]').isDisabled(), 'no race with an invalid map');
+  // the game itself is untouched: its page still opens
+  await page.goto(BASE); await page.locator('.menu2').waitFor();
+  noErrors(errors); await ctx.close();
+});
+
 test('studio at 1280x720: the stage and the parts tray fit the window', async (browser) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });

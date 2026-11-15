@@ -1,0 +1,425 @@
+{
+ "familyId": "suv90-green",
+ "canvas": [
+  1376,
+  590
+ ],
+ "anchorVersion": "suv90-canvas-1",
+ "sourceTransform": {
+  "note": "canvas = (source − offset) × scale",
+  "offset": [
+   0,
+   220
+  ],
+  "scale": 0.5,
+  "sourceSize": [
+   2752,
+   1536
+  ]
+ },
+ "source": "production-assets/suv-1990-v1/sources/proposal-01.jpg",
+ "sourceSha256": "d90beadb8e8038027f5bea7dc2fb335d3d05c338ec369f1ec3490b502b1bfcd7",
+ "artBranch": "art/suv90-master-20261115-01a1dd27",
+ "hubsCanvas": {
+  "front": [
+   283.0,
+   447.5
+  ],
+  "rear": [
+   1047.0,
+   447.5
+  ]
+ },
+ "tyreRadiusCanvas": 111.0,
+ "layers": {
+  "wheel-steel-front": {
+   "file": "parts/wheel-steel.webp",
+   "box": [
+    209,
+    372,
+    150,
+    150
+   ],
+   "hubCanvas": [
+    283.0,
+    447.5
+   ],
+   "source": "generated/steel-v2-original.png",
+   "sourceSha256": "e7a131e1565251a0a436ccf61f273abd4dffbc84fed8046580f918f99b724b2f",
+   "uniformScaleToSource": 0.23612334801762114,
+   "pivot": [
+    619.0,
+    637.0
+   ],
+   "externalAspectRatio": 0.9806167400881057,
+   "measuredCentreCanvas": [
+    282.94,
+    447.34
+   ],
+   "pivotToCentroidPx": 0.17
+  },
+  "wheel-steel-rear": {
+   "file": "parts/wheel-steel.webp",
+   "box": [
+    973,
+    372,
+    150,
+    150
+   ],
+   "hubCanvas": [
+    1047.0,
+    447.5
+   ],
+   "source": "generated/steel-v2-original.png",
+   "sourceSha256": "e7a131e1565251a0a436ccf61f273abd4dffbc84fed8046580f918f99b724b2f",
+   "uniformScaleToSource": 0.23612334801762114,
+   "pivot": [
+    619.0,
+    637.0
+   ],
+   "externalAspectRatio": 0.9806167400881057,
+   "measuredCentreCanvas": [
+    1046.94,
+    447.34
+   ],
+   "pivotToCentroidPx": 0.17
+  },
+  "wheel-alloy-front": {
+   "file": "parts/wheel-alloy.webp",
+   "box": [
+    210,
+    373,
+    149,
+    149
+   ],
+   "hubCanvas": [
+    283.0,
+    447.5
+   ],
+   "source": "generated/alloy-v2-original.png",
+   "sourceSha256": "2772f4b03ca9d0a6e9d8993434392140ee9c7ba82fa92831796519298949f6d6",
+   "uniformScaleToSource": 0.23447069116360456,
+   "pivot": [
+    621.5,
+    635.0
+   ],
+   "externalAspectRatio": 0.9903762029746281,
+   "measuredCentreCanvas": [
+    282.75,
+    447.29
+   ],
+   "pivotToCentroidPx": 0.33
+  },
+  "wheel-alloy-rear": {
+   "file": "parts/wheel-alloy.webp",
+   "box": [
+    974,
+    373,
+    149,
+    149
+   ],
+   "hubCanvas": [
+    1047.0,
+    447.5
+   ],
+   "source": "generated/alloy-v2-original.png",
+   "sourceSha256": "2772f4b03ca9d0a6e9d8993434392140ee9c7ba82fa92831796519298949f6d6",
+   "uniformScaleToSource": 0.23447069116360456,
+   "pivot": [
+    621.5,
+    635.0
+   ],
+   "externalAspectRatio": 0.9903762029746281,
+   "measuredCentreCanvas": [
+    1046.75,
+    447.29
+   ],
+   "pivotToCentroidPx": 0.33
+  },
+  "headlamp-a": {
+   "file": "parts/headlamp-a.webp",
+   "box": [
+    95,
+    264,
+    60,
+    43
+   ],
+   "allowedCanvas": [
+    95,
+    264,
+    60,
+    43
+   ],
+   "source": "generated/light-a-v2-original.png",
+   "sourceSha256": "3d5b2dd801bd597b9accdad9cddca07003aea6ad353700b84b0d5010401f36a9",
+   "uniformScale": 0.10969097651421508,
+   "clipPolygonSource": [
+    [
+     203,
+     751
+    ],
+    [
+     224,
+     752
+    ],
+    [
+     251,
+     753
+    ],
+    [
+     279,
+     755
+    ],
+    [
+     296,
+     756
+    ],
+    [
+     303,
+     760
+    ],
+    [
+     305,
+     775
+    ],
+    [
+     304,
+     795
+    ],
+    [
+     300,
+     810
+    ],
+    [
+     293,
+     820
+    ],
+    [
+     282,
+     826
+    ],
+    [
+     266,
+     829
+    ],
+    [
+     245,
+     830
+    ],
+    [
+     218,
+     830
+    ],
+    [
+     195,
+     828
+    ],
+    [
+     193,
+     819
+    ],
+    [
+     194,
+     800
+    ],
+    [
+     196,
+     779
+    ],
+    [
+     199,
+     761
+    ]
+   ]
+  },
+  "headlamp-b": {
+   "file": "parts/headlamp-b.webp",
+   "box": [
+    95,
+    264,
+    60,
+    43
+   ],
+   "allowedCanvas": [
+    95,
+    264,
+    60,
+    43
+   ],
+   "source": "generated/light-b-v2-original.png",
+   "sourceSha256": "f433cd6bebae59e07d70f301522320ba33ed5be2f63a1222e5c6bf2d12902430",
+   "uniformScale": 0.12206327372764787,
+   "clipPolygonSource": [
+    [
+     203,
+     751
+    ],
+    [
+     224,
+     752
+    ],
+    [
+     251,
+     753
+    ],
+    [
+     279,
+     755
+    ],
+    [
+     296,
+     756
+    ],
+    [
+     303,
+     760
+    ],
+    [
+     305,
+     775
+    ],
+    [
+     304,
+     795
+    ],
+    [
+     300,
+     810
+    ],
+    [
+     293,
+     820
+    ],
+    [
+     282,
+     826
+    ],
+    [
+     266,
+     829
+    ],
+    [
+     245,
+     830
+    ],
+    [
+     218,
+     830
+    ],
+    [
+     195,
+     828
+    ],
+    [
+     193,
+     819
+    ],
+    [
+     194,
+     800
+    ],
+    [
+     196,
+     779
+    ],
+    [
+     199,
+     761
+    ]
+   ]
+  }
+ },
+ "qa": {
+  "recomposition": {
+   "meanAbsDiff": 0.266,
+   "p99": 3.0,
+   "pixelsOver16": 362
+  },
+  "halo": {
+   "ringPixels": 4267,
+   "ringMeanLumaOnBlack": 13.5,
+   "ringPixelsBrighterThan140OnBlack": 36,
+   "note": "luma of the semi-transparent edge ring composited on black; a white halo would read ≈200+"
+  },
+  "alpha": {
+   "opaque": 458552,
+   "transparent": 349018,
+   "soft": 4270
+  },
+  "opaqueProbes": {
+   "glass-front": 1.0,
+   "glass-rear": 1.0,
+   "headlamp": 1.0,
+   "rim-front": 1.0,
+   "rim-rear": 1.0,
+   "hood-highlight": 1.0
+  },
+  "paintMask": {
+   "coverage": 168561,
+   "mustBeExcluded": {
+    "glass": 0.0,
+    "flare-front": 0.0,
+    "flare-rear": 0.0,
+    "side-strip": 0.0,
+    "bumper": 0.0,
+    "rocker": 0.0,
+    "mirror": 0.0,
+    "handle": 0.0,
+    "tail-lamp": 0.0,
+    "indicator": 0.0,
+    "headlamp": 0.0,
+    "rim": 0.0,
+    "tyre": 0.0,
+    "backdrop": 0.0
+   },
+   "mustBeIncluded": {
+    "door": 1.0,
+    "door-low": 1.0,
+    "hood": 1.0,
+    "roof": 1.0,
+    "rear-quarter": 1.0,
+    "fuel-door": 1.0
+   },
+   "grayLevels": 38,
+   "note": "binary selection softened by a 3×3 blur at source scale then area-resampled: only the edge is grey"
+  },
+  "variants": {
+   "wheel-steel-front": {
+    "changedPixels": 12071,
+    "changedOutsideBox": 0
+   },
+   "wheel-steel-rear": {
+    "changedPixels": 12151,
+    "changedOutsideBox": 0
+   },
+   "wheel-alloy-front": {
+    "changedPixels": 13187,
+    "changedOutsideBox": 0
+   },
+   "wheel-alloy-rear": {
+    "changedPixels": 13197,
+    "changedOutsideBox": 0
+   },
+   "headlamp-a": {
+    "changedPixels": 1877,
+    "changedOutsideBox": 0
+   },
+   "headlamp-b": {
+    "changedPixels": 1922,
+    "changedOutsideBox": 0
+   }
+  },
+  "bumperFaceTrials": {
+   "bumper-face-a": {
+    "edgeGradientTrial": 69.3,
+    "edgeGradientOriginal": 102.4,
+    "meanChangeInside": 5.85
+   },
+   "bumper-face-b": {
+    "edgeGradientTrial": 98.2,
+    "edgeGradientOriginal": 102.4,
+    "meanChangeInside": 11.82
+   }
+  }
+ }
+}
