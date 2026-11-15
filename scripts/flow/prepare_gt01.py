@@ -59,8 +59,32 @@ ground = (yy0 > 532) & outside_tyres & (sat0 < 0.14)
 # the thin light gap between the sills and their shadow is backdrop too, even where it is enclosed
 gap = (yy0 > 500) & outside_tyres & (dist < T_OUT)
 alpha = np.where(gap, np.clip((dist - T_IN) / (T_OUT - T_IN), 0, 1), alpha)
+# Phase 5D: in each column outside the tyres, the first light gap row below the sills ends the car; everything under
+# it is ground and shadow. This removes the speckle that the per-pixel rule left along the shadow line.
+below_gap = np.zeros((H, W), bool)
+for x in range(W):
+    ys = np.where((dist[480:620, x] < T_OUT) & outside_tyres[480:620, x])[0]
+    if len(ys):
+        below_gap[480 + ys[0]:, x] = True
+below_gap &= outside_tyres
+ground = ground | below_gap
+# where no light gap separates the black sills/bumpers from their shadow, shadow specks remain attached: a 7×7
+# morphological opening of the car mask in the band under the body (outside the tyres) removes them; whatever it
+# removes is ground too
+import cv2
+solid = ((alpha > 0.5) & ~ground).astype(np.uint8)
+opened = cv2.morphologyEx(solid, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))).astype(bool)
+band = (yy0 > 515) & (yy0 < 575) & outside_tyres
+ground = ground | (band & solid.astype(bool) & ~opened)
+# a larger opening, only below the lowest body line (y > 526), takes the remaining hanging blobs off
+solid = ((alpha > 0.5) & ~ground).astype(np.uint8)
+opened = cv2.morphologyEx(solid, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))).astype(bool)
+ground = ground | ((yy0 > 526) & (yy0 < 575) & outside_tyres & solid.astype(bool) & ~opened)
 shadow_a = np.where(ground | (backdrop & (yy0 > 380)), np.clip((bgL - lum) / bgL, 0, 0.97), 0)
 alpha = np.where(ground, 0, alpha)
+# the shadow is a soft gradient in the original; a 3×3 mean (twice) removes JPEG grain without moving its edge
+for _ in range(2):
+    pad_s = np.pad(shadow_a, 1, mode='edge'); shadow_a = sum(pad_s[dy:dy + H, dx:dx + W] for dy in range(3) for dx in range(3)) / 9
 # un-mix soft edge pixels from the backdrop colour (c = a*fg + (1-a)*bg)
 a3 = np.clip(alpha, 1e-3, 1)[..., None]
 fg = np.clip((img - (1 - a3) * bg) / a3, 0, 255)
@@ -117,6 +141,7 @@ qa = {
     'backdropColour': [round(float(v), 1) for v in bg], 'transparentPixels': transparent, 'partialAlphaPixels': int(((body_a > 0.01) & (body_a < 0.99)).sum()),
     'paintMaskPixels': int((paint > 0.5).sum()),
     'recomposition': {'meanAbsDiff': round(float(diff.mean()), 3), 'p99AbsDiff': round(float(np.percentile(diff, 99)), 2), 'pixelsOver16': int((diff > 16).sum())},
+    'partialBodyPixelsUnderSills': int(((body_a[520:560, 420:930] > 0.02) & (body_a[520:560, 420:930] < 0.98)).sum()),
     'note': 'Layers derived from the original by thresholding, flood fill and circular cuts; no pixels were generated. The wheel layers are the original wheels: there are still no approved alternative wheels.',
 }
 anchors = {

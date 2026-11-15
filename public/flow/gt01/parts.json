@@ -1,0 +1,146 @@
+{
+ "canvas": [
+  1376,
+  768
+ ],
+ "anchorVersion": "gt01-native-1",
+ "source": "d5ff9b7b219e5e0c3f710134de68ed24339f57bc867ca59c249cdfaa9d54c20d",
+ "layers": {
+  "wheel-multispoke-front": {
+   "file": "parts/wheel-multispoke-front.webp",
+   "box": [
+    227,
+    384,
+    189,
+    189
+   ],
+   "center": [
+    94.5,
+    94.5
+   ],
+   "rimRadius": 77.5,
+   "note": "tyre kept from the original (r >= 77.5); rim redrawn"
+  },
+  "wheel-multispoke-rear": {
+   "file": "parts/wheel-multispoke-rear.webp",
+   "box": [
+    958,
+    383,
+    189,
+    189
+   ],
+   "center": [
+    94.5,
+    94.5
+   ],
+   "rimRadius": 77.5,
+   "note": "tyre kept from the original (r >= 77.5); rim redrawn"
+  },
+  "headlamp-matrix": {
+   "file": "parts/headlamp-matrix.webp",
+   "box": [
+    108,
+    360,
+    112,
+    50
+   ],
+   "allowed": [
+    108,
+    360,
+    112,
+    50
+   ],
+   "note": "new graphics inside the segmented original opening"
+  },
+  "handle-flush": {
+   "file": "parts/handle-flush.webp",
+   "box": [
+    668,
+    335,
+    340,
+    32
+   ],
+   "allowed": [
+    [
+     670,
+     343,
+     64,
+     22
+    ],
+    [
+     940,
+     337,
+     66,
+     22
+    ]
+   ],
+   "note": "handles inpainted from the surrounding paint; flush slot drawn on the same footprint",
+   "paintMask": "parts/handle-flush-paint.png"
+  },
+  "bumper-front-sport": {
+   "file": "parts/bumper-front-sport.webp",
+   "box": [
+    84,
+    420,
+    160,
+    120
+   ],
+   "allowed": [
+    84,
+    420,
+    160,
+    120
+   ],
+   "note": "mesh in the original openings, gloss surrounds, carbon splitter along the measured lower edge"
+  },
+  "roof-panoramic": {
+   "file": "parts/roof-panoramic.webp",
+   "box": [
+    616,
+    199,
+    397,
+    49
+   ],
+   "allowed": [
+    616,
+    199,
+    397,
+    49
+   ],
+   "note": "glass drawn inside the roof panel: under the original roof line, above the window frames"
+  }
+ },
+ "qa": {
+  "wheel-multispoke": {
+   "changedPixels": 37656,
+   "changedOutsideAllowed": 0
+  },
+  "wheel-multispoke-front-tyre": {
+   "maxDiffInTyre": 0.0,
+   "alphaDiffInTyre": 0.0,
+   "sameSize": true
+  },
+  "wheel-multispoke-rear-tyre": {
+   "maxDiffInTyre": 0.0,
+   "alphaDiffInTyre": 0.0,
+   "sameSize": true
+  },
+  "headlamp-matrix": {
+   "changedPixels": 3197,
+   "changedOutsideAllowed": 0
+  },
+  "handle-flush": {
+   "changedPixels": 1868,
+   "changedOutsideAllowed": 0
+  },
+  "bumper-front-sport": {
+   "changedPixels": 5710,
+   "changedOutsideAllowed": 0
+  },
+  "roof-panoramic": {
+   "changedPixels": 6869,
+   "changedOutsideAllowed": 0
+  },
+  "roof-panoramic-aboveRoofLine": 0
+ }
+}
