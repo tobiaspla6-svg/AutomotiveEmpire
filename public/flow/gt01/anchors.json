@@ -1,0 +1,58 @@
+{
+ "bodyFamilyId": "gt01-fastback",
+ "anchorVersion": "gt01-native-1",
+ "units": "px of the 1376\u00d7768 original",
+ "groundLine": 579.0,
+ "wheels": {
+  "front": {
+   "cx": 321.5,
+   "cy": 478.5,
+   "r": 92.1
+  },
+  "rear": {
+   "cx": 1052.5,
+   "cy": 477.5,
+   "r": 92.1
+  }
+ },
+ "wheelLayers": {
+  "front": {
+   "box": [
+    227,
+    384,
+    189,
+    189
+   ],
+   "center": [
+    94.5,
+    94.5
+   ],
+   "radius": 92.1
+  },
+  "rear": {
+   "box": [
+    958,
+    383,
+    189,
+    189
+   ],
+   "center": [
+    94.5,
+    94.5
+   ],
+   "radius": 92.1
+  }
+ },
+ "facing": "left",
+ "productionTransform": {
+  "scale": 1.1666666666666667,
+  "offsetX": -2.6666666666666665,
+  "offsetY": -75.7,
+  "target": [
+   1600,
+   700
+  ],
+  "status": "candidate, not exported"
+ },
+ "status": "base derivada para prototipo; anclajes de raster \u00b13 px, no aprobados como finales"
+}

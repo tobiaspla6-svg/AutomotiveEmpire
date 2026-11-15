@@ -1,0 +1,500 @@
+{
+ "method": "crop; OpenCV inpaint (Telea, radius 9) on small listed rects; structure-guided removal of the reference cars (wall continued from above, floor interpolated per row); no generative model",
+ "jobs": {
+  "inicio": {
+   "source": "01-inicio/E-garaje-refinado.jpg",
+   "sourceSha256": "c0adf97639e51f6271b6ba812f51e13a54ede06e4c1e9dd9fc54e89c0d4c09c6",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    459,
+    0,
+    917,
+    768
+   ],
+   "inpaintRects": [],
+   "blur": 0,
+   "removedObject": null,
+   "output": "inicio.webp",
+   "outputSize": [
+    917,
+    768
+   ],
+   "bytes": 59012,
+   "quality": "small areas reconstructed"
+  },
+  "headquarters": {
+   "source": "02-headquarters/A-campus.jpg",
+   "sourceSha256": "5be6ce5f1410266927ffeb5c8f5fa3841b1e144b5af6ecbddee7eddcfd51dac8",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    0,
+    100,
+    1376,
+    578
+   ],
+   "inpaintRects": [
+    [
+     668,
+     118,
+     226,
+     78
+    ],
+    [
+     243,
+     240,
+     128,
+     72
+    ],
+    [
+     262,
+     300,
+     26,
+     18
+    ],
+    [
+     1098,
+     200,
+     150,
+     64
+    ],
+    [
+     1113,
+     258,
+     26,
+     18
+    ],
+    [
+     941,
+     436,
+     144,
+     64
+    ],
+    [
+     960,
+     494,
+     26,
+     18
+    ]
+   ],
+   "blur": 0,
+   "removedObject": null,
+   "output": "headquarters.webp",
+   "outputSize": [
+    1376,
+    578
+   ],
+   "bytes": 130826,
+   "quality": "small areas reconstructed"
+  },
+  "taller": {
+   "source": "03-taller/A.jpg",
+   "sourceSha256": "ce3745d3115780fffcfbba57b0f4e9410415bb0f98b668f3d8c6f2f196556be2",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    104,
+    94,
+    1060,
+    516
+   ],
+   "inpaintRects": [],
+   "blur": 0,
+   "removedObject": {
+    "poly": [
+     [
+      306,
+      378
+     ],
+     [
+      330,
+      358
+     ],
+     [
+      400,
+      338
+     ],
+     [
+      480,
+      316
+     ],
+     [
+      560,
+      306
+     ],
+     [
+      660,
+      306
+     ],
+     [
+      760,
+      323
+     ],
+     [
+      840,
+      348
+     ],
+     [
+      950,
+      383
+     ],
+     [
+      1040,
+      408
+     ],
+     [
+      1070,
+      428
+     ],
+     [
+      1070,
+      497
+     ],
+     [
+      1002,
+      514
+     ],
+     [
+      998,
+      544
+     ],
+     [
+      878,
+      544
+     ],
+     [
+      868,
+      514
+     ],
+     [
+      542,
+      514
+     ],
+     [
+      538,
+      544
+     ],
+     [
+      406,
+      544
+     ],
+     [
+      402,
+      507
+     ],
+     [
+      318,
+      497
+     ],
+     [
+      304,
+      462
+     ]
+    ],
+    "floorRect": [
+     296,
+     462,
+     790,
+     92
+    ],
+    "horizon": 462,
+    "wall": "extend"
+   },
+   "output": "taller.webp",
+   "outputSize": [
+    1060,
+    516
+   ],
+   "bytes": 22448,
+   "quality": "approximate reconstruction of a large area"
+  },
+  "fabrica": {
+   "source": "04-fabrica/A.jpg",
+   "sourceSha256": "72ecc31d536d8348ea1ad34d1b03f3121c383b0477f215c322685d42bb9b5dca",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    0,
+    76,
+    1376,
+    556
+   ],
+   "inpaintRects": [
+    [
+     88,
+     284,
+     230,
+     70
+    ],
+    [
+     412,
+     284,
+     228,
+     70
+    ],
+    [
+     748,
+     284,
+     206,
+     46
+    ],
+    [
+     1048,
+     284,
+     260,
+     70
+    ],
+    [
+     110,
+     584,
+     156,
+     34
+    ],
+    [
+     428,
+     584,
+     190,
+     34
+    ],
+    [
+     764,
+     584,
+     186,
+     34
+    ],
+    [
+     1084,
+     584,
+     222,
+     34
+    ],
+    [
+     640,
+     632,
+     96,
+     24
+    ]
+   ],
+   "blur": 0,
+   "removedObject": null,
+   "output": "fabrica.webp",
+   "outputSize": [
+    1376,
+    556
+   ],
+   "bytes": 123574,
+   "quality": "small areas reconstructed"
+  },
+  "garaje": {
+   "source": "05-garaje/A.jpg",
+   "sourceSha256": "9cccfffed3f371bd1ac57c297129bc50cfd8db67cac41b645f90d09611f81298",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    432,
+    0,
+    944,
+    600
+   ],
+   "inpaintRects": [],
+   "blur": 0,
+   "removedObject": {
+    "poly": [
+     [
+      510,
+      398
+     ],
+     [
+      560,
+      368
+     ],
+     [
+      700,
+      323
+     ],
+     [
+      800,
+      293
+     ],
+     [
+      880,
+      278
+     ],
+     [
+      1000,
+      280
+     ],
+     [
+      1150,
+      298
+     ],
+     [
+      1287,
+      338
+     ],
+     [
+      1308,
+      380
+     ],
+     [
+      1303,
+      482
+     ],
+     [
+      1202,
+      502
+     ],
+     [
+      1192,
+      534
+     ],
+     [
+      1058,
+      534
+     ],
+     [
+      1040,
+      502
+     ],
+     [
+      732,
+      502
+     ],
+     [
+      722,
+      534
+     ],
+     [
+      588,
+      534
+     ],
+     [
+      578,
+      502
+     ],
+     [
+      518,
+      492
+     ],
+     [
+      507,
+      460
+     ]
+    ],
+    "floorRect": [
+     500,
+     466,
+     815,
+     84
+    ],
+    "horizon": 466,
+    "wall": "periodic",
+    "period": 44
+   },
+   "output": "garaje.webp",
+   "outputSize": [
+    944,
+    600
+   ],
+   "bytes": 31394,
+   "quality": "approximate reconstruction of a large area"
+  },
+  "cofres": {
+   "source": "06-cofres/B.jpg",
+   "sourceSha256": "75e474688d9bb22798fcd5035f38448aeb8f0ea907bbeaa42cf168b2dda45089",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    0,
+    0,
+    1376,
+    636
+   ],
+   "inpaintRects": [
+    [
+     520,
+     12,
+     340,
+     108
+    ],
+    [
+     1240,
+     22,
+     100,
+     40
+    ],
+    [
+     1335,
+     5,
+     30,
+     30
+    ],
+    [
+     12,
+     5,
+     30,
+     30
+    ],
+    [
+     394,
+     112,
+     176,
+     276
+    ]
+   ],
+   "blur": 0,
+   "removedObject": null,
+   "output": "cofres.webp",
+   "outputSize": [
+    1376,
+    636
+   ],
+   "bytes": 70134,
+   "quality": "small areas reconstructed"
+  },
+  "configuracion": {
+   "source": "07-configuracion/A.jpg",
+   "sourceSha256": "861674a8c6fac5e4d4400fb631b726f041f42837b38881cbc400e71b7fe18785",
+   "sourceSize": [
+    1376,
+    768
+   ],
+   "crop": [
+    0,
+    0,
+    1376,
+    768
+   ],
+   "inpaintRects": [
+    [
+     330,
+     118,
+     718,
+     532
+    ]
+   ],
+   "blur": 9,
+   "removedObject": null,
+   "output": "configuracion.webp",
+   "outputSize": [
+    1376,
+    768
+   ],
+   "bytes": 11436,
+   "quality": "approximate reconstruction of a large area"
+  }
+ }
+}
