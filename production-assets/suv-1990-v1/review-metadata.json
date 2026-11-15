@@ -1,0 +1,80 @@
+{
+  "selected": "proposal-01",
+  "selection_basis": "visual review of all four supplied images; material separation and modular preparation",
+  "modular_fit": "not_tested_no_components_supplied",
+  "target_canvas": [
+    1600,
+    700
+  ],
+  "production_transform": "pending; preserve aspect ratio, never stretch",
+  "files": [
+    {
+      "id": "proposal-01",
+      "source_name": "SUV_illustration_material_clarity_bc74ae10_2K.jpg",
+      "path": "sources/proposal-01.jpg",
+      "size": [
+        2752,
+        1536
+      ],
+      "format": "JPEG",
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "real_transparency": false,
+      "sha256": "d90beadb8e8038027f5bea7dc2fb335d3d05c338ec369f1ec3490b502b1bfcd7",
+      "status": "selected_reference",
+      "provenance": "user_provided_flow_export",
+      "original_prompt": "not embedded in supplied file; do not infer exact prompt from filename"
+    },
+    {
+      "id": "proposal-02",
+      "source_name": "SUV_side_illustration_production…_792dbe9f_2K.jpg",
+      "path": "sources/proposal-02.jpg",
+      "size": [
+        2752,
+        1536
+      ],
+      "format": "JPEG",
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "real_transparency": false,
+      "sha256": "7ae19a22642ffbaea7ed7bda39fe6ce0cb662f9a9d0eda3a1ba0b2b001e48176",
+      "status": "reference",
+      "provenance": "user_provided_flow_export",
+      "original_prompt": "not embedded in supplied file; do not infer exact prompt from filename"
+    },
+    {
+      "id": "proposal-03",
+      "source_name": "Generating_SUV_illustration_refe…_9a24d8ed_2K.jpg",
+      "path": "sources/proposal-03.jpg",
+      "size": [
+        2752,
+        1536
+      ],
+      "format": "JPEG",
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "real_transparency": false,
+      "sha256": "4f20abd73ac00e41f6f9882738714f21ec9fd57c47ddb50b2503f24c424504a9",
+      "status": "reference",
+      "provenance": "user_provided_flow_export",
+      "original_prompt": "not embedded in supplied file; do not infer exact prompt from filename"
+    },
+    {
+      "id": "proposal-04",
+      "source_name": "codex-clipboard-7d8db3f8-9242-4ca6-8ea8-b43cf345b320.png",
+      "path": "sources/proposal-04.png",
+      "size": [
+        1376,
+        768
+      ],
+      "format": "PNG",
+      "mode": "RGB",
+      "alpha_extrema": null,
+      "real_transparency": false,
+      "sha256": "f89d2699bf39a8c05412d1a1dff627231c4124ac379d62d81248bd575a643e18",
+      "status": "reference",
+      "provenance": "user_provided_clipboard_image",
+      "original_prompt": "not embedded in supplied file; do not infer exact prompt from filename"
+    }
+  ]
+}

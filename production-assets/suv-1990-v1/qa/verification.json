@@ -1,0 +1,32 @@
+{
+  "sources": [
+    {
+      "path": "sources/proposal-01.jpg",
+      "hash_matches": true,
+      "dimensions_match": true,
+      "has_alpha": false
+    },
+    {
+      "path": "sources/proposal-02.jpg",
+      "hash_matches": true,
+      "dimensions_match": true,
+      "has_alpha": false
+    },
+    {
+      "path": "sources/proposal-03.jpg",
+      "hash_matches": true,
+      "dimensions_match": true,
+      "has_alpha": false
+    },
+    {
+      "path": "sources/proposal-04.png",
+      "hash_matches": true,
+      "dimensions_match": true,
+      "has_alpha": false
+    }
+  ],
+  "modular_composite": "not_run",
+  "variants_found": 0,
+  "production_master": "not_exported",
+  "new_flow_images_generated_by_agent": 0
+}

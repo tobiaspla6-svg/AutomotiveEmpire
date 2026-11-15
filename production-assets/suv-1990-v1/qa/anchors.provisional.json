@@ -1,0 +1,77 @@
+{
+  "family_id": "suv90-green",
+  "anchor_version": "suv90-source-draft-1",
+  "status": "provisional_measurements_not_runtime_approved",
+  "source": "../sources/proposal-01.jpg",
+  "source_canvas": [
+    2752,
+    1536
+  ],
+  "source_sha256": "d90beadb8e8038027f5bea7dc2fb335d3d05c338ec369f1ec3490b502b1bfcd7",
+  "coordinate_system": "pixels, origin top-left, x right, y down; vehicle faces left",
+  "tires": {
+    "front": {
+      "center": [
+        566.5,
+        1112.5
+      ],
+      "radius": 225.4,
+      "method": "Hough outer tire circle estimate"
+    },
+    "rear": {
+      "center": [
+        2092.5,
+        1112.5
+      ],
+      "radius": 224.5,
+      "method": "Hough outer tire circle estimate"
+    }
+  },
+  "measurement_tolerance_px": 5,
+  "component_search_regions_xyxy": {
+    "headlamp": [
+      182,
+      739,
+      321,
+      851
+    ],
+    "fender_marker": [
+      817,
+      732,
+      868,
+      768
+    ],
+    "lower_front_marker": [
+      180,
+      851,
+      234,
+      906
+    ],
+    "front_bumper": [
+      131,
+      897,
+      363,
+      1081
+    ]
+  },
+  "region_status": "manual visual search boxes; NOT alpha contours or approved mount edges",
+  "ground_y_estimate": 1338,
+  "target_canvas_proposal": [
+    1600,
+    700
+  ],
+  "uniform_transform_proposal": {
+    "scale": 0.5737051792828686,
+    "translate_x": 1.4023904382470107,
+    "translate_y": -117.61752988047817,
+    "formula": "target = source * scale + translation",
+    "status": "not_applied_no_production_master_exported"
+  },
+  "mount_points": {
+    "headlamp": null,
+    "front_bumper": null
+  },
+  "rim_swap_radius": null,
+  "assembly_verification": "not_run_no_variant_files_exist",
+  "warning": "Do not align variants independently to conceal generator drift. Never stretch or recenter separate parts."
+}

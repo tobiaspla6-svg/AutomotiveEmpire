@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-15",
+  "provider": "Google Flow via native Windows control",
+  "reference": "sources/proposal-01.jpg",
+  "generated_images": 0,
+  "submitted_generation_requests": 0,
+  "credits_consumed_by_these_actions": 0,
+  "attempts": [
+    {"step": "capture existing Chrome window", "result": "FrameArrived timed out: timed out waiting on channel"},
+    {"step": "refresh window selection, activate and recapture once", "result": "window capture timed out: timed out waiting on channel"}
+  ],
+  "status": "blocked_before_editor_observation",
+  "next_step": "Restore functioning browser/desktop observation, then generate one component at a time using the selected original; verify actual outputs before approval.",
+  "rejected_provider_requests_this_turn": 0
+}
