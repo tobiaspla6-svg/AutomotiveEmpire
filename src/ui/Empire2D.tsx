@@ -351,7 +351,7 @@ export function Workshop2D() {
       </div>
       <aside className="g2-preview">
         <span className="g2-kicker">{tx('ws.preview')}</span>
-        {step === 'engine' ? <Engine2D engine={spec.engine} /> : step === 'chassis' ? <Chassis2D type={spec.chassis} /> : (step === 'body' || step === 'finish' || step === 'approve') && (spec.body === 'sedan' || spec.body === 'coupe' || spec.body === 'supercar' || spec.body === 'suv') ? <HeroShowroom2D compact color={spec.color} body={spec.body} label={name || tx('ws.unnamed')} /> : <CarArt spec={spec} year={g.year} equipped={p.arcade?.equipped} />}
+        {step === 'engine' ? <Engine2D engine={spec.engine} /> : step === 'chassis' ? <Chassis2D type={spec.chassis} /> : g.year >= 1985 ? <HeroShowroom2D compact color={spec.color} body={spec.body} label={name || tx('ws.unnamed')} /> : <CarArt spec={spec} year={g.year} equipped={p.arcade?.equipped} />}
         <h3>{name || tx('ws.unnamed')}</h3>
         <dl className="g2-specs">
           <dt>{tx('ws.power')}</dt><dd>{fmtKw(cur.power)}</dd>

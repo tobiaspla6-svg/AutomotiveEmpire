@@ -18,7 +18,8 @@ import { useTerm } from '../i18n/terms';
 import { money, num } from '../i18n/format';
 import { BarList, Kpi, Seg, Select, Slider, Src, StatLine } from './common';
 import { Guard3D, RaceCarViewer, RoadCarViewer } from './Lazy3D';
-import { CarPoster, posterForBody, posterForDiscipline } from './ds/poster';
+import { CarPoster, posterForDiscipline } from './ds/poster';
+import { HeroShowroom2D } from './art2d/HeroShowroom2D';
 import { REGION_IDS } from '../data/world';
 
 const k = (x: string) => x as MessageKey;
@@ -84,7 +85,7 @@ export function CeoSetupScreen() {
             <ul style={{ margin: 0, paddingLeft: 18 }}>{objectives.map((o) => <li key={o.id}>{o.text}</li>)}</ul>
           </div>
           <div className="viewer" style={{ height: 250 }}>
-            <Guard3D poster={<CarPoster kind={posterForBody(flagship.spec.body)} color={flagship.spec.color} />}><RoadCarViewer spec={flagship.spec} /></Guard3D>
+            <Guard3D poster={<HeroShowroom2D compact body={flagship.spec.body} color={flagship.spec.color} label={flagship.name} />}><RoadCarViewer spec={flagship.spec} /></Guard3D>
             <div className="overlay"><b>{flagship.name}</b> · {t('setup.ceo.generated')}</div>
           </div>
         </div>
@@ -169,7 +170,7 @@ export function FounderSetupScreen() {
       <div className="right">
         <div><h1>{o.name || t('setup.f.yours')} <span className="muted" style={{ fontWeight: 400 }}>{t('setup.f.est', { year: o.year })}</span></h1><p className="dim">{term(COUNTRY[o.country].name)} · {term(SPECIALIZATIONS.find((s) => s.id === o.specialization)?.name ?? '')}</p></div>
         <div className="grid g2">
-          <div className="viewer" style={{ height: 300 }}><Guard3D poster={<CarPoster kind={posterForBody(car.body)} color={car.color} />}><RoadCarViewer spec={car} /></Guard3D><div className="overlay">{t('setup.f.carNote')}</div></div>
+          <div className="viewer" style={{ height: 300 }}><Guard3D poster={<HeroShowroom2D compact body={car.body} color={car.color} />}><RoadCarViewer spec={car} /></Guard3D><div className="overlay">{t('setup.f.carNote')}</div></div>
           <div className="panel col">
             <h4>{t('setup.f.where')}</h4>
             <BarList total totalLabel={t('st.total')} fmt={(v) => fmtMoney(v)} items={[{ label: t('setup.f.cost.factory'), value: costs.factory }, { label: t('setup.f.cost.eng'), value: costs.eng, color: 'var(--s2)' }, { label: t('setup.f.cost.research'), value: costs.research, color: 'var(--s3)' }, { label: t('setup.f.cost.left'), value: Math.max(0, left), color: 'var(--s4)' }]} />

@@ -20,6 +20,11 @@ if (section === 'showroom') {
     { body: 'sedan' as const, color: '#315b8e', label: 'Founder / dark sapphire sedan' },
     { body: 'coupe' as const, color: '#a33135', label: 'CEO / metallic red grand-tourer' },
     { body: 'suv' as const, color: '#b69b71', label: 'SUV / satin champagne' },
+    { body: 'supercar' as const, color: '#e2a92b', label: 'Supercar' },
+    { body: 'hatch' as const, color: '#3d8a5a', label: 'Hatchback' },
+    { body: 'wagon' as const, color: '#9aa4b1', label: 'Wagon' },
+    { body: 'roadster' as const, color: '#c8352e', label: 'Roadster' },
+    { body: 'pickup' as const, color: '#22262e', label: 'Pickup' },
   ];
   modes.forEach((car) => cell(car.label, h(HeroShowroom2D, { body:car.body, color:car.color, label:car.label })));
 }
@@ -53,4 +58,4 @@ if (section === 'campus') {
   cell('growing', h(Campus2D, { s: { ...base, officeTier: 2, studioTier: 2, labTier: 2, plants: [{ id: 'a', name: 'A', capacity: 600, building: false, automation: 0.6 }, { id: 'b', name: 'B', capacity: 1500, building: true, automation: 0.6 }], showroomTier: 1, track: true, racing: false, trophies: 2 } }));
   cell('empire', h(Campus2D, { s: { ...base, officeTier: 4, studioTier: 3, labTier: 3, plants: [1, 2, 3, 4].map((i) => ({ id: String(i), name: String(i), capacity: 5000, building: false, automation: 0.9 })), showroomTier: 3, track: true, racing: true, trophies: 9 }, extraPlants: 3 }));
 }
-fs.writeFileSync(out, `<!doctype html><meta charset="utf-8"><style>body{background:#0e141d;color:#cfd8e3;font:12px system-ui;margin:16px}main{display:grid;grid-template-columns:repeat(${section === 'showroom' || section === 'campus' ? 1 : section === 'rewards' ? 6 : 4},1fr);gap:10px}figure{margin:0;background:linear-gradient(#1b2737,#121a26);border-radius:10px;padding:6px}figure:has(.ae-hero-showroom){max-width:1280px;margin:auto;width:100%}.art svg{width:100%;display:block}figcaption{text-align:center;opacity:.7}</style><main>${cells.join('')}</main>`);
+fs.writeFileSync(out, `<!doctype html><meta charset="utf-8"><style>body{background:#0e141d;color:#cfd8e3;font:12px system-ui;margin:16px}main{display:grid;grid-template-columns:repeat(${section === 'showroom' ? 2 : section === 'campus' ? 1 : section === 'rewards' ? 6 : 4},1fr);gap:10px}figure{margin:0;overflow:hidden;background:linear-gradient(#1b2737,#121a26);border-radius:10px;padding:6px}figure:has(.ae-hero-showroom){max-width:1280px;margin:auto;width:100%}.art svg{width:100%;display:block}figcaption{text-align:center;opacity:.7}</style><main>${cells.join('')}</main>`);
