@@ -30,7 +30,7 @@ JOBS = {
     'taller': {'src': '03-taller/A.jpg', 'crop': [104, 94, 1060, 516], 'inpaint': [], 'approximate': True,
         # the reference sedan, removed so the GT-01 layers can stand there: wall extended upward-to-down, floor by row
         'remove': {'poly': [(306, 378), (330, 358), (400, 338), (480, 316), (560, 306), (660, 306), (760, 323), (840, 348), (950, 383), (1040, 408), (1070, 428), (1070, 497), (1002, 514), (998, 544), (878, 544), (868, 514), (542, 514), (538, 544), (406, 544), (402, 507), (318, 497), (304, 462)],
-                   'floorRect': [296, 462, 790, 92], 'horizon': 462, 'wall': 'extend', 'feather': 7}},
+                   'floorRect': [296, 462, 790, 92], 'horizon': 462, 'wall': 'extend', 'feather': 7, 'grow': 25}},
     'fabrica': {'src': '04-fabrica/A.jpg', 'crop': [0, 76, 1376, 556], 'inpaint': [
         [88, 284, 230, 70], [412, 284, 228, 70], [748, 284, 206, 46], [1048, 284, 260, 70],   # station titles and bars
         [110, 584, 156, 34], [428, 584, 190, 34], [764, 584, 186, 34], [1084, 584, 222, 34],  # floor labels
@@ -79,7 +79,8 @@ def remove_object(img, spec):
     H, W = img.shape[:2]
     hole = np.zeros((H, W), np.uint8)
     cv2.fillPoly(hole, [np.array(spec['poly'], np.int32)], 255)
-    hole = cv2.dilate(hole, np.ones((9, 9), np.uint8))
+    g = spec.get('grow', 9)                                          # outline pixels of the removed object must be inside the hole
+    hole = cv2.dilate(hole, np.ones((g, g), np.uint8))
     fx, fy, fw, fh = spec['floorRect']
     hole[fy:fy + fh, fx:fx + fw] = 255
     hz = spec['horizon']

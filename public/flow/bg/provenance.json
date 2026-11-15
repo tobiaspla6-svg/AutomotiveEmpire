@@ -206,14 +206,15 @@
     ],
     "horizon": 462,
     "wall": "extend",
-    "feather": 7
+    "feather": 7,
+    "grow": 25
    },
    "output": "taller.webp",
    "outputSize": [
     1060,
     516
    ],
-   "bytes": 22608,
+   "bytes": 21962,
    "quality": "approximate reconstruction of a large area"
   },
   "fabrica": {

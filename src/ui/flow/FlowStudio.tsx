@@ -10,7 +10,7 @@ import { useT } from '../../i18n';
 import { money } from '../../i18n/format';
 import type { VehicleModel } from '../../sim/types';
 import {
-  BODY_FAMILIES, INTERIOR, PAINTS, PARTS, PART_CATEGORIES, configOf, familyFor, incompatibility, partById, saveVehicleConfig,
+  BODY_FAMILIES, INTERIOR, PAINTS, PARTS, PART_CATEGORIES, configOf, isElectrified, familyFor, incompatibility, partById, saveVehicleConfig,
   type InteriorConfig, type PartCategory, type PartOption, type VehicleConfig,
 } from '../../sim/vehicleConfig';
 import { Icon, type IconName } from '../ds/icons';
@@ -57,7 +57,7 @@ export function FlowStudio() {
   // the vehicle drawn: GT-01 family when it represents this body and era; otherwise the period side view, labelled
   const body = model?.spec.body ?? 'sedan', year = model?.designYear ?? g.year;
   const family = familyFor(body, year);
-  const electric = !!model && (model.spec.engine.layout === 'EV' || (model.spec.engine.hybridKw ?? 0) > 0);
+  const electric = isElectrified(model);
   const stats = useMemo(() => model?.stats ?? null, [model]);
   const unseen = Object.entries(cfg.parts).map(([, id]) => partById(id)).filter((x): x is PartOption => !!x && x.asset === 'missing');
   const choose = (o: PartOption) => set({ ...cfg, parts: { ...cfg.parts, [o.slot]: o.id } });
@@ -126,8 +126,8 @@ export function FlowStudio() {
           const on = cfg.parts[o.slot] === o.id;
           return <button type="button" key={o.id} className="fs-opt" aria-pressed={on} disabled={!!why} data-part={o.id} onClick={() => choose(o)}>
             <div className={'fs-thumbbox' + (o.thumb ? '' : ' missing')}>{o.thumb ? <GT01Crop rect={o.thumb} paint={cfg.paint} finish={cfg.finish} parts={{ ...cfg.parts, [o.slot]: o.id }} /> : o.slot === 'rideHeight' ? <span className="fs-soft">{l(o.es, o.en)}</span> : <span className="fs-pending">{l('Falta asset', 'Asset missing')}</span>}</div>
-            <b>{l(o.es, o.en)}</b>
-            <small>{why ?? (o.asset === 'layer' ? l('Variante verificada: cambia en la vista', 'Verified variant: changes the view') : o.asset === 'base' ? l('Dibujada en la carrocería base; sin alternativa todavía', 'Drawn in the base body; no alternative yet') : l('Se guarda; sin representación todavía', 'Saved; not drawn yet'))}</small>
+            <span className="fs-opt-text"><b>{l(o.es, o.en)}</b>
+            <small>{why ?? (o.asset === 'layer' ? l('Variante verificada: cambia en la vista', 'Verified variant: changes the view') : o.asset === 'base' ? l('Dibujada en la carrocería base; sin alternativa todavía', 'Drawn in the base body; no alternative yet') : l('Se guarda; sin representación todavía', 'Saved; not drawn yet'))}</small></span>
           </button>;
         })}
         {cat === 'paint' && <p className="fs-soft">{l('Elegí color y acabado en el panel de pintura. El repintado usa la máscara de carrocería: no tiñe cristales, neumáticos ni ópticas.', 'Choose colour and finish in the paint panel. The repaint uses the body mask: it does not tint glass, tyres or lamps.')}</p>}

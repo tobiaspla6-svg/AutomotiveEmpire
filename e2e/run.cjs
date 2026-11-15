@@ -396,6 +396,80 @@ test('garage: real vehicles, Customise opens the studio on that vehicle with its
   noErrors(errors); await ctx.close();
 });
 
+test('modular GT: variants and finish saved per vehicle, recovered in garage, studio and after reloading; open roofs refused', async (browser) => {
+  const { ctx, page, errors } = await open(browser, { lang: 'es' });
+  await startCeo(page, 'Toyota', '2024');
+  await nav(page, 'garage2d');
+  // a vehicle drawn as GT-01 (a modern saloon or coupé)
+  const ids = await page.locator('.fs-gtray .fs-thumb[data-model]').evaluateAll((els) => els.filter((e) => e.querySelector('.gt01')).map((e) => e.getAttribute('data-model')));
+  assert(ids.length > 0, 'the garage has a vehicle drawn as GT-01');
+  const id = ids[0];
+  await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  await page.locator('[data-action="customize"]').click();
+  await page.locator('.fs-studio').waitFor();
+  eq(await page.locator('[data-field="studio-target"]').inputValue(), id, 'the studio edits the chosen vehicle');
+  const pick = async (cat, part) => { await page.locator(`.fs-cat[data-cat="${cat}"]`).click(); await page.locator(`.fs-opt[data-part="${part}"]`).click(); };
+  await pick('wheels', 'wheel-multispoke'); await pick('lights', 'headlamp-matrix'); await pick('bumpers', 'bumper-front-sport');
+  // open roofs need the open-top body family, which has no asset: disabled, with the reason
+  await page.locator('.fs-cat[data-cat="roof"]').click();
+  for (const r of ['roof-soft-top', 'roof-retractable-hardtop']) {
+    assert(await page.locator(`.fs-opt[data-part="${r}"]`).isDisabled(), `${r} is disabled`);
+    assert((await page.locator(`.fs-opt[data-part="${r}"] small`).innerText()).includes('estructura'), `${r} says why`);
+  }
+  assert(await page.locator('.fs-opt[data-part="roof-panoramic"]').isEnabled(), 'the panoramic roof can be fitted');
+  await page.locator('.fs-chip', { hasText: 'Mate' }).click();
+  const stage = page.locator('.fs-stage .gt01');
+  const parts = await stage.getAttribute('data-parts');
+  eq(parts, 'bumper-front-sport headlamp-matrix', 'the stage shows the chosen overlays');
+  eq(await stage.locator('.gt01-wheel[data-part="wheel-multispoke"]').count(), 2, 'both wheels are multi-spoke');
+  await page.locator('[data-action="studio-save"]').click();
+  const check = async (car, where) => {
+    eq(await car.getAttribute('data-parts'), parts, `${where}: overlays`);
+    eq(await car.getAttribute('data-finish'), 'matte', `${where}: finish`);
+    eq(await car.locator('.gt01-wheel[data-part="wheel-multispoke"]').count(), 2, `${where}: wheels`);
+  };
+  await nav(page, 'garage2d');
+  await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  await check(page.locator('.fs-gmain .fs-scene .gt01').first(), 'garage');
+  await check(page.locator(`.fs-gtray .fs-thumb[data-model="${id}"] .gt01`), 'garage thumbnail');
+  // another vehicle keeps its own (default) configuration
+  const other = ids.find((x) => x !== id);
+  if (other) eq(await page.locator(`.fs-gtray .fs-thumb[data-model="${other}"] .gt01`).getAttribute('data-parts'), '', 'another vehicle is unchanged');
+  await nav(page, 'hq2d'); await nav(page, 'studio2d');
+  await check(page.locator('.fs-stage .gt01'), 'studio reopened');
+  // the autosave carries it: reload the page and resume
+  await page.locator('[data-action="quit"]').click(); await page.locator('.menu2').waitFor();
+  await page.reload(); await page.locator('.menu2').waitFor();
+  await page.locator('[data-action="resume"]').click(); await page.locator('.shell').waitFor();
+  await nav(page, 'garage2d');
+  await page.locator(`.fs-gtray .fs-thumb[data-model="${id}"]`).click();
+  await check(page.locator('.fs-gmain .fs-scene .gt01').first(), 'garage after reload');
+  noErrors(errors); await ctx.close();
+});
+
+test('studio at 1280x720: the stage and the parts tray fit the window', async (browser) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });
+  const page = await ctx.newPage(); page.setDefaultTimeout(20000);
+  const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(BASE); await page.locator('.menu2').waitFor();
+  await startCeo(page, 'Toyota', '2024');
+  await nav(page, 'studio2d'); await page.locator('.fs-studio').waitFor();
+  for (const cat of ['wheels', 'roof', 'paint']) {
+    await page.locator(`.fs-cat[data-cat="${cat}"]`).click(); await page.waitForTimeout(100);
+    const r = await page.evaluate(() => {
+      const tray = document.querySelector('.fs-tray'), t = tray.getBoundingClientRect(), c = document.querySelector('.fs-stage .gt01, .fs-stage .fs-car').getBoundingClientRect();
+      const opt = Math.max(0, ...[...tray.querySelectorAll('.fs-opt')].map((e) => e.getBoundingClientRect().bottom));
+      return { tray: t.bottom, inner: t.bottom - parseFloat(getComputedStyle(tray).paddingBottom), opt, carW: c.width, carBottom: c.bottom, doc: document.documentElement.scrollWidth };
+    });
+    assert(r.tray <= 720, `${cat}: the tray ends inside the window (${r.tray})`);
+    assert(r.opt <= r.inner + 1, `${cat}: every option (with its reason) fits in the tray (${r.opt} > ${r.inner})`);
+    assert(r.carBottom <= 720 && r.carW > 400, `${cat}: the car is visible and large (${r.carW} px)`);
+    eq(r.doc, 1280, `${cat}: no horizontal scroll`);
+  }
+  noErrors(errors); await ctx.close();
+});
+
 test('2d phone: the headquarters and workshop fit a 390 px screen', async (browser) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });

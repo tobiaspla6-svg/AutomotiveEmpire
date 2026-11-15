@@ -1,0 +1,50 @@
+{
+ "wheel-multispoke": {
+  "changedPixels": 89549,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ },
+ "headlamp-matrix": {
+  "changedPixels": 7744,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ },
+ "handle-flush": {
+  "changedPixels": 3425,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ },
+ "bumper-front-sport": {
+  "changedPixels": 11096,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ },
+ "roof-panoramic": {
+  "changedPixels": 17572,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ },
+ "base-again": {
+  "changedPixels": 0,
+  "changedOutsideRegion": 0,
+  "captureSize": [
+   2192,
+   1224
+  ]
+ }
+}

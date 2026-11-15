@@ -80,8 +80,8 @@ export const PARTS: Record<Exclude<PartCategory, 'paint' | 'interior' | 'powertr
     { id: 'ride-raised', slot: 'rideHeight', es: 'Altura elevada (+2 cm)', en: 'Raised (+2 cm)', asset: 'layer' },
   ],
   roof: [
-    { id: 'roof-fixed', slot: 'roof', es: 'Techo fijo', en: 'Fixed roof', asset: 'layer', thumb: [540, 192, 520, 110] },
-    { id: 'roof-panoramic', slot: 'roof', es: 'Techo panorámico', en: 'Panoramic roof', asset: 'layer', thumb: [540, 192, 520, 110] },
+    { id: 'roof-fixed', slot: 'roof', es: 'Techo fijo', en: 'Fixed roof', asset: 'layer', thumb: [690, 182, 250, 125] },
+    { id: 'roof-panoramic', slot: 'roof', es: 'Techo panorámico', en: 'Panoramic roof', asset: 'layer', thumb: [690, 182, 250, 125] },
     { id: 'roof-canvas-sunroof', slot: 'roof', es: 'Techo de lona', en: 'Canvas sunroof', asset: 'missing' },
     { id: 'roof-soft-top', slot: 'roof', es: 'Descapotable de lona', en: 'Soft top', asset: 'missing', family: 'gt01-open' },
     { id: 'roof-retractable-hardtop', slot: 'roof', es: 'Techo rígido retráctil', en: 'Retractable hard top', asset: 'missing', family: 'gt01-open' },
@@ -169,11 +169,29 @@ export function validateConfig(cfg: unknown): string | null {
   return null;
 }
 
+/** Electric or hybrid powertrain (the solar roof needs one). The draft has no mechanics yet, so it counts as not electric. */
+export const isElectrified = (m?: VehicleModel) => !!m && (m.spec.engine.layout === 'EV' || (m.spec.engine.hybridKw ?? 0) > 0);
+
+/** Parts of a configuration that cannot be fitted to it (structure, roof type, electrification), by slot. */
+export function fitProblems(cfg: VehicleConfig, model?: VehicleModel): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [slot, id] of Object.entries(cfg.parts)) {
+    const part = partById(id);
+    const why = part && incompatibility(cfg, part, { electric: isElectrified(model) });
+    if (why) out[slot] = why;
+  }
+  return out;
+}
+
 /** Key under which a configuration is stored: a model id, or 'draft' for the next design. */
 export type DesignKey = string;
 export function configOf(c: { designs?: Record<string, VehicleConfig> }, key: DesignKey, model?: VehicleModel): VehicleConfig {
   const saved = c.designs?.[key];
-  if (saved && !validateConfig(saved)) return saved;
+  if (saved && !validateConfig(saved)) {
+    // a part that no longer fits (e.g. the model lost its hybrid system) falls back to the slot default; the rest is kept
+    const bad = Object.keys(fitProblems(saved, model));
+    return bad.length ? { ...saved, parts: { ...saved.parts, ...Object.fromEntries(bad.map((s) => [s, DEFAULT_PARTS[s]])) } } : saved;
+  }
   return defaultConfig(model?.spec.color && /^#[0-9a-f]{6}$/i.test(model.spec.color) ? model.spec.color : undefined);
 }
 
@@ -183,6 +201,9 @@ export function saveVehicleConfig(g: GameState, key: DesignKey, cfg: VehicleConf
   if (key !== 'draft' && !c.models.some((m) => m.id === key)) return 'Unknown vehicle.';
   const err = validateConfig(cfg);
   if (err) return `Invalid configuration: ${err}.`;
+  // structural rules are enforced here too, not only by the disabled buttons: no open roof without its body family
+  const fit = Object.entries(fitProblems(cfg, c.models.find((m) => m.id === key)));
+  if (fit.length) return `Incompatible part (${fit[0][0]}): ${fit[0][1]}`;
   c.designs ??= {};
   c.designs[key] = JSON.parse(JSON.stringify(cfg));
   return null;

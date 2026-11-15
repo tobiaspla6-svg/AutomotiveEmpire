@@ -99,7 +99,7 @@ export function GT01Car({ paint = '#2a4f86', ride = 'ride-stock', parts, finish 
 /** A cut-out of the GT-01 original (for part thumbnails): shows the body layer's region [x, y, w, h]. */
 export function GT01Crop({ rect, paint, parts, finish }: { rect: [number, number, number, number]; paint?: string; parts?: Record<string, string>; finish?: Finish }) {
   const [x, y, w, h] = rect;
-  return <div className="gt01-crop" style={{ aspectRatio: `${w} / ${h}` }}>
+  return <div className="gt01-crop" style={{ aspectRatio: `${w} / ${h}`, '--ar': w / h } as CSSProperties}>
     <GT01Car paint={paint} parts={parts} finish={finish} style={{ position: 'absolute', width: `${(GT01.w / w) * 100}%`, left: `${(-x / w) * 100}%`, top: `${(-y / h) * 100}%` }} />
   </div>;
 }
