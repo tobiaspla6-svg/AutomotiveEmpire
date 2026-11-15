@@ -1,0 +1,622 @@
+{
+  "service": "Google Flow",
+  "modelLabel": "Nano Banana 2.1",
+  "costIndicatorObserved": "0 créditos",
+  "generatedAndVerifiedImages": 29,
+  "notes": [
+    "Archivos aplanados de referencia, no biblioteca modular final.",
+    "Puntuaciones editoriales subjetivas; no benchmarks automáticos.",
+    "Posiciones y tipografías normativas están en handoff/."
+  ],
+  "assets": [
+    {
+      "screen": "Inicio",
+      "variant": "A",
+      "file": "01-inicio/A-atelier.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 579068,
+      "sha256": "9e086d1396d4c1549ff7574db472c6a3f3d044d92a8e28e1817be3f7777afb01",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 4,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Auto fino y acción clara; rótulos de propuesta sobran."
+    },
+    {
+      "screen": "Inicio",
+      "variant": "B",
+      "file": "01-inicio/B-galeria.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 565683,
+      "sha256": "43be6d44c774d7d858f0fdd0050005833fef26e7fc7d80b1197576e7ab0aa435",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 3,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Galería elegante; serif e inventario debilitan el inicio."
+    },
+    {
+      "screen": "Inicio",
+      "variant": "C",
+      "file": "01-inicio/C-plano.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 544391,
+      "sha256": "fb537a938e277781605a3bfde2134fb1f569a73c3c33240e251a53e90d5fd5a2",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Claro y simple; el plano duplica y recorta la silueta."
+    },
+    {
+      "screen": "Inicio",
+      "variant": "D",
+      "file": "01-inicio/D-garaje-fundador.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 552933,
+      "sha256": "8579a2300a7d41bf32614895a6b5a1ce729c09f563a372f9a3f81a9fcd0c1f32",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 4,
+        "reactFeasibility": 5
+      },
+      "review": "Mejor atmósfera de origen; acción primaria poco dominante."
+    },
+    {
+      "screen": "Inicio",
+      "variant": "E",
+      "file": "01-inicio/E-garaje-refinado.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 595981,
+      "sha256": "c0adf97639e51f6271b6ba812f51e13a54ede06e4c1e9dd9fc54e89c0d4c09c6",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 5,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Iteración elegida: jerarquía clara; suavizar sombra y preservar proporciones originales."
+    },
+    {
+      "screen": "Headquarters",
+      "variant": "A",
+      "file": "02-headquarters/A-campus.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 912233,
+      "sha256": "5be6ce5f1410266927ffeb5c8f5fa3841b1e144b5af6ecbddee7eddcfd51dac8",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Campus reconocible y buenos destinos; reducir barra y reemplazar números ficticios."
+    },
+    {
+      "screen": "Headquarters",
+      "variant": "B",
+      "file": "02-headquarters/B-edificio.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 786519,
+      "sha256": "cb1a898719616cd586bc558e0898fb63db4088dcd8871be6009eb8334ed7e80b",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 3,
+        "readability": 3,
+        "reactFeasibility": 3
+      },
+      "review": "Edificio interesante; mucha lectura y pisos mezclados."
+    },
+    {
+      "screen": "Headquarters",
+      "variant": "C",
+      "file": "02-headquarters/C-mapa.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 1118310,
+      "sha256": "53b3681a039b63994a594b08c9f111695a5c73a26d117f7374b2aff44e02388b",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Mapa legible; deriva a un tono antiguo y rótulos en inglés."
+    },
+    {
+      "screen": "Headquarters",
+      "variant": "D",
+      "file": "02-headquarters/D-plaza.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 777469,
+      "sha256": "aa9875f76a3f289c3b03d12f767671dd4f91d000b921c6fdd1b46313b90b3ac6",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Bonita plaza, pero los destinos ocupan menos superficie y la barra está sobrecargada."
+    },
+    {
+      "screen": "Taller de diseño",
+      "variant": "A",
+      "file": "03-taller/A.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 702196,
+      "sha256": "ce3745d3115780fffcfbba57b0f4e9410415bb0f98b668f3d8c6f2f196556be2",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Auto grande, categorías claras y bandeja modular: mejor base para React."
+    },
+    {
+      "screen": "Taller de diseño",
+      "variant": "B",
+      "file": "03-taller/B.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 818635,
+      "sha256": "74d53e57818f2f1da259d605330224ca3ad168ee8f6ff61526f894ed2df00ff1",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Excelente guía para accesorios del SUV; traducir etiquetas y añadir interior."
+    },
+    {
+      "screen": "Taller de diseño",
+      "variant": "C",
+      "file": "03-taller/C.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 665517,
+      "sha256": "55135b2b175997fb452b3554770af7580e7dacfb378c38998f8f8a32eef211c2",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Mesa de diseño atractiva; cambia la época del auto y llena el pie de texto."
+    },
+    {
+      "screen": "Taller de diseño",
+      "variant": "D",
+      "file": "03-taller/D.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 863119,
+      "sha256": "6ab7328726787bce538c31f2212c631705a01f6ca8ef60a86a1824409c3fedc5",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 3,
+        "style": 4,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Interior útil como referencia adicional; SUV más caricaturesco y texto de propuesta visible."
+    },
+    {
+      "screen": "Fábrica",
+      "variant": "A",
+      "file": "04-fabrica/A.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 867432,
+      "sha256": "72ecc31d536d8348ea1ad34d1b03f3121c383b0477f215c322685d42bb9b5dca",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 4,
+        "reactFeasibility": 5
+      },
+      "review": "Mejor flujo de cuatro estaciones; traducir rótulos, quitar duplicaciones y separar maquinaria animada."
+    },
+    {
+      "screen": "Fábrica",
+      "variant": "B",
+      "file": "04-fabrica/B.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 1025751,
+      "sha256": "ec81fcd9368df3f73d3f0c986e6e7e5dfb0aaaaae544e088e088d44a7ae40d13",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 3
+      },
+      "review": "Buena planta; vigas tapan zonas y pickup incorrecta en miniatura fastback."
+    },
+    {
+      "screen": "Fábrica",
+      "variant": "C",
+      "file": "04-fabrica/C.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 826996,
+      "sha256": "c4090503fac8103d7babf924c93a3c2ebef653527a7b18f8e604e9782354f430",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 4,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Taller artesanal cálido; escala insuficiente para representar una fábrica completa."
+    },
+    {
+      "screen": "Fábrica",
+      "variant": "D",
+      "file": "04-fabrica/D.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 711507,
+      "sha256": "bf8696828811d1191bef5b964943ea8125570ee29c4064c395a84888edcbed1f",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Producción lateral clara, pero corta autos en los bordes y deja cola pequeña."
+    },
+    {
+      "screen": "Garaje",
+      "variant": "A",
+      "file": "05-garaje/A.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 691979,
+      "sha256": "9cccfffed3f371bd1ac57c297129bc50cfd8db67cac41b645f90d09611f81298",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Colección y auto dominante; corregir etiquetas duplicadas y fidelidad del catálogo."
+    },
+    {
+      "screen": "Garaje",
+      "variant": "B",
+      "file": "05-garaje/B.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 698115,
+      "sha256": "44768ff0361fb756d224d307a6077e152484d5781d01ed28c4e93e46b6ee2133",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Buen museo de colección; autos menos protagonistas individualmente."
+    },
+    {
+      "screen": "Garaje",
+      "variant": "C",
+      "file": "05-garaje/C.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 725923,
+      "sha256": "6a0bd19308b4fcd5503659982a979ac280eb1ab15f97ebc56f9392bde82874e2",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 4
+      },
+      "review": "Atmósfera cálida; cambia la familia SUV y mezcla serif con rótulos erróneos."
+    },
+    {
+      "screen": "Garaje",
+      "variant": "D",
+      "file": "05-garaje/D.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 720290,
+      "sha256": "676f3688524bb9d88a28b417e4a29fb5e722c13d8bc7749776cdeb58af6034b5",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Luz cálida y buen espacio; cambia el fastback moderno por uno clásico y reduce el botón principal."
+    },
+    {
+      "screen": "Cofres",
+      "variant": "A",
+      "file": "06-cofres/A.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 705311,
+      "sha256": "af860f8cb63502f72b7e9381fa139ed941813469144d3b222f433bc58614c241",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 4,
+        "readability": 2,
+        "reactFeasibility": 4
+      },
+      "review": "Buen estado cerrado; rótulos portugueses y microtexto requieren reemplazo."
+    },
+    {
+      "screen": "Cofres",
+      "variant": "B",
+      "file": "06-cofres/B.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 699216,
+      "sha256": "75e474688d9bb22798fcd5035f38448aeb8f0ea907bbeaa42cf168b2dda45089",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 4,
+        "reactFeasibility": 5
+      },
+      "review": "Mejor momento de recompensa; caja y carta separables, traducir inventario y volver."
+    },
+    {
+      "screen": "Cofres",
+      "variant": "C",
+      "file": "06-cofres/C.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 732407,
+      "sha256": "9c5d6494285315082ad4c2fe428589c479ad31a87a17980edd263a826a0620b3",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Seis materiales útiles para rarezas; selección e indicador necesitan coherencia."
+    },
+    {
+      "screen": "Cofres",
+      "variant": "D",
+      "file": "06-cofres/D.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 714724,
+      "sha256": "d1480058d1de636f89bff07dde7fc6ea5e93aa2cf966eb881e722e99317c8bd0",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 4
+      },
+      "review": "Mueble bien dibujado; cartas pequeñas, muchos rótulos y caja secundaria."
+    },
+    {
+      "screen": "Configuración",
+      "variant": "A",
+      "file": "07-configuracion/A.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 548923,
+      "sha256": "861674a8c6fac5e4d4400fb631b726f041f42837b38881cbc400e71b7fe18785",
+      "selectedByArtDirector": true,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 5,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Mejor coherencia con inicio: navy, jerarquía limpia y controles amplios."
+    },
+    {
+      "screen": "Configuración",
+      "variant": "B",
+      "file": "07-configuracion/B.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 626171,
+      "sha256": "c8196c978e9dba9328d5f8ac662a6bd52b05faca6a2760fb53d8d521e51a30cd",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 4,
+        "composition": 4,
+        "readability": 4,
+        "reactFeasibility": 5
+      },
+      "review": "Buen contraste; panel claro se aparta de la identidad y mezcla ajustes en pestaña vídeo."
+    },
+    {
+      "screen": "Configuración",
+      "variant": "C",
+      "file": "07-configuracion/C.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 597951,
+      "sha256": "151e69adc3931b587d733f796b108f3aa743f5893702ad1a5801dbd9d6835f17",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 4,
+        "style": 5,
+        "composition": 4,
+        "readability": 3,
+        "reactFeasibility": 5
+      },
+      "review": "Accesibilidad comprensible; repite Sí y recorta el auto de fondo."
+    },
+    {
+      "screen": "Configuración",
+      "variant": "D",
+      "file": "07-configuracion/D.jpg",
+      "format": "JPEG",
+      "width": 1376,
+      "height": 768,
+      "bytes": 659727,
+      "sha256": "4e6461ba4567b5882627cdf6060b748be32a3961084a8e250dd2862138660d90",
+      "selectedByArtDirector": false,
+      "userApprovalRecorded": false,
+      "referenceOnly": true,
+      "scoresSubjective1to5": {
+        "quality": 5,
+        "style": 5,
+        "composition": 4,
+        "readability": 5,
+        "reactFeasibility": 5
+      },
+      "review": "Buen panel de vídeo; demasiado espacio vacío y menos compacto que A."
+    }
+  ]
+}
