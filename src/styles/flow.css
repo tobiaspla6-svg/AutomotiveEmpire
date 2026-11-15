@@ -291,10 +291,12 @@ html.high-contrast { --fl-soft: #dfe5e6; --fl-line-soft: rgba(238, 236, 229, 0.5
   .fs-studio-screen .fs-stage > .fs-scene { width: min(100cqw, calc(100cqh * 1060 / 516)); flex: none; }
   .fs-studio-screen .fs-stage > .fs-interior { width: 100%; max-height: 100%; overflow-y: auto; align-self: stretch; }
   .fs-studio-screen > .fs-nav { display: none; }
+  /* a fixed tray height keeps the car the same size whichever category is open */
+  .fs-studio-screen .fs-tray { height: 196px; align-items: flex-start; }
 }
 @media (min-width: 1101px) and (max-width: 1599px) { .fs-studio-screen .fs-brand { display: none; } }
 @media (min-width: 1101px) and (max-height: 860px) {
-  .fs-studio-screen .fs-tray { padding: 8px 10px; gap: 8px; }
+  .fs-studio-screen .fs-tray { padding: 8px 10px; gap: 8px; height: 168px; }
   .fs-studio-screen .fs-opt { width: 156px; padding: 6px; gap: 4px; }
   .fs-studio-screen .fs-thumbbox { height: 64px; }
   .fs-studio-screen .fs-opt small { font-size: 13px; line-height: 1.25; }

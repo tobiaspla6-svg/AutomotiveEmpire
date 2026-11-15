@@ -64,7 +64,7 @@ function PaintStack({ mask, paint, finish, box }: { mask: string; paint: string;
     {finish === 'solid' && <div className="gt01-paint" data-finish="solid" style={{ ...m, background: paint, opacity: 0.34 }} />}
     {finish === 'matte' && <div className="gt01-paint" data-finish="matte" style={{ ...m, background: towardWhite(0.18), mixBlendMode: 'darken', opacity: 0.9 }} />}
     {finish === 'matte' && <div className="gt01-paint" data-finish="matte" style={{ ...m, background: 'rgb(128,128,128)', mixBlendMode: 'saturation', opacity: 0.18 }} />}
-    {finish === 'pearl' && <div className="gt01-paint" data-finish="pearl" style={{ ...m, background: 'linear-gradient(100deg, #ffd8f0 0%, #d4f0ff 42%, #fff1d2 78%, #e2dcff 100%)', mixBlendMode: 'soft-light', opacity: 0.75 }} />}
+    {finish === 'pearl' && <div className="gt01-paint" data-finish="pearl" style={{ ...m, background: 'linear-gradient(100deg, #ffd8f0 0%, #d4f0ff 42%, #fff1d2 78%, #e2dcff 100%)', mixBlendMode: 'soft-light', opacity: 0.5 }} />}
   </>;
 }
 

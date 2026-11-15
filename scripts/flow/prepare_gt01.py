@@ -114,6 +114,18 @@ mx, mn = img.max(-1), img.min(-1)
 sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1), 0)
 hue_blue = (b > r + 12) & (b > g + 4)
 paint = (hue_blue & (sat > 0.27) & (mx > 26) & (alpha > 0.5)).astype(np.float32)   # glass is s≈0.15, paint s≈0.5–0.86 (highlights ≈0.3–0.5)
+# the dark sill and side blade are near-black navy: their pixels hover around the hue/saturation thresholds and give a
+# salt-and-pepper mask that a repaint or the pearl layer turns into visible specks. Below the belt (y ≥ 470) a 5×5
+# median settles each pixel to its neighbourhood, then specks under 80 px are dropped everywhere.
+# The sill strip itself is charcoal trim (≈ 18,26,33: b−r ≈ 15, max ≈ 33), while the lower door paint stays clearly blue
+# (≈ 12,29,62: b−r ≈ 50), so below the belt the hue test is stricter.
+low = np.zeros((H, W), bool); low[470:] = True
+paint[low & ~((b > r + 22) & (b > g + 10) & (mx > 38))] = 0
+pb = (paint > 0).astype(np.uint8) * 255
+pb[470:] = cv2.medianBlur(pb, 5)[470:]
+n_c, lab, stats, _ = cv2.connectedComponentsWithStats((pb > 0).astype(np.uint8), 8)
+keep = np.zeros(n_c, bool); keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= 80
+paint = keep[lab].astype(np.float32)
 for k, (cx, cy) in geo.items():                                           # never inside the wheels
     paint[np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) <= R + 1] = 0
 # soften by one pixel (3×3 mean) so the repaint has no jagged border

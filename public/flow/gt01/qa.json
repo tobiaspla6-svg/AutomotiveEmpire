@@ -12,7 +12,7 @@
  ],
  "transparentPixels": 736285,
  "partialAlphaPixels": 892,
- "paintMaskPixels": 180146,
+ "paintMaskPixels": 173467,
  "recomposition": {
   "meanAbsDiff": 0.42,
   "p99AbsDiff": 4.33,
