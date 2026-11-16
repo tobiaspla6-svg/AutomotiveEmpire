@@ -69,7 +69,7 @@ export const es: Record<MessageKey, string> = {
   'nav.timeline.historical': 'Cronología histórica', 'nav.timeline.alt': 'Historia alternativa',
   'top.date': 'Fecha', 'top.cash': 'Caja', 'top.debt': 'Deuda', 'top.lastMonth': 'Último mes', 'top.board': 'Confianza del consejo', 'top.owner': 'Confianza del propietario',
   'top.save': 'Guardar partida', 'top.saved': 'Partida guardada.', 'top.menu': 'Menú principal', 'top.raceWeekend': 'Fin de semana de carrera: {name}',
-  'top.plus3': '+3 meses', 'top.plus3.hint': 'Avanzar tres meses (se detiene en las decisiones)', 'top.next': 'Mes siguiente', 'top.next.hint': 'Avanzar un mes (barra espaciadora)', 'top.working': 'Procesando…',
+  'top.plus3': '+3 meses', 'top.plus3.hint': 'Avanzar tres meses (se detiene en las decisiones y en los fines de semana de carrera)', 'top.next': 'Mes siguiente', 'top.next.hint': 'Avanzar un mes (barra espaciadora)', 'top.working': 'Procesando…',
   'decision.required': 'Decisión necesaria', 'over.title': 'Tu mandato ha terminado', 'over.led': 'Dirigiste {name} de {from} a {to}.', 'over.books': 'Revisar las cuentas',
   'stage.body': 'Carrocería', 'stage.paint': 'Pintura', 'stage.powertrain': 'Tren motriz', 'stage.assembly': 'Montaje final', 'stage.inspection': 'Inspección',
 
@@ -94,7 +94,7 @@ export const es: Record<MessageKey, string> = {
   'dash.utilisation': 'Utilización', 'dash.perMonth': '{n} coches / mes', 'dash.bottleneck': 'cuello de botella', 'dash.more': '+ {n} fábricas más',
   'dash.market': 'Mercado', 'dash.market.title': 'Posición entre las marcas', 'dash.regions': 'Tus ventas por región (coches al año)',
   'dash.programmes': 'Cartera', 'dash.programmes.title': 'Programas y objetivos', 'dash.noDev': 'Ningún vehículo en desarrollo.', 'dash.monthsLeft.one': 'queda {count} mes', 'dash.monthsLeft.other': 'quedan {count} meses',
-  'dash.engineers': 'Ingenieros necesarios a pleno ritmo: {need} · contratados: {have}.', 'dash.owner': 'Expectativas del propietario', 'dash.objectives': 'Objetivos del consejo', 'dash.by': 'para {year}',
+  'dash.engineers': 'Ingenieros necesarios a pleno ritmo: {need} · contratados: {have}.', 'dash.owner': 'Expectativas del propietario', 'dash.objectives': 'Objetivos del consejo', 'dash.by': 'revisión final: enero de {year}',
   'dash.world': 'Mundo', 'dash.news': 'Últimas noticias', 'dash.allNews': 'Todas las noticias', 'dash.conditions': 'Condiciones', 'dash.conditions.title': 'Condiciones del mundo', 'dash.noConditions': 'Ahora no hay condiciones especiales.',
 
   // ---- avisos ejecutivos

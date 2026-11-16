@@ -37,6 +37,9 @@ export function prepareLoadedGame(raw: unknown): GameState {
   if (v > SAVE_VERSION) throw new Error(`This save comes from a newer version of the game (save format ${v}; this build reads up to ${SAVE_VERSION}).`);
   if (v < 2) for (const c of g.companies) migrateCompanyV1(g, c);
   if (v < 3) for (const c of g.companies) if (c.isPlayer) adoptFamilies(g, c);
+  // Audit AE-02: before this fix "Full capacity" stored the line's units of that moment. In a player's save every
+  // value ≥ 0 came from that option, so it becomes the real full-capacity policy (1e9 = LINE_FULL in sim/actions).
+  for (const c of g.companies) if (c.isPlayer) for (const f of c.factories ?? []) for (const l of f.lines ?? []) if (typeof l.target === 'number' && l.target >= 0) l.target = 1e9;
   g.version = SAVE_VERSION;
   const damage = saveDamage(g);
   if (damage) throw new Error(`This save is damaged and cannot be loaded safely (${damage}).`);

@@ -14,7 +14,7 @@ import { clamp, cpi, fmtMoney, kf, MONTHS } from './util';
 import { getRegs, disciplineAvailable } from './racing/regs';
 import { adoptFamilies } from './families';
 import { updateFx } from './regional';
-import { breakEvenGrant, sponsorTarget, budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason } from './racing/season';
+import { breakEvenGrant, sponsorTarget, budgetRef, createDivision, motorsportMonth, pendingRound, quickSimRound, startSeason , seasonBudget } from './racing/season';
 import { emptyPending, openBooks } from './accounts';
 
 export const player = (g: GameState): Company => g.companies.find((c) => c.id === g.playerId)!;
@@ -50,7 +50,7 @@ function boardObjectives(g: GameState, c: Company, def: MakerDef): Objective[] {
   ];
   const health = kf(def.health, y);
   if (health < 0.3) out.push({ id: uid(g, 'o'), kind: 'debt', text: `Cut debt below $${(c.debt * 0.6 / 1e6).toFixed(0)}M by the end of ${y + 3}`, target: c.debt * 0.6, byYear: y + 4, progress: c.debt, done: false, failed: false });
-  else { const tgt = Math.round((c.baseVolume * (def.archetype === 'exotic' ? 1.12 : 1.2)) / 10) * 10; out.push({ id: uid(g, 'o'), kind: 'volume', text: `Sell at least ${tgt.toLocaleString()} cars a year by ${y + 4}`, target: tgt, byYear: y + 5, progress: 0, done: false, failed: false }); }
+  else { const tgt = Math.round((c.baseVolume * (def.archetype === 'exotic' ? 1.12 : 1.2)) / 10) * 10; out.push({ id: uid(g, 'o'), kind: 'volume', text: `Sell at least ${tgt.toLocaleString()} cars in a calendar year, ${y + 4} at the latest`, target: tgt, byYear: y + 5, progress: 0, done: false, failed: false }); }
   if (def.archetype === 'mass') out.push({ id: uid(g, 'o'), kind: 'reliability', text: `Raise the reliability reputation to ${Math.min(95, Math.round(c.reliabilityRep + 5))}`, target: Math.min(95, Math.round(c.reliabilityRep + 5)), byYear: y + 6, progress: c.reliabilityRep, done: false, failed: false });
   else out.push({ id: uid(g, 'o'), kind: 'prestige', text: `Keep brand prestige at ${Math.round(Math.max(55, c.prestige - 2))} or higher`, target: Math.round(Math.max(55, c.prestige - 2)), byYear: y + 6, progress: c.prestige, done: false, failed: false });
   return out;
@@ -167,6 +167,16 @@ export function newMotorsportGame(o: MotorsportSetup): GameState {
   news(g, 'motorsport', `${o.teamName} enters the ${regs.seriesName}`, `${regs.className}. ${regs.note}`, 'historical');
   openBooks(player(g));
   return g;
+}
+
+/**
+ * What the Director setup promises (audit AE-03): the budget of the team exactly as `newMotorsportGame` creates it with
+ * these options and this seed. Built by running the real constructor on a throw-away game, so the preview can never
+ * drift from the game again. Pure: nothing outside the returned object is touched.
+ */
+export function previewMotorsport(o: MotorsportSetup & { seed: number }) {
+  const g = newMotorsportGame(o), c = player(g), b = seasonBudget(g, c, c.motorsport!);
+  return { owner: b.owner, sponsors: b.sponsors, cash: c.cash, cost: b.cost, prize: b.prize, prizePos: b.prizePos, development: b.development, balance: b.balance };
 }
 
 function reviewBoard(g: GameState, c: Company) {

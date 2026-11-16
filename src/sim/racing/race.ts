@@ -202,7 +202,7 @@ export class RaceSim {
     const c = this.car(id); if (!c || c.status !== 'run') return;
     const regs = this.cfg.regs;
     const lapsLeft = this.lapsLeft(c);
-    const fuel = regs.refuel ? Math.min(regs.tankKg, c.fuelPerLap * ((fuelLaps ?? lapsLeft) + 0.5) * 1.03) : c.fuel;
+    const fuel = regs.refuel ? Math.min(regs.tankKg, this.burn(c) * ((fuelLaps ?? this.fuelLapsLeft(c)) + 0.5) * 1.03) : c.fuel;
     c.pitReq = { compound, fuel: Math.max(fuel, c.fuel), tyres: true };
     this.say(`${this.name(c)} is called in: box this lap for ${regs.tyres.find((x) => x.id === compound)?.name ?? compound} tyres.`, 'player');
   }
@@ -212,10 +212,22 @@ export class RaceSim {
     return Math.max(0, (this.cfg.duration - this.t) / (c.T0 * (1 + c.pen)));
   }
 
+  /**
+   * Laps of fuel a car still needs (audit R-01). A timed race does not end when the clock runs out: the leader
+   * completes the lap it is on and takes the flag, then every other car completes its own lap. That is up to two more
+   * line crossings than `lapsLeft` (which counts to the nominal duration only), so strategists that fuelled "to the
+   * clock" ran dry on the way to the flag: 23 % of the field in 24 simulated two-hour races. Races by laps are unchanged.
+   */
+  fuelLapsLeft(c: CarState): number { return this.cfg.laps ? this.lapsLeft(c) : this.lapsLeft(c) + 2; }
+  /** Consumption per lap at the car's current pace (Push burns 4 % more; never less than the normal rate for a fill). */
+  private burn(c: CarState): number { return c.fuelPerLap * Math.max(1, MODE[c.mode].fuel); }
+
   private decide(c: CarState) {
     const regs = this.cfg.regs;
     const lapsLeft = this.lapsLeft(c);
-    if (lapsLeft < 0.9) return;
+    // in a timed race the car may still need a splash after the clock has nearly run out (see fuelLapsLeft)
+    const fuelCritical = regs.refuel && !this.cfg.laps && c.fuel < this.burn(c) * 1.3;
+    if (lapsLeft < 0.9 && !fuelCritical) return;
     const soon = this.rainSoon();
     const smart = c.e.strategy / 100;
     const w = soon > 0 && chance(this.rng, smart) ? Math.max(this.wetness, soon * 0.5) : this.wetness;
@@ -226,7 +238,7 @@ export class RaceSim {
     if (pens[2] < pens[bestT]) bestT = 2;
     if (pens[cur] - pens[bestT] > 0.012 + (1 - smart) * 0.02) c.wrongTyre++; else c.wrongTyre = 0;
     const wantType = c.wrongTyre >= (smart > 0.7 ? 1 : 2) ? bestT : cur;
-    const needFuel = regs.refuel && c.fuel < c.fuelPerLap * 1.3;
+    const needFuel = regs.refuel && c.fuel < this.burn(c) * 1.3;
     const planned = c.plan.includes(c.laps) && this.wetness < 0.2;
     const needTyre = wantType !== cur || (c.wear > (cur === 0 ? c.wearLimit : 1.05) && lapsLeft > 2.5) || c.damage > 0.004;
     const dryRace = c.usedDry.length > 0 && cur === 0;
@@ -236,7 +248,7 @@ export class RaceSim {
     const wearRate = this.track.abrasion * c.e.perf.tyreWear * (1.15 - this.driver(c).tyre / 320) / c.compound.lifeKm;
     const tyres = needTyre || planned || twoRule || c.wear + wearRate * stintLaps * this.lapKm > 0.92;
     const comp = tyres ? this.chooseCompound(c, wantType, lapsLeft, stintLaps, twoRule) : c.compound;
-    const fuel = regs.refuel ? Math.min(regs.tankKg, c.fuelPerLap * (lapsLeft + 0.6) * 1.03) : c.fuel;
+    const fuel = regs.refuel ? Math.min(regs.tankKg, this.burn(c) * (this.fuelLapsLeft(c) + 0.6) * 1.03) : c.fuel;
     c.pitReq = { compound: comp.id, fuel: Math.max(fuel, c.fuel), tyres };
   }
 
@@ -323,7 +335,7 @@ export class RaceSim {
     }
     if (distDone) { c.status = 'fin'; c.finishT = tCross; return; }
     if (c.auto && !c.pitReq) this.decide(c);
-    if (c.pitReq && this.lapsLeft(c) > 0.5) this.enterPit(c, k * this.L);
+    if (c.pitReq && (this.lapsLeft(c) > 0.5 || (this.cfg.regs.refuel && !this.cfg.laps && c.fuel < this.burn(c) * 1.3))) this.enterPit(c, k * this.L);
   }
 
   private attempt(c: CarState, a: CarState) {

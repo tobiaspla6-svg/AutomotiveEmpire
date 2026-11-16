@@ -1,0 +1,35 @@
+{
+ "errors": [],
+ "setup": {
+  "owner": "1989616",
+  "sponsors": "2156984",
+  "cash": "1554583",
+  "text": "Garantizado: propietario + patrocinadores = 4,1 M $ al año. Condicionado: premio de 1,2 M $ si terminás P5. Margen previsto con ese premio: 20 k $."
+ },
+ "gtClock": {
+  "seconds": 7344,
+  "text": "TIEMPO DE CARRERA\n2:02:24 / 2:00:00\nCARRERA TERMINADA",
+  "outOfFuel": 0,
+  "cars": 22
+ },
+ "acquisition": "¿Adquirir Lamborghini por 2,7 M $? Tienes 62,5 M $ en caja; unos 0 $ serían deuda. Sus plantas, concesionarios, ingenieros y coches pasan a ser tuyos, con sus costes. No se puede deshacer.\n\nRevisión de la compra — precio 2,7 M $; caja que trae Lamborghini: +4,8 M $; deuda que asumís: +12,1 M $. Tu caja: 62,5 M $ → 64,7 M $. Tu deuda: 78,2 M $ → 90,3 M $. Crédito disponible después: 67,4 M $. Recibís 1 planta(s), 2 modelo(s) en producción y 19 ingeniero(s).",
+ "objectives": [
+  "Deliver a cumulative net profit over 1985–1987\nrevisión final: enero de 1988",
+  "Sell at least 3,790 cars in a calendar year, 1989 at the latest\nrevisión final: enero de 1990",
+  "Keep brand prestige at 92 or higher\nrevisión final: enero de 1991",
+  "Fortalezas\nThe strongest pricing power in the industry · Limited-series flagships sell out before launch · Racing heritage",
+  "Riesgos\nDependent on a handful of models · Formula 1 is a permanent cost",
+  "Coste inicial (indemnizaciones, consultores)\n32 k $",
+  "Ahorro estimado\n65 k $ / año durante 3 años",
+  "Recuperación estimada\n6 meses",
+  "Riesgo\nreputación de fiabilidad −2 (trastornos)"
+ ],
+ "dealers": [
+  "unos +3561 coches / año",
+  "unos +4808 coches / año",
+  "unos +3561 coches / año",
+  "unos +3561 coches / año",
+  "unos +3561 coches / año",
+  "unos +3561 coches / año"
+ ]
+}

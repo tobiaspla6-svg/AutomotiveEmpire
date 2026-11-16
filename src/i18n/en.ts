@@ -68,7 +68,7 @@ export const en = {
   'nav.timeline.historical': 'Historical timeline', 'nav.timeline.alt': 'Alternative history',
   'top.date': 'Date', 'top.cash': 'Cash', 'top.debt': 'Debt', 'top.lastMonth': 'Last month', 'top.board': 'Board confidence', 'top.owner': 'Owner confidence',
   'top.save': 'Save game', 'top.saved': 'Game saved.', 'top.menu': 'Main menu', 'top.raceWeekend': 'Race weekend: {name}',
-  'top.plus3': '+3 months', 'top.plus3.hint': 'Advance three months (stops for decisions)', 'top.next': 'Next month', 'top.next.hint': 'Advance one month (space bar)', 'top.working': 'Working…',
+  'top.plus3': '+3 months', 'top.plus3.hint': 'Advance three months (stops for decisions and race weekends)', 'top.next': 'Next month', 'top.next.hint': 'Advance one month (space bar)', 'top.working': 'Working…',
   'decision.required': 'Decision required', 'over.title': 'Your tenure is over', 'over.led': 'You led {name} from {from} to {to}.', 'over.books': 'Review the books',
   'stage.body': 'Body shop', 'stage.paint': 'Paint shop', 'stage.powertrain': 'Powertrain', 'stage.assembly': 'Final assembly', 'stage.inspection': 'Quality inspection',
 
@@ -93,7 +93,7 @@ export const en = {
   'dash.utilisation': 'Utilisation', 'dash.perMonth': '{n} cars / month', 'dash.bottleneck': 'bottleneck', 'dash.more': '+ {n} more plants',
   'dash.market': 'Market', 'dash.market.title': 'Position among makers', 'dash.regions': 'Your sales by region (cars per year)',
   'dash.programmes': 'Pipeline', 'dash.programmes.title': 'Programmes and objectives', 'dash.noDev': 'No vehicle in development.', 'dash.monthsLeft.one': '{count} month left', 'dash.monthsLeft.other': '{count} months left',
-  'dash.engineers': 'Engineers needed for full speed: {need} · employed: {have}.', 'dash.owner': 'Owner expectations', 'dash.objectives': 'Board objectives', 'dash.by': 'by {year}',
+  'dash.engineers': 'Engineers needed for full speed: {need} · employed: {have}.', 'dash.owner': 'Owner expectations', 'dash.objectives': 'Board objectives', 'dash.by': 'final review: January {year}',
   'dash.world': 'World', 'dash.news': 'Latest news', 'dash.allNews': 'All news', 'dash.conditions': 'Conditions', 'dash.conditions.title': 'World conditions', 'dash.noConditions': 'No special conditions right now.',
 
   // ---- insights: headline + why it matters, per kind

@@ -6,7 +6,7 @@ import { COUNTRIES, COUNTRY, MARKET_DATA_THROUGH, REGIONS } from '../data/world'
 import { TECHS } from '../data/tech';
 import { AREA_NAME, TECH_AREAS } from '../sim/company';
 import {
-  capitalOptions, ENGINEER_LEVELS, FACTORY_SIZES, founderCosts, MS_BUDGETS, newCeoGame, newFounderGame, newMotorsportGame, previewCompany,
+  capitalOptions, ENGINEER_LEVELS, FACTORY_SIZES, founderCosts, MS_BUDGETS, newCeoGame, newFounderGame, newMotorsportGame, previewCompany, previewMotorsport,
   RESEARCH_LEVELS, SPECIALIZATIONS, WORKFORCE_LEVELS, type FounderSetup,
 } from '../sim/world';
 import { LAYOUT_NAME, starterVehicle } from '../sim/engineering';
@@ -221,6 +221,11 @@ export function MotorsportSetupScreen() {
   const perf = useMemo(() => computeRaceCar(defaultRaceCar(regs, year), { aero: 0.3, engine: 0.3, chassis: 0.3, reliability: 0.3 }, regs, year, 0.5), [disc, year]);
   const pickMaker = (id: string | null) => { setMakerId(id); if (id) { const m = MAKER[id]; setTeamName(`${m.name} Works Team`); setColor(m.color); setColor2(m.color2); } };
   const name = teamName.trim() || t('setup.m.yourTeam');
+  const l2 = (es: string, en: string) => (lang === 'es' ? es : en);
+  // one seed for the preview and for the game it starts, so the budget shown here is the budget the team opens with
+  const [seed] = useState(() => (Date.now() ^ Math.floor(Math.random() * 0x7fffffff)) >>> 0);
+  const msOpts = { makerId, teamName: name, discipline: disc, year, budget, facilities, staff, target: Math.min(target, regs.teams), color, color2, difficulty: diff, historyMode: hist, seed };
+  const pv = useMemo(() => previewMotorsport(msOpts), [makerId, disc, year, budget, facilities, staff, target, diff, hist, seed]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="setup">
       <div className="left">
@@ -242,7 +247,7 @@ export function MotorsportSetupScreen() {
         <Slider label={t('setup.m.objective')} value={target} min={1} max={regs.teams} onChange={setTarget} fmt={(v) => t('setup.m.objectiveFmt', { n: v })} />
         <span className="small muted">{t('setup.m.note')}</span>
         <WorldOptions diff={diff} setDiff={setDiff} hist={hist} setHist={setHist} />
-        <button className="btn primary lg" data-action="start-game" onClick={() => start(newMotorsportGame({ makerId, teamName: name, discipline: disc, year, budget, facilities, staff, target: Math.min(target, regs.teams), color, color2, difficulty: diff, historyMode: hist }))}>{t('setup.m.go', { year })}</button>
+        <button className="btn primary lg" data-action="start-game" onClick={() => start(newMotorsportGame(msOpts))}>{t('setup.m.go', { year })}</button>
       </div>
       <div className="right">
         <div><h1>{name} <span className="muted" style={{ fontWeight: 400 }}>{year}</span></h1><p className="dim">{regs.seriesName} ({t('setup.m.unofficial')}) · {regs.className}</p></div>
@@ -265,7 +270,8 @@ export function MotorsportSetupScreen() {
           <Kpi label={t('setup.m.format')} value={regs.raceKm ? t('setup.m.kmRaces', { km: regs.raceKm }) : t('setup.m.timed')} detail={t(regs.raceKm ? 'setup.m.sprint' : 'setup.m.endurance')} />
         </div>
         <div className="panel col"><h4>{t('setup.m.yourBudget')} <Src k="e" /></h4>
-          <BarList fmt={(v) => fmtMoney(v)} items={[{ label: t(makerId ? 'setup.m.makerFunding' : 'ms.budget.owner'), value: B * 0.72 * bk }, { label: t('setup.m.sponsors'), value: B * 0.45 * bk, color: 'var(--s3)' }, { label: t('setup.m.cashStart'), value: B * 0.3 * bk, color: 'var(--s4)' }]} />
+          <BarList fmt={(v) => fmtMoney(v)} items={[{ label: t(makerId ? 'setup.m.makerFunding' : 'ms.budget.owner'), value: pv.owner }, { label: t('setup.m.sponsors'), value: pv.sponsors, color: 'var(--s3)' }, { label: t('setup.m.cashStart'), value: pv.cash, color: 'var(--s4)' }, { label: l2('Coste anual del equipo', 'Yearly running cost'), value: pv.cost, color: 'var(--s2)' }]} />
+          <p className="small muted" data-preview="ms-budget" data-owner={Math.round(pv.owner)} data-sponsors={Math.round(pv.sponsors)} data-cash={Math.round(pv.cash)}>{l2(`Garantizado: propietario + patrocinadores = ${fmtMoney(pv.owner + pv.sponsors)} al año. Condicionado: premio de ${fmtMoney(pv.prize)} si terminás P${pv.prizePos}. Margen previsto con ese premio: ${fmtMoney(pv.balance)}.`, `Guaranteed: owner + sponsors = ${fmtMoney(pv.owner + pv.sponsors)} a year. Conditional: ${fmtMoney(pv.prize)} prize money if you finish P${pv.prizePos}. Forecast margin with that prize: ${fmtMoney(pv.balance)}.`)}</p>
           <p className="small muted">{t('setup.m.prize')} {makerId ? t('setup.m.alsoMaker', { name: MAKER[makerId].name }) : ''}</p>
         </div>
       </div>

@@ -312,7 +312,7 @@ function Toolbar({ quality, rotate, setRotate, go, dist, full, onFull, onBench, 
         </select>
         <button className="vbtn" title={t('viewer.fpsHint')} disabled={benching} onClick={onBench}>{benching ? t('viewer.measuring') : t('viewer.fps')}</button>
       </div>
-      {result && <div className="vbench" role="status">{result.avgFps.toFixed(0)} FPS · p95 {result.p95Ms.toFixed(1)} ms · {result.drawCalls} draw calls · {(result.triangles / 1000).toFixed(0)}k tris · {result.width}×{result.height} @{result.dpr}x · {t(`gfx.${result.quality}` as MessageKey)}</div>}
+      {result && <div className="vbench" role="status">{result.avgFps.toFixed(0)} FPS · p95 {result.p95Ms.toFixed(1)} ms · {result.drawCalls} draw calls · {(result.triangles / 1000).toFixed(0)}k tris · {Math.round(result.width)}×{Math.round(result.height)} @{Number(result.dpr.toFixed(2))}x · {t(`gfx.${result.quality}` as MessageKey)}{result.quality !== quality ? ' · ⚠ medición anterior, con otra calidad: volvé a medir / earlier sample at another quality: measure again' : ''}</div>}
     </>
   );
 }

@@ -9,7 +9,7 @@ import { useT, type MessageKey } from '../i18n';
 import { money, num } from '../i18n/format';
 import { starterVehicle, defaultVehicle, computeVehicle, CYL } from '../sim/engineering';
 import { annualUnits, makeModel, estimateUnitCost, factoryBuildCost } from '../sim/company';
-import { startDevelopment, setEngineers, setMarketing, investDealers, validateSpec, expandStage, stageCost, setInspection, upgradeAutomation, automationCost, maxAutomation, expandFactory, buildMonths, dealerCostPerUnit } from '../sim/actions';
+import { startDevelopment, setEngineers, setMarketing, investDealers, validateSpec, expandStage, stageCost, setInspection, upgradeAutomation, automationCost, maxAutomation, expandFactory, buildMonths, dealerInvestPreview } from '../sim/actions';
 import { planDevelopment, defaultChoice } from '../sim/families';
 import { missingTechs, TECH_BY_ID } from '../data/tech';
 import { suggestSegment, segVolume } from '../sim/market';
@@ -490,8 +490,7 @@ export function Campaigns2D() {
       <h3>{tx('mk.dealers')}</h3>
       <div className="g2-dealers">{REGIONS.map((r) => {
         const a = amount[r.id] ?? Math.max(1e6, Math.round(p.cash * 0.02 / 1e6) * 1e6);
-        const entry = p.reach[r.id] <= 0 ? 5e6 * (dealerCostPerUnit(g, p, r.id) / 1500) : 0;
-        const adds = Math.max(0, (a - entry) / dealerCostPerUnit(g, p, r.id));
+        const pvD = dealerInvestPreview(g, p, r.id, a), entry = pvD.setup, adds = pvD.add;
         const vol = SEGMENTS.reduce((s, sd) => s + segVolume(r.id, sd.id, g.year), 0);
         return <article key={r.id} className="g2-dealer" data-region={r.id}>
           <header><b>{r.name}</b>{r.id === p.homeRegion && <span className="g2-chip on">★</span>}</header>

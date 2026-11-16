@@ -9,7 +9,7 @@ import { money, num } from '../i18n/format';
 import { BODY, LAYOUT_NAME, SCORE_KEYS, defaultVehicle, starterVehicle } from '../sim/engineering';
 import { SEG, REGION_IDS } from '../data/world';
 import { cancelDevelopment, retireModel, setPrice } from '../sim/actions';
-import { devEngineersNeeded, estimateUnitCost } from '../sim/company';
+import { devBlockers, devEngineersNeeded, devEtaMonths, estimateUnitCost } from '../sim/company';
 import { annualSupply, computeMarket } from '../sim/market';
 import { DEALER_NET, TYPICAL_VOLUME, contributionAt, demandCurve, priceGuide } from '../sim/pricing';
 import { familyOf, familyUsers, platformOf, platformUsers } from '../sim/families';
@@ -58,7 +58,7 @@ export function VehiclesView() {
               return (
                 <tr key={m.id} data-model={m.id} className={'click' + (shown?.id === m.id ? ' me' : '')} onClick={() => setInspect(m.id)}>
                   <td><b>{m.name}</b>{m.historical && <> <Tag kind="h" title={t('veh.histHint')}>{t('veh.hist')}</Tag></>}<div className="tiny muted">{t('veh.gen', { n: m.generation, year: m.designYear })}{m.launchYear ? ` · ${t('veh.onSale', { year: m.launchYear })}` : ''}</div></td>
-                  <td>{m.status === 'development' ? <span className="warn">{t('veh.devLeft', { n: Math.ceil(m.devMonthsLeft) })}</span> : m.status === 'ready' ? <span className="accent">{t('veh.status.ready')}</span> : t(k(`veh.status.${m.status}`))}</td>
+                  <td>{m.status === 'development' ? (() => { const bl = devBlockers(p, m); return bl.length && m.devMonthsLeft <= 0 ? <span className="warn" data-dev-wait={m.id} title={bl.map((b) => b.name).join(', ')}>{lang === 'es' ? `Ingeniería lista · espera ${bl[0].name} (~${devEtaMonths(p, m)} m)` : `Engineering done · waiting for ${bl[0].name} (~${devEtaMonths(p, m)} mo)`}</span> : <span className="warn">{t('veh.devLeft', { n: devEtaMonths(p, m) })}</span>; })() : m.status === 'ready' ? <span className="accent">{t('veh.status.ready')}</span> : t(k(`veh.status.${m.status}`))}</td>
                   <td>{term(SEG[m.segment].name)}</td>
                   <td className="r">{Math.round(m.stats.powerKw)} kW</td><td className="r">{m.stats.zeroTo100.toFixed(1)} s</td>
                   <td className="r">{money(cost, lang)}</td>
@@ -161,6 +161,7 @@ function ModelCard({ m }: { m: VehicleModel }) {
       </div>}
       <div className="col" style={{ gap: 4 }}>{SCORE_KEYS.map((key) => <ScoreBar key={key} label={t(k(`score.${key}`))} value={s.scores[key]} color={(SEG[m.segment].weights[key] ?? 0) >= 0.15 ? 'var(--accent)' : 'var(--s1)'} />)}</div>
       <p className="tiny muted">{t('veh.scoresNote', { year: g.year, segment: term(SEG[m.segment].name).toLowerCase() })}</p>
+      {m.status === 'development' && devBlockers(p, m).length > 0 && <p className="small warn" data-dev-blockers role="status">{(lang === 'es' ? 'Ruta crítica: no puede pasar a producción hasta que termine ' : 'Critical path: it cannot go into production until this is finished: ') + devBlockers(p, m).map((b) => `${b.name} (${lang === 'es' ? (b.kind === 'platform' ? 'plataforma' : b.kind === 'engine' ? 'familia de motor' : 'variante de motor') : (b.kind === 'platform' ? 'platform' : b.kind === 'engine' ? 'engine family' : 'engine variant')}, ~${Math.ceil(b.monthsLeft)} ${lang === 'es' ? 'meses' : 'months'})`).join('; ') + (m.devMonthsLeft <= 0 ? (lang === 'es' ? '. El trabajo propio del auto ya terminó.' : '. The car\'s own work is finished.') : '.')}</p>}
       {m.status === 'development' && <p className="small warn">{t('veh.devProgress', { left: Math.ceil(m.devMonthsLeft), total: m.devMonthsTotal, paid: m$(m.devCostPaid), budget: m$(m.devCostTotal), eng: Math.round(devEngineersNeeded(g, p, m)) })}</p>}
     </div>
   );
