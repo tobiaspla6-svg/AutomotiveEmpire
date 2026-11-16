@@ -13,7 +13,7 @@ import { CATEGORIES, CATEGORY_NAME, IN_HOUSE, SUPPLIER_BY_ID, suppliersFor } fro
 import { estimateUnitCost, factoryBuildCost, factoryFixedCost, lineShareUsed, toolingCost } from '../sim/company';
 import {
   addLine, automationCost, buildFactory, buildInHouse, endContract, expandFactory, expandStage, maxAutomation, removeLine, sellFactory, setInspection,
-  setLineTarget, setSafetyStock, signContract, stageCost, upgradeAutomation, buildMonths,
+  LINE_FOLLOW, LINE_FULL, setLineTarget, setSafetyStock, signContract, stageCost, upgradeAutomation, buildMonths,
 } from '../sim/actions';
 import { bottleneck, capacityRef, effectiveCapacity, inHouseCost, inspectionOf, quote, STAGES, stagesOf, supplierCapacity } from '../sim/supply';
 import { DEALER_NET } from '../sim/pricing';
@@ -209,7 +209,7 @@ function PlantCard({ f, defaultOpen }: { f: Factory; defaultOpen: boolean }) {
                   <i className="swatch" style={{ background: PALETTE[i % PALETTE.length] }} />
                   <div className="ll-name"><b>{m.name}</b><span className="tiny muted">{t('fac.line.cap', { n: n(units) })}{l.ramp < 0.995 ? ` · ${t('fac.line.ramp', { pct: Math.round(l.ramp * 100) })}` : ''}</span></div>
                   <span className="ll-cost"><span className="tiny muted">{t('fac.line.unitCost')}</span><b className="num">{m.lastUnitCost ? m$(m.lastUnitCost) : '—'}</b></span>
-                  <Select value={l.target < 0 ? 'auto' : 'max'} options={[{ value: 'auto', label: t('fac.line.follow') }, { value: 'max', label: t('fac.line.full') }]} onChange={(v) => act((gg) => setLineTarget(gg, f.id, m.id, v === 'auto' ? -1 : units))} />
+                  <Select value={l.target < 0 ? 'auto' : 'max'} options={[{ value: 'auto', label: t('fac.line.follow') }, { value: 'max', label: t('fac.line.full') }]} onChange={(v) => act((gg) => setLineTarget(gg, f.id, m.id, v === 'auto' ? LINE_FOLLOW : LINE_FULL))} />
                   <button className="btn sm ghost" onClick={() => ask(t('fac.confirmRemoveLine', { model: m.name, plant: f.name }), () => { act((gg) => removeLine(gg, f.id, m.id)); })}>{t('fac.line.remove')}</button>
                 </li>); })}
             </ul>

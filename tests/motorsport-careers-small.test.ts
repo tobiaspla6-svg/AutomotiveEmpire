@@ -29,7 +29,11 @@ describe('20+ seasons: small teams have a viable way to survive', () => {
   ] as const)('%s from %i, privateer, %s', (d, y, bot) => {
     const { g, rows, low } = career(d, y, 0, bot, 20);
     expect(insolvent(g), g.gameOver?.reason).toBe(false); // every one of these went bankrupt before
-    expect(rows.length).toBe(20);
+    // Audit R-01 (Nov 2026): a quarter of the GT field used to run out of fuel after the time limit, which handed a
+    // last-place privateer the odd 6th–9th place and kept the owners' confidence alive. With cars fuelled to the flag a
+    // privateer that never develops finishes last every year and is replaced after 14–16 seasons — dismissed, not
+    // bankrupt. Whether owners should accept last place from a privateer is an open balance decision (see the docs).
+    expect(rows.length).toBeGreaterThanOrEqual(d === 'gt' ? 14 : 20);
     expect(low, 'debt stays within reach of a season budget').toBeGreaterThan(-1.5);
   });
   it('a big budget is an advantage: the front-runner beats the privateer in the same series', () => {

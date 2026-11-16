@@ -18,7 +18,7 @@ const k = (x: string) => x as MessageKey;
 
 export function RaceScreen() {
   const { g, p } = useGame();
-  const { t } = useT();
+  const { t, lang } = useT();
   const go = useStore((s) => s.go), act = useStore((s) => s.act), save = useStore((s) => s.save);
   const div = p.motorsport;
   const round = div ? pendingRound(g, p) : null;
@@ -137,7 +137,7 @@ export function RaceScreen() {
     <div className="race">
       <div className="bar">
         <div className="race-id"><span className="eyebrow">{div.championship.name}</span><b>{sim.cfg.name}</b></div>
-        <div className="race-lap" aria-live="off">{lapsTotal ? <><span className="eyebrow">{t('race.lap')}</span><b className="display">{Math.min(lapsTotal, sim.leaderLaps() + 1)}<i> / {lapsTotal}</i></b></> : <><span className="eyebrow">{t('race.time')}</span><b className="display">{fmtClock(Math.min(sim.t, sim.cfg.duration))}<i> / {fmtClock(sim.cfg.duration)}</i></b></>}</div>
+        <div className="race-lap" aria-live="off">{lapsTotal ? <><span className="eyebrow">{t('race.lap')}</span><b className="display">{Math.min(lapsTotal, sim.leaderLaps() + 1)}<i> / {lapsTotal}</i></b></> : <><span className="eyebrow">{t('race.time')}</span><b className="display" data-race-clock={Math.floor(sim.t)}>{fmtClock(sim.t)}<i> / {fmtClock(sim.cfg.duration)}</i></b>{sim.t >= sim.cfg.duration && <span className="eyebrow" data-race-overtime style={{ color: 'var(--accent, #e8b04a)' }}>{sim.finished ? (lang === 'es' ? 'Carrera terminada' : 'Race over') : sim.leaderDone ? (lang === 'es' ? 'Bandera a cuadros: el resto completa su vuelta' : 'Chequered flag: the others finish their lap') : (lang === 'es' ? 'Tiempo cumplido: última vuelta del líder' : 'Time is up: leader on the final lap')}</span>}</>}</div>
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(sim.progress() * 100)}><i style={{ width: `${sim.progress() * 100}%` }} /></div>
         <span className={'race-weather ' + weather} title={t('race.wetness')}>{t(k(`race.weather.${weather}`))}{sim.rain > 0.05 ? ` ${Math.round(sim.rain * 100)}%` : ''} · {t('race.trackWet', { pct: Math.round(sim.wetness * 100) })}</span>
         {sim.vsc > 0 && <span className="tag e race-vsc">{t('race.vsc')}</span>}

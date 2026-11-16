@@ -10,7 +10,7 @@ import { money, monthShort, num, pct } from '../i18n/format';
 import { REGIONS, REGION_IDS, SEG, SEGMENTS, segPrice } from '../data/world';
 import { TECHS } from '../data/tech';
 import { AREA_NAME, TECH_AREAS, annualRevenue, annualUnits, creditLimit, devEngineersNeeded, engineerCost, researchRef, valuation } from '../sim/company';
-import { dealerCostPerUnit, investDealers, repayLoan, setEngineers, setMarketing, setRd, takeLoan } from '../sim/actions';
+import { dealerInvestPreview, investDealers, repayLoan, setEngineers, setMarketing, setRd, takeLoan } from '../sim/actions';
 import { computeMarket, fuelPrice, segVolume } from '../sim/market';
 import { cpi } from '../sim/util';
 import { equity, fixedAssets, inventoryValue } from '../sim/accounts';
@@ -183,13 +183,13 @@ export function MarketView() {
 
       <Panel eyebrow={t('mkt.dealers')} title={t('mkt.dealers.title')}>
         <div className="region-grid">
-          {REGIONS.map((r) => { const vol = SEGMENTS.reduce((s, sd) => s + segVolume(r.id, sd.id, g.year), 0); const a = amount[r.id] ?? Math.max(1e6, Math.round(p.cash * 0.05 / 1e6) * 1e6); const add = a / dealerCostPerUnit(g, p, r.id as RegionId); return (
+          {REGIONS.map((r) => { const vol = SEGMENTS.reduce((s, sd) => s + segVolume(r.id, sd.id, g.year), 0); const a = amount[r.id] ?? Math.max(1e6, Math.round(p.cash * 0.05 / 1e6) * 1e6); const pv = dealerInvestPreview(g, p, r.id as RegionId, a), add = pv.add; const gain = pv.setup > 0 ? (a <= pv.setup ? (lang === 'es' ? `Entrar cuesta ${money(pv.setup, lang)}: invertí más que eso` : `Entry costs ${money(pv.setup, lang)}: invest more than that`) : (lang === 'es' ? `Entrada ${money(pv.setup, lang)} + red ${money(pv.network, lang)} → +${n(add)} coches / año` : `Entry ${money(pv.setup, lang)} + network ${money(pv.network, lang)} → +${n(add)} cars / yr`)) : t('mkt.dealers.gain', { n: n(add) }); return (
             <article key={r.id} className="region-card" data-region={r.id}>
               <header><b>{term(r.name)}</b>{r.id === p.homeRegion && <span className="status-chip ready">{t('mkt.dealers.home')}</span>}</header>
               <HBar label={t('mkt.dealers.reach')} value={p.reach[r.id]} max={vol} color="var(--s1)" right={`${n(p.reach[r.id])} / ${n(vol)}`} title={t('mkt.dealers.reachHint')} />
               <HBar label={t('mkt.kpi.awareness')} value={p.awareness[r.id]} max={100} color="var(--s3)" right={`${Math.round(p.awareness[r.id])}%`} />
               <footer><label className="row" style={{ gap: 5 }}><input type="number" style={{ width: 78 }} value={Math.round(a / 1e6)} min={1} aria-label={t('mkt.dealers.amount', { name: term(r.name) })} onChange={(e) => setAmount({ ...amount, [r.id]: Number(e.target.value) * 1e6 })} /><span className="small muted">{t('mkt.dealers.m')}</span></label>
-                <button className="btn sm" data-action="invest-dealers" title={t('mkt.dealers.gain', { n: n(add) })} onClick={() => act((gg) => investDealers(gg, r.id as RegionId, a), t('mkt.dealers.done'))}>{t('mkt.dealers.invest')}</button><span className="tiny muted">{t('mkt.dealers.gain', { n: n(add) })}</span></footer>
+                <button className="btn sm" data-action="invest-dealers" title={gain} onClick={() => act((gg) => investDealers(gg, r.id as RegionId, a), t('mkt.dealers.done'))}>{t('mkt.dealers.invest')}</button><span className="tiny muted" data-dealer-gain={Math.round(add)}>{gain}</span></footer>
             </article>); })}
         </div>
         <ImpactPreview deps={[amount]} run={(gg) => { for (const r of REGIONS) { const v = amount[r.id]; if (v) { const e = investDealers(gg, r.id as RegionId, v); if (e) return e; } } return Object.values(amount).some((v) => v) ? null : t('mkt.dealers.enter'); }} />

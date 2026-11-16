@@ -509,6 +509,78 @@ test('Tuning Lab (separate page): stage, race, incompatible stage disabled, ECU 
   noErrors(errors); await ctx.close();
 });
 
+test('audit AE-01: typing spaces in the save importer never advances the month; Space outside forms still does', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await startCeo(page);
+  await nav(page, 'saves');
+  const date0 = await stat(page, 'date'), cash0 = await stat(page, 'cash');
+  await page.locator('button', { hasText: /Paste a save/ }).click();
+  const ta = page.locator('#paste-save'); await ta.waitFor(); await ta.click();
+  for (let i = 0; i < 10; i++) await page.keyboard.press('Space');
+  await page.keyboard.type('line one\nline two  with  spaces');
+  await page.evaluate(() => { const el = document.querySelector('#paste-save'); el.focus(); document.execCommand('insertText', false, ' pasted text '); });
+  await page.waitForTimeout(400);
+  eq(await stat(page, 'date'), date0, 'the month did not change while typing');
+  eq(await stat(page, 'cash'), cash0, 'cash did not change while typing');
+  assert((await ta.inputValue()).startsWith('          line one'), 'the spaces went into the text area');
+  // with the dialog open, Space on the page body does nothing either
+  await page.evaluate(() => document.activeElement.blur()); await page.keyboard.press('Space'); await page.waitForTimeout(300);
+  eq(await stat(page, 'date'), date0, 'Space is ignored while a dialog is open');
+  await page.keyboard.press('Escape');
+  if (await page.locator('#paste-save').count()) await page.mouse.click(5, 5);
+  await page.locator('#paste-save').waitFor({ state: 'detached' });
+  await page.evaluate(() => document.activeElement.blur()); await page.keyboard.press('Space');
+  await page.waitForFunction((d) => document.querySelector('[data-stat="date"] .v')?.textContent?.trim() !== d, date0);
+  noErrors(errors); await ctx.close();
+});
+
+test('audit AE-03/AE-08: the Director setup budget equals the team that is created; +3 months stops at the race weekend', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await pickMode(page, 2);
+  const pv = page.locator('[data-preview="ms-budget"]'); await pv.waitFor();
+  const want = { owner: Number(await pv.getAttribute('data-owner')), sponsors: Number(await pv.getAttribute('data-sponsors')), cash: Number(await pv.getAttribute('data-cash')) };
+  await page.locator('[data-action="start-game"]').click(); await page.locator('.shell').waitFor();
+  // read the real budget from the autosave that the game writes on start
+  const real = await page.evaluate(async () => {
+    const db = await new Promise((res, rej) => { const r = indexedDB.open('automotive-empire'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    const rec = await new Promise((res, rej) => { const t = db.transaction('saves', 'readonly'); const q = t.objectStore('saves').getAll(); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    const g = rec.map((x) => x.game ?? x.data ?? x).find((x) => x && x.companies); const c = g.companies.find((x) => x.id === g.playerId);
+    return { owner: Math.round(c.motorsport.ownerGrant), sponsors: Math.round(c.motorsport.sponsors.reduce((a, x) => a + x.annual, 0) + c.motorsport.championship.teams.find((t) => t.id === c.motorsport.teamId).drivers.reduce((a, id) => a + (c.motorsport.championship.drivers.find((d) => d.id === id)?.backing ?? 0), 0)), cash: Math.round(c.cash), month: g.month };
+  });
+  eq(real.owner, want.owner, 'owner funding: setup preview = team created');
+  eq(real.cash, want.cash, 'starting cash: setup preview = team created');
+  eq(real.sponsors, want.sponsors, 'sponsors: setup preview = team created');
+  // +3 months: stops when the first race weekend arrives, nothing simulated
+  await page.locator('button', { hasText: '+3 months' }).click();
+  await page.locator('[data-action="race-weekend"]').waitFor();
+  await nav(page, 'motorsport');
+  eq(await page.locator('[data-action="race-weekend"]').count() > 0, true, 'the race weekend is waiting for the player');
+  // while the weekend waits, the batch button is replaced by the race button: nothing can simulate it by accident
+  eq(await page.locator('button', { hasText: '+3 months' }).count(), 0, 'no batch advance while a race waits');
+  const results = await page.evaluate(async () => {
+    const db = await new Promise((res, rej) => { const r = indexedDB.open('automotive-empire', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    const rec = await new Promise((res, rej) => { const r = db.transaction('saves').objectStore('saves').get('autosave'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    db.close(); const g = rec.game; return g.companies.find((x) => x.id === g.playerId).motorsport.championship.results.length;
+  });
+  eq(results, 0, 'no race was simulated on the way');
+  noErrors(errors); await ctx.close();
+});
+
+test('audit AE-05: the acquisition dialog shows cash received and debt assumed, and Cancel changes nothing', async (browser) => {
+  const { ctx, page, errors } = await open(browser);
+  await startCeo(page, 'Ferrari', '1985');
+  await nav(page, 'company');
+  const cash0 = await stat(page, 'cash'), debt0 = await stat(page, 'debt');
+  await page.locator('tr', { hasText: 'Lamborghini' }).locator('[data-action="acquire"]').click();
+  const dlg = page.locator('[role="alertdialog"]'); await dlg.waitFor();
+  const text = await dlg.innerText();
+  for (const w of ['Purchase review', 'cash that comes with Lamborghini', 'debt you assume', 'Your debt:', 'Credit left afterwards']) assert(text.includes(w), `the review mentions "${w}"`);
+  await page.locator('[data-action="confirm-cancel"]').click();
+  await page.waitForTimeout(250);
+  eq(await stat(page, 'cash'), cash0, 'Cancel: cash unchanged'); eq(await stat(page, 'debt'), debt0, 'Cancel: debt unchanged');
+  noErrors(errors); await ctx.close();
+});
+
 test('studio at 1280x720: the stage and the parts tray fit the window', async (browser) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   await ctx.addInitScript(() => { try { localStorage.setItem('ae.lang', 'es'); localStorage.setItem('ae.graphics.quality', 'off'); localStorage.setItem('ae.guide.welcomeSeen', '1'); } catch {} });

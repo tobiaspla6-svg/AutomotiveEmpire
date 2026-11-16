@@ -333,7 +333,7 @@ export function addLine(g: GameState, factoryId: string, modelId: string, units:
   if (err) return err;
   f.bookValue += tooling; // tooling is capitalised on the plant
   const ex = f.lines.find((l) => l.modelId === modelId);
-  if (ex) { const oldU = ex.share * f.capacity; ex.share = (oldU + units) / f.capacity; ex.ramp = (ex.ramp * oldU + 0.3 * units) / (oldU + units); }
+  if (ex) { const oldU = ex.share * f.capacity; if (ex.target >= oldU * 0.999) ex.target = LINE_FULL; /* a goal at (or above) the old capacity meant "full": it follows the enlarged line */ ex.share = (oldU + units) / f.capacity; ex.ramp = (ex.ramp * oldU + 0.3 * units) / (oldU + units); }
   else f.lines.push({ modelId, share: units / f.capacity, ramp: 0.3, target: -1 });
   if (!m.price) { // opening price: the recommended retail price at this line's volume (the player can change it at any time)
     m.price = Math.max(10, Math.round(priceGuide(g, c, m, units).recommended / 10) * 10);
@@ -344,6 +344,8 @@ export function removeLine(g: GameState, factoryId: string, modelId: string) {
   const f = player(g).factories.find((x) => x.id === factoryId);
   if (f) f.lines = f.lines.filter((l) => l.modelId !== modelId);
 }
+/** Line production policies stored in FactoryLine.target: follow demand (−1), full capacity (1e9, i.e. never the limit), or an absolute monthly goal. */
+export const LINE_FOLLOW = -1, LINE_FULL = 1e9;
 export function setLineTarget(g: GameState, factoryId: string, modelId: string, target: number) {
   const l = player(g).factories.find((x) => x.id === factoryId)?.lines.find((x) => x.modelId === modelId);
   if (l && finite(target)) l.target = target;
@@ -532,15 +534,24 @@ export function setInspection(g: GameState, factoryId: string, level: number): s
 /** Entry barriers on the hard difficulty (Phase 4E): dealers ask more of a maker they do not know. Normal and easy unchanged. */
 export const HARD_DEALER_COST = 1.2;
 export const dealerCostPerUnit = (g: GameState, c: Company, r: RegionId) => 1500 * cpi(g.year) * (r === c.homeRegion ? 1 : 1.35) * (g.difficulty === 'hard' ? HARD_DEALER_COST : 1);
+/**
+ * What a dealer investment buys (audit AE-04): the one-off entry cost of a region the company is not in yet (importer
+ * and parts depot), what is left for the network, and the distribution reach that buys. The action and every screen
+ * that quotes it use this function, so the promise and the result cannot differ.
+ */
+export function dealerInvestPreview(g: GameState, c: Company, region: RegionId, amount: number): { setup: number; network: number; add: number } {
+  const setup = c.reach[region] <= 0 ? 5e6 * cpi(g.year) : 0;
+  const network = Math.max(0, (finite(amount) ? amount : 0) - setup);
+  return { setup, network, add: network / dealerCostPerUnit(g, c, region) };
+}
 export function investDealers(g: GameState, region: RegionId, amount: number): string | null {
   const c = player(g);
   if (!finite(amount) || amount <= 0) return 'Enter an amount.';
-  const setup = c.reach[region] <= 0 ? 5e6 * cpi(g.year) : 0;
+  const { setup, add } = dealerInvestPreview(g, c, region, amount);
   if (amount <= setup) return `Entering a new region costs at least $${(setup / 1e6).toFixed(1)}M for an importer and parts depot.`;
   const err = pay(c, g, amount, 'capex');
   if (err) return err;
   c.books.otherAssets += amount; // dealer network and importer set-up are long-lived assets
-  const add = (amount - setup) / dealerCostPerUnit(g, c, region);
   c.reach[region] += add;
   if (setup) news(g, 'company', `${c.name} enters a new market`, `A sales company and the first dealers open; distribution capacity ${Math.round(add).toLocaleString()} cars a year.`);
   return null;
@@ -561,6 +572,23 @@ export function repayLoan(g: GameState, amount: number): string | null {
 }
 
 export const acquisitionPrice = (c: Company, year: number) => valuation(c, year) * 1.3;
+/**
+ * What an acquisition does to the buyer before it is confirmed (audit AE-05: the dialog named only the price, while
+ * the target's cash and debt come with it). Computed by running the real `acquire` on a copy of the game, so the
+ * figures reconcile with the result by construction. Pure: the game passed in is not touched.
+ */
+export function acquisitionPreview(g: GameState, companyId: string) {
+  const copy: GameState = JSON.parse(JSON.stringify(g));
+  const before = player(copy), t = copy.companies.find((x) => x.id === companyId);
+  if (!t) return null;
+  const snap = { cash: before.cash, debt: before.debt, plants: before.factories.length, models: before.models.length, engineers: before.engineers };
+  const price = acquisitionPrice(t, copy.year), targetCash = t.cash, targetDebt = t.debt, plants = t.factories.length, models = t.models.filter((m) => m.status === 'production').length;
+  const error = acquire(copy, companyId);
+  const after = player(copy);
+  const limit = creditLimit(after, copy.year);
+  return { error, price, targetCash, targetDebt, plants, models, engineers: after.engineers - snap.engineers,
+    cashBefore: snap.cash, cashAfter: after.cash, debtBefore: snap.debt, debtAfter: after.debt, creditLimitAfter: limit, creditLeftAfter: limit - after.debt };
+}
 export function acquire(g: GameState, companyId: string): string | null {
   const p = player(g); const t = g.companies.find((x) => x.id === companyId);
   if (!t || !t.alive || t.isPlayer) return 'Not available.';

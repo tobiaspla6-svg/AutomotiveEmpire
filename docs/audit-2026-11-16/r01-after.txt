@@ -1,0 +1,25 @@
+seed 11 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.6 min
+seed 11 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.5 min
+seed 11 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.1 min
+seed 22 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.5 min
+seed 22 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.5 min
+seed 22 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.8 min
+seed 33 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.7 min
+seed 33 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.0 min
+seed 33 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.7 min
+seed 44 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.0 min
+seed 44 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.3 min
+seed 44 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.3 min
+seed 55 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.2 min
+seed 55 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.5 min
+seed 55 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.5 min
+seed 66 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.0 min
+seed 66 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.6 min
+seed 66 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.3 min
+seed 77 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.3 min
+seed 77 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.5 min
+seed 77 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 121.3 min
+seed 88 round 1 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.0 min
+seed 88 round 2 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.7 min
+seed 88 round 3 2 h: 22 cars, out of fuel 0 (after the time limit: 0), flag at 120.4 min
+{"races":24,"cars":528,"fuelOut":0,"fuelOutAfterTime":0,"sharePct":0}

@@ -51,6 +51,7 @@ export function FlowSettings({ onClose }: { onClose: () => void }) {
   const tabs: { id: Tab; es: string; en: string }[] = [{ id: 'audio', es: 'Audio', en: 'Audio' }, { id: 'video', es: 'Video', en: 'Video' }, { id: 'game', es: 'Juego', en: 'Game' }, { id: 'access', es: 'Accesibilidad', en: 'Accessibility' }];
   const range = (k: 'master' | 'effects' | 'uiScale', label: string, min: number, max: number, note?: string, disabled = false) =>
     <label className="fs-field"><span>{label}</span><span className="fs-range"><input type="range" min={min} max={max} step={k === 'uiScale' ? 5 : 1} value={d[k]} disabled={disabled} onChange={(e) => upd(k, Number(e.target.value))} aria-valuetext={`${d[k]}%`} /><output>{d[k]}%</output></span>{note && <small>{note}</small>}</label>;
+  const [autosim, setAutosim] = useState(() => { try { return localStorage.getItem('ae.race.autosim') === '1'; } catch { return false; } });
   const toggle = (k: 'sound' | 'reduceMotion' | 'highContrast', label: string, note?: string) =>
     <button type="button" role="switch" aria-checked={d[k]} className="fs-toggle" data-pref={k} onClick={() => upd(k, !d[k])}><span>{label}{note && <small style={{ display: 'block', color: 'var(--fl-soft)', fontSize: 14 }}>{note}</small>}</span><b>{d[k] ? l('Sí', 'On') : l('No', 'Off')}</b></button>;
 
@@ -79,6 +80,8 @@ export function FlowSettings({ onClose }: { onClose: () => void }) {
             {canFs && <button type="button" role="switch" aria-checked={fs} className="fs-toggle" onClick={toggleFs}><span>{l('Pantalla completa', 'Full screen')}<small style={{ display: 'block', color: 'var(--fl-soft)', fontSize: 14 }}>{l('Se aplica al instante; Esc la cierra.', 'Applies at once; Esc leaves it.')}</small></span><b>{fs ? l('Sí', 'On') : l('No', 'Off')}</b></button>}
             {range('uiScale', l('Escala de la interfaz', 'Interface scale'), 80, 130, l('El navegador decide la resolución; aquí se escala la interfaz.', 'The browser decides the resolution; this scales the interface.'))}
           </>}
+          {tab === 'game' && <label className="fs-field" style={{ cursor: 'pointer' }}><span>{l('Simular carreras al avanzar varios meses', 'Simulate races when advancing several months')}<small style={{ display: 'block', opacity: 0.75 }}>{l('Desactivado: el avance de +3 meses se detiene en cada fin de semana de carrera.', 'Off: the +3 months advance stops at every race weekend.')}</small></span>
+            <input type="checkbox" data-field="autosim-races" checked={autosim} onChange={(e) => { try { localStorage.setItem('ae.race.autosim', e.target.checked ? '1' : '0'); } catch { /* storage blocked */ } setAutosim(e.target.checked); }} /></label>}
           {tab === 'game' && <div className="fs-field"><span>{l('Idioma', 'Language')}</span>
             <div className="fs-chiprow" role="radiogroup" aria-label={l('Idioma', 'Language')}>{LANGS.map((x) => <button key={x.id} type="button" role="radio" aria-checked={d.lang === x.id} aria-pressed={d.lang === x.id} className="fs-chip" lang={x.id} onClick={() => upd('lang', x.id)}>{x.name}</button>)}</div>
             <small>{l('La partida se guarda sola al final de cada mes.', 'The game saves itself at the end of every month.')}</small></div>}

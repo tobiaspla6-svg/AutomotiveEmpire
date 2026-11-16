@@ -62,7 +62,16 @@ export function Shell() {
       { id: 'nav.group.system', items: [{ id: 'news', icon: 'news', label: 'nav.news' }, { id: 'saves', icon: 'save', label: 'nav.saves' }] },
     ];
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.code === 'Space' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLTextAreaElement)) { e.preventDefault(); if (!race) advance(1); } };
+    // Space advances a month only when nothing is being edited and no dialog is open (audit AE-01: typing a space in the
+    // save importer used to advance the calendar behind the dialog)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat) return;
+      const el = e.target as HTMLElement | null;
+      const editing = !!el?.closest?.('input, textarea, select, button, a[href], summary, [contenteditable=""], [contenteditable="true"], [role="textbox"], [role="slider"], [role="button"], [role="tab"]');
+      const dialogOpen = !!document.querySelector('.modal-bg, [aria-modal="true"]');
+      if (editing || dialogOpen) return;
+      e.preventDefault(); if (!race) advance(1);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [advance, race]);

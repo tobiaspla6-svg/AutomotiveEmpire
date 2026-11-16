@@ -6,7 +6,7 @@ import { useTerm } from '../i18n/terms';
 import { dateTime, money, monthYear, num } from '../i18n/format';
 import { COUNTRY } from '../data/world';
 import { RESTRUCTURE, annualProfit, annualRevenue, annualUnits, creditLimit, restructuringSaving, valuation } from '../sim/company';
-import { acquire, acquisitionPrice, startRestructuring } from '../sim/actions';
+import { acquire, acquisitionPreview, acquisitionPrice, startRestructuring } from '../sim/actions';
 import { exportToFile, importFromFile, loadSlot, localSaves, type SaveMeta } from '../store/saves';
 import { prepareLoadedGame } from '../sim/migrate';
 import { Meter, Modal, PageHead, Select, StatLine, Tag } from './common';
@@ -80,7 +80,9 @@ export function CompanyView() {
         <div className="tablewrap" style={{ maxHeight: 380 }}><table><thead><tr><th>{t('co.acq.company')}</th><th>{t('fac.new.country')}</th><th className="r">{t('co.acq.cars')}</th><th className="r">{t('co.acq.revenue')}</th><th className="r">{t('co.acq.profit')}</th><th className="r">{t('score.prestige')}</th><th className="r">{t('veh.col.price')}</th><th /></tr></thead><tbody>
           {rivals.map((c) => { const price = acquisitionPrice(c, g.year); return (
             <tr key={c.id}><td><span className="row" style={{ gap: 6 }}><i className="swatch" style={{ background: c.color }} /><b>{c.name}</b></span></td><td className="dim">{term(COUNTRY[c.country]?.name ?? c.country)}</td><td className="r">{num(annualUnits(c), lang)}</td><td className="r">{m$(annualRevenue(c))}</td><td className="r">{m$(annualProfit(c))}</td><td className="r">{Math.round(c.prestige)}</td><td className="r">{m$(price)}</td>
-              <td className="r"><button className="btn sm" data-action="acquire" disabled={price > funds} title={price > funds ? t('co.acq.cannot') : undefined} onClick={() => ask(t('co.acq.confirm', { name: c.name, price: m$(price), cash: m$(p.cash), debt: m$(Math.max(0, price - p.cash)) }), () => { act((gg) => acquire(gg, c.id), t('co.acq.done', { name: c.name })); })}>{t('co.acq.go')}</button></td></tr>); })}
+              <td className="r"><button className="btn sm" data-action="acquire" disabled={price > funds} title={price > funds ? t('co.acq.cannot') : undefined} onClick={() => { const pv = acquisitionPreview(g, c.id); ask(t('co.acq.confirm', { name: c.name, price: m$(price), cash: m$(p.cash), debt: m$(Math.max(0, price - p.cash)) }) + (pv ? '\n\n' + (lang === 'es'
+                ? `Revisión de la compra — precio ${m$(pv.price)}; caja que trae ${c.name}: +${m$(pv.targetCash)}; deuda que asumís: +${m$(pv.targetDebt)}. Tu caja: ${m$(pv.cashBefore)} → ${m$(pv.cashAfter)}. Tu deuda: ${m$(pv.debtBefore)} → ${m$(pv.debtAfter)}. Crédito disponible después: ${m$(Math.max(0, pv.creditLeftAfter))}. Recibís ${pv.plants} planta(s), ${pv.models} modelo(s) en producción y ${pv.engineers} ingeniero(s).${pv.creditLeftAfter < pv.creditLimitAfter * 0.15 ? ' ⚠ Quedarías cerca del límite de crédito.' : ''}`
+                : `Purchase review — price ${m$(pv.price)}; cash that comes with ${c.name}: +${m$(pv.targetCash)}; debt you assume: +${m$(pv.targetDebt)}. Your cash: ${m$(pv.cashBefore)} → ${m$(pv.cashAfter)}. Your debt: ${m$(pv.debtBefore)} → ${m$(pv.debtAfter)}. Credit left afterwards: ${m$(Math.max(0, pv.creditLeftAfter))}. You receive ${pv.plants} plant(s), ${pv.models} model(s) in production and ${pv.engineers} engineer(s).${pv.creditLeftAfter < pv.creditLimitAfter * 0.15 ? ' ⚠ You would be close to your credit limit.' : ''}`) : ''), () => { act((gg) => acquire(gg, c.id), t('co.acq.done', { name: c.name })); }); }}>{t('co.acq.go')}</button></td></tr>); })}
         </tbody></table></div>
       </Panel>
     </div>

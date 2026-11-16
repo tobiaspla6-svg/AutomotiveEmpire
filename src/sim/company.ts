@@ -76,6 +76,22 @@ export function dependenciesReady(c: Company, m: VehicleModel): boolean {
   if (v && v.status !== 'ready' && v.ownerModelId !== m.id) return false;
   return true;
 }
+/**
+ * What a vehicle programme still waits for besides its own work (audit AE-06: a card said "0 months left" while the
+ * shared platform or engine family it reuses was still being developed by another programme). Each entry names the
+ * dependency and the months it has left. Empty = nothing blocks it.
+ */
+export function devBlockers(c: Company, m: VehicleModel): { kind: 'engine' | 'platform' | 'variant'; name: string; monthsLeft: number }[] {
+  const out: { kind: 'engine' | 'platform' | 'variant'; name: string; monthsLeft: number }[] = [];
+  const f = familyOf(c, m), p = platformOf(c, m);
+  if (f && f.status !== 'ready' && f.ownerModelId !== m.id) out.push({ kind: 'engine', name: f.name, monthsLeft: Math.max(0, f.devMonthsLeft ?? 0) });
+  if (p && p.status !== 'ready' && p.ownerModelId !== m.id) out.push({ kind: 'platform', name: p.name, monthsLeft: Math.max(0, p.devMonthsLeft ?? 0) });
+  const v = f?.variants.find((x) => x.id === m.engineVariantId);
+  if (v && v.status !== 'ready' && v.ownerModelId !== m.id) out.push({ kind: 'variant', name: v.name, monthsLeft: Math.max(0, v.readyIn ?? 0) });
+  return out;
+}
+/** Months until a programme can be signed off: its own work or its slowest dependency, whichever is longer. */
+export const devEtaMonths = (c: Company, m: VehicleModel) => Math.ceil(Math.max(m.devMonthsLeft, ...devBlockers(c, m).map((b) => b.monthsLeft)));
 /** Engineering sign-off of a vehicle and of the architecture developed with it. */
 export function completeModel(g: GameState, c: Company, m: VehicleModel) {
   m.status = 'ready'; m.devMonthsLeft = 0;
@@ -234,6 +250,10 @@ export function runPlayerMonth(g: GameState, c: Company, mk: MarketResult, extra
       // build for this month's buyers, keep some stock, and work a third of any waiting list down each month
       const queue = (m.orders ?? 0) + trimsOf(m).reduce((q, t) => q + (t.orders ?? 0), 0);
       const desiredModel = Math.max(0, lastD * 1.03 + (0.6 * lastD - m.inventory) * 0.5) + queue / 3;
+      // target < 0: follow demand; LINE_FULL (1e9): everything the line can build this month; any other value ≥ 0: an
+      // absolute monthly goal. Audit AE-02: "Full capacity" used to store the units of the moment as an absolute goal,
+      // so a line enlarged from 300 to 400 went on building 300. The interface now stores LINE_FULL, addLine converts a
+      // goal that was at the line's capacity, and loading a save converts the player's old values (sim/migrate.ts).
       const target = l.target >= 0 ? l.target : desiredModel * ((f.capacity * l.share * l.ramp) / totalCap);
       const n = Math.max(0, Math.min(cap, target));
       l.ramp = Math.min(1, l.ramp + 0.2);

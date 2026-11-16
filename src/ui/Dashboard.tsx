@@ -8,7 +8,7 @@ import { useT, type Lang, type MessageKey } from '../i18n';
 import { delta as fmtDelta, money, monthShort, num, pct } from '../i18n/format';
 import { REGION_IDS, REGION_NAME, SEGMENTS } from '../data/world';
 import { COUNTRY } from '../data/world';
-import { annualUnits, creditLimit, devEngineersNeeded, lineShareUsed, valuation, annualRevenue } from '../sim/company';
+import { annualUnits, creditLimit, devBlockers, devEngineersNeeded, devEtaMonths, lineShareUsed, valuation, annualRevenue } from '../sim/company';
 import { segVolume } from '../sim/market';
 import { companyInsights, objectiveRatio, type Insight } from '../sim/insights';
 import { bottleneck, effectiveCapacity } from '../sim/supply';
@@ -135,7 +135,7 @@ export function DashboardView() {
           <div className="col" style={{ gap: 10 }}>
             {d.dev.length === 0 ? <p className="small muted">{t('dash.noDev')}</p> : d.dev.map((m) => (
               <div key={m.id} className="col" style={{ gap: 3 }}>
-                <div className="row between"><b>{m.name}</b><span className="small muted">{tp('dash.monthsLeft', Math.ceil(m.devMonthsLeft))}</span></div>
+                <div className="row between"><b>{m.name}</b><span className="small muted">{devBlockers(p, m).length && m.devMonthsLeft <= 0 ? (lang === 'es' ? `espera ${devBlockers(p, m)[0].name} · ~${devEtaMonths(p, m)} m` : `waiting for ${devBlockers(p, m)[0].name} · ~${devEtaMonths(p, m)} mo`) : tp('dash.monthsLeft', devEtaMonths(p, m))}</span></div>
                 <HBar label="" value={m.devMonthsTotal - m.devMonthsLeft} max={m.devMonthsTotal} color="var(--accent)" right={pct((m.devMonthsTotal - m.devMonthsLeft) / Math.max(1, m.devMonthsTotal), lang)} />
               </div>))}
             {d.dev.length > 0 && <p className="tiny muted">{t('dash.engineers', { need: Math.round(d.engNeed), have: p.engineers })}</p>}
